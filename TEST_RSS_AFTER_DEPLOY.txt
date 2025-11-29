@@ -1,0 +1,67 @@
+# ============================================
+# TEST RSS FEED AFTER DEPLOYMENT
+# ============================================
+
+# Run these commands on your VPS after deploying next.config.js:
+
+cd /var/www/cryptorafts
+
+# Step 1: Restart PM2
+pm2 restart cryptorafts
+
+# Step 2: Wait for app to start
+sleep 5
+
+# Step 3: Test API endpoint directly (should work)
+echo "Testing /api/blog/rss..."
+curl -I http://localhost:3000/api/blog/rss
+
+# Should return:
+# HTTP/1.1 200 OK
+# Content-Type: application/rss+xml; charset=utf-8
+
+# Step 4: Test feed.xml (should work via rewrite)
+echo ""
+echo "Testing /feed.xml..."
+curl -I http://localhost:3000/feed.xml
+
+# Should return:
+# HTTP/1.1 200 OK
+# Content-Type: application/rss+xml; charset=utf-8
+
+# Step 5: Test content
+echo ""
+echo "Testing RSS feed content..."
+curl http://localhost:3000/feed.xml | head -30
+
+# Should show XML content starting with:
+# <?xml version="1.0" encoding="UTF-8"?>
+# <rss version="2.0"...
+
+# Step 6: Test from external
+echo ""
+echo "Testing from external URL..."
+curl -I https://www.cryptorafts.com/feed.xml
+
+# ============================================
+# TROUBLESHOOTING
+# ============================================
+
+# If /api/blog/rss works but /feed.xml doesn't:
+# 1. Check rewrites in next.config.js
+# 2. Verify Next.js picked up the config
+# 3. Check PM2 logs: pm2 logs cryptorafts --lines 50
+
+# If both return 404:
+# 1. Check if route files exist:
+#    ls -la src/app/api/blog/rss/route.ts
+# 2. Check PM2 logs for errors
+# 3. Restart PM2: pm2 delete cryptorafts && pm2 start ecosystem.config.js
+
+# If returns HTML instead of XML:
+# 1. Check Content-Type header
+# 2. Verify route.ts is returning XML
+# 3. Check for Next.js routing issues
+
+# ============================================
+

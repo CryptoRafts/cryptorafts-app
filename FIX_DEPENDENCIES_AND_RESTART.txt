@@ -1,0 +1,41 @@
+✅ APP IS RUNNING BUT NEEDS DEPENDENCY FIX
+==========================================
+
+npm install failed due to zod version conflict. Let's fix it!
+
+
+IN YOUR SSH TERMINAL, RUN THESE COMMANDS:
+-----------------------------------------
+
+STEP 1: Fix dependencies (use --legacy-peer-deps)
+-------------------------------------------------
+cd ~/cryptorafts
+npm install --legacy-peer-deps
+
+
+STEP 2: Rebuild the app
+-----------------------
+rm -rf .next out
+NODE_ENV=production npm run build
+
+
+STEP 3: Restart PM2
+--------------------
+pm2 restart cryptorafts
+
+
+STEP 4: Check status
+--------------------
+pm2 status
+pm2 logs cryptorafts --lines 20
+
+
+STEP 5: Verify app is responding
+---------------------------------
+curl http://localhost:3000
+
+Should show HTML response (not 404 or error)
+
+
+THEN VISIT: https://www.cryptorafts.com
+

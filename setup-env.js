@@ -1,0 +1,37 @@
+#!/usr/bin/env node
+
+console.log('🔧 FIREBASE ENVIRONMENT SETUP');
+console.log('=====================================');
+console.log('');
+console.log('❌ ISSUE: Missing .env.local file with Firebase configuration');
+console.log('');
+console.log('📋 SOLUTION: Create .env.local file with the following content:');
+console.log('');
+console.log('# Firebase Configuration');
+console.log('NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key_here');
+console.log('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=cryptorafts-b9067.firebaseapp.com');
+console.log('NEXT_PUBLIC_FIREBASE_PROJECT_ID=cryptorafts-b9067');
+console.log('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=cryptorafts-b9067.appspot.com');
+console.log('NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id_here');
+console.log('NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id_here');
+console.log('');
+console.log('ADMIN_EMAIL=admin@cryptorafts.com');
+console.log('');
+console.log('🔗 GET FIREBASE CONFIG:');
+console.log('1. Go to: https://console.firebase.google.com/project/cryptorafts-b9067/settings/general');
+console.log('2. Scroll down to "Your apps" section');
+console.log('3. Click on the web app (or create one if none exists)');
+console.log('4. Copy the config values and replace the placeholders above');
+console.log('');
+console.log('📁 CREATE FILE:');
+console.log('1. Create a new file called ".env.local" in the project root');
+console.log('2. Paste the configuration above with your actual values');
+console.log('3. Save the file');
+console.log('4. Restart the development server: npm run dev');
+console.log('');
+console.log('✅ AFTER SETUP:');
+console.log('- The app will connect to Firebase');
+console.log('- All roles will work perfectly');
+console.log('- No more configuration errors');
+console.log('');
+console.log('🚨 CRITICAL: Without this file, the app cannot connect to Firebase!');

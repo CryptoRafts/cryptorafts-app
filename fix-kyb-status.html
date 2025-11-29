@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix KYB Status - CryptoRafts</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 100%;
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .info-box {
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        .info-box h3 {
+            margin: 0 0 10px 0;
+            color: #667eea;
+            font-size: 16px;
+        }
+        .info-box p {
+            margin: 0;
+            color: #555;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 10px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .user-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .user-info p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #555;
+        }
+        .user-info strong {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Fix KYB Status</h1>
+        <p class="subtitle">Reset your KYB status to access the KYB form</p>
+
+        <div class="info-box">
+            <h3>What does this do?</h3>
+            <p>
+                If you're stuck on "KYB Verification Pending" but haven't actually submitted your KYB form yet, 
+                this tool will reset your KYB status to "not_submitted" so you can access the KYB form properly.
+            </p>
+        </div>
+
+        <div id="userInfo" class="user-info" style="display: none;">
+            <p><strong>Email:</strong> <span id="userEmail"></span></p>
+            <p><strong>Role:</strong> <span id="userRole"></span></p>
+            <p><strong>Current KYB Status:</strong> <span id="currentStatus"></span></p>
+            <p><strong>Profile Completed:</strong> <span id="profileCompleted"></span></p>
+        </div>
+
+        <button id="checkStatusBtn" onclick="checkStatus()">
+            Check Current Status
+        </button>
+
+        <button id="fixStatusBtn" onclick="fixKYBStatus()" style="display: none;">
+            Reset KYB Status to "Not Submitted"
+        </button>
+
+        <button onclick="window.location.href='/vc/kyb'">
+            Go to KYB Page
+        </button>
+
+        <div id="status"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js';
+        import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js';
+        import { getFirestore, doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD9u4fe7hExvVO10xySFVWC0C1Fo35vPbA",
+            authDomain: "cryptorafts-b9067.firebaseapp.com",
+            projectId: "cryptorafts-b9067",
+            storageBucket: "cryptorafts-b9067.firebasestorage.app",
+            messagingSenderId: "727285985940",
+            appId: "1:727285985940:web:a29a73d65d0bb3f2e5f00d",
+            measurementId: "G-LSMKVT78CR"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUser = null;
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                console.log('✅ User authenticated:', user.email);
+            } else {
+                console.log('❌ No user authenticated');
+                showStatus('Please login first. Redirecting to login page...', 'error');
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 2000);
+            }
+        });
+
+        window.checkStatus = async function() {
+            if (!currentUser) {
+                showStatus('❌ Please login first', 'error');
+                return;
+            }
+
+            showStatus('🔍 Checking your KYB status...', 'info');
+            
+            try {
+                const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+                
+                if (userDoc.exists()) {
+                    const data = userDoc.data();
+                    const kybStatus = data.kybStatus || 'not set';
+                    const profileCompleted = data.profileCompleted || false;
+                    const role = data.role || 'not set';
+
+                    console.log('📊 User Data:', {
+                        kybStatus,
+                        profileCompleted,
+                        role,
+                        hasKybData: !!data.kyb
+                    });
+
+                    // Update UI
+                    document.getElementById('userEmail').textContent = currentUser.email;
+                    document.getElementById('userRole').textContent = role;
+                    document.getElementById('currentStatus').textContent = kybStatus;
+                    document.getElementById('profileCompleted').textContent = profileCompleted ? 'Yes ✅' : 'No ❌';
+                    document.getElementById('userInfo').style.display = 'block';
+
+                    if (kybStatus === 'pending' && !data.kyb) {
+                        showStatus('⚠️ You are stuck! Your KYB status is "pending" but you haven\'t submitted KYB data yet. Click "Reset KYB Status" to fix this.', 'error');
+                        document.getElementById('fixStatusBtn').style.display = 'block';
+                    } else if (kybStatus === 'not_submitted') {
+                        showStatus('✅ Your KYB status is correct! You can proceed to the KYB form.', 'success');
+                        document.getElementById('fixStatusBtn').style.display = 'none';
+                    } else if (kybStatus === 'pending' && data.kyb) {
+                        showStatus('⏳ Your KYB is legitimately pending admin approval. No action needed.', 'info');
+                        document.getElementById('fixStatusBtn').style.display = 'none';
+                    } else if (kybStatus === 'approved') {
+                        showStatus('🎉 Your KYB is approved! You can access the dashboard.', 'success');
+                        document.getElementById('fixStatusBtn').style.display = 'none';
+                    } else {
+                        showStatus('📊 KYB Status: ' + kybStatus, 'info');
+                        document.getElementById('fixStatusBtn').style.display = 'block';
+                    }
+                } else {
+                    showStatus('❌ User profile not found in database', 'error');
+                }
+            } catch (error) {
+                console.error('❌ Error:', error);
+                showStatus('❌ Error: ' + error.message, 'error');
+            }
+        };
+
+        window.fixKYBStatus = async function() {
+            if (!currentUser) {
+                showStatus('❌ Please login first', 'error');
+                return;
+            }
+
+            if (!confirm('Are you sure you want to reset your KYB status to "not_submitted"? This will allow you to access the KYB form.')) {
+                return;
+            }
+
+            showStatus('🔧 Fixing your KYB status...', 'info');
+            document.getElementById('fixStatusBtn').disabled = true;
+            
+            try {
+                await setDoc(doc(db, 'users', currentUser.uid), {
+                    kybStatus: 'not_submitted',
+                    updatedAt: new Date().toISOString()
+                }, { merge: true });
+
+                console.log('✅ KYB status updated successfully');
+                showStatus('✅ Success! Your KYB status has been reset to "not_submitted". Click "Go to KYB Page" to continue.', 'success');
+                
+                // Refresh status after 1 second
+                setTimeout(() => {
+                    checkStatus();
+                    document.getElementById('fixStatusBtn').disabled = false;
+                }, 1000);
+            } catch (error) {
+                console.error('❌ Error:', error);
+                showStatus('❌ Error: ' + error.message, 'error');
+                document.getElementById('fixStatusBtn').disabled = false;
+            }
+        };
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = 'status ' + type;
+        }
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,310 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.role == 'admin';
+    }
+    
+    function hasRole(role) {
+      return isAuthenticated() && request.auth.token.role == role;
+    }
+
+    function isRoomMember(roomId) {
+      return isAuthenticated() && 
+        exists(/databases/$(database)/documents/rooms/$(roomId)) &&
+        request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.members;
+    }
+
+    function isProjectMember(projectId) {
+      return isAuthenticated() && (
+        // Project founder
+        get(/databases/$(database)/documents/projects/$(projectId)).data.founderId == request.auth.uid ||
+        // Room member for this project
+        exists(/databases/$(database)/documents/rooms) &&
+        request.auth.uid in get(/databases/$(database)/documents/rooms).data.members
+      );
+    }
+
+    // Users collection - users can read/write their own documents, admins can read all
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      allow write: if isAuthenticated() && isOwner(userId);
+      allow create: if isAuthenticated() && isOwner(userId);
+      
+      // Allow custom claims updates
+      allow update: if isAuthenticated() && isOwner(userId) && 
+                   (request.resource.data.keys().hasAll(['customClaims', 'claims_updated_at', 'updated_at']) ||
+                    !('customClaims' in request.resource.data.diff(resource.data).affectedKeys()));
+    }
+    
+    // User subcollections (AI chats, notifications, etc.) - owner or admin only
+    match /users/{userId}/{subcollection=**} {
+      allow read, write: if isAuthenticated() && (isOwner(userId) || isAdmin());
+    }
+
+    // Organizations - members can read/write, admins can read all
+    match /organizations/{orgId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        exists(/databases/$(database)/documents/organizations/$(orgId)) &&
+        request.auth.uid in get(/databases/$(database)/documents/organizations/$(orgId)).data.members
+      );
+      allow write: if isAuthenticated() && (
+        isAdmin() ||
+        exists(/databases/$(database)/documents/organizations/$(orgId)) &&
+        request.auth.uid in get(/databases/$(database)/documents/organizations/$(orgId)).data.members
+      );
+      allow create: if isAuthenticated();
+    }
+
+    // Organization KYB documents - org members or admin only
+    match /organizations/{orgId}/kyb/{docId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        exists(/databases/$(database)/documents/organizations/$(orgId)) &&
+        request.auth.uid in get(/databases/$(database)/documents/organizations/$(orgId)).data.members
+      );
+    }
+
+    // Projects - authenticated users can read, founders can write their own, admins can write all
+    match /projects/{projectId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.auth.uid == resource.data.founderId;
+      allow update, delete: if isAuthenticated() && (
+        resource.data.founderId == request.auth.uid ||
+        isAdmin()
+      );
+      allow list: if isAuthenticated();
+    }
+
+    // Pitches - founders can read/write their own pitches, admins can read all
+    match /pitches/{pitchId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        exists(/databases/$(database)/documents/pitches/$(pitchId)) &&
+        get(/databases/$(database)/documents/pitches/$(pitchId)).data.founderId == request.auth.uid
+      );
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.founderId;
+      allow update, delete: if isAuthenticated() && (
+        isAdmin() ||
+        exists(/databases/$(database)/documents/pitches/$(pitchId)) &&
+        get(/databases/$(database)/documents/pitches/$(pitchId)).data.founderId == request.auth.uid
+      );
+      allow list: if isAuthenticated();
+    }
+
+    // Routes - authenticated users can read, admins can write
+    match /routes/{routeId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Messages - room members or admin only
+    match /messages/{messageId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        exists(/databases/$(database)/documents/messages/$(messageId)) &&
+        request.auth.uid in get(/databases/$(database)/documents/messages/$(messageId)).data.roomMembers
+      );
+      allow create: if isAuthenticated();
+    }
+
+    // Project artifacts - project members or admin only
+    match /projects/{projectId}/artifacts/{artifactId} {
+      allow read, write: if isAuthenticated() && (isProjectMember(projectId) || isAdmin());
+    }
+
+    // Project artifact versions - project members or admin only
+    match /projects/{projectId}/artifacts/{artifactId}/versions/{versionId} {
+      allow read, write: if isAuthenticated() && (isProjectMember(projectId) || isAdmin());
+    }
+
+    // Project artifacts collection - project members or admin only
+    match /projectArtifacts/{artifactId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        exists(/databases/$(database)/documents/projectArtifacts/$(artifactId)) &&
+        isProjectMember(get(/databases/$(database)/documents/projectArtifacts/$(artifactId)).data.projectId)
+      );
+      allow create: if isAuthenticated();
+    }
+
+    // NDA acceptances - user's own or admin
+    match /ndaAcceptances/{acceptanceId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        exists(/databases/$(database)/documents/ndaAcceptances/$(acceptanceId)) &&
+        get(/databases/$(database)/documents/ndaAcceptances/$(acceptanceId)).data.userId == request.auth.uid
+      );
+      allow create: if isAuthenticated();
+    }
+
+    // Rooms - room members or admin only
+    match /rooms/{roomId} {
+      allow read, write: if isAuthenticated() && (isRoomMember(roomId) || isAdmin());
+      allow create: if isAuthenticated();
+    }
+
+    // Room messages - room members or admin only
+    match /rooms/{roomId}/messages/{messageId} {
+      allow read, write: if isAuthenticated() && (isRoomMember(roomId) || isAdmin());
+    }
+
+    // Relations - participants or admin only
+    match /relations/{relationId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        exists(/databases/$(database)/documents/relations/$(relationId)) &&
+        (request.auth.uid in get(/databases/$(database)/documents/relations/$(relationId)).data.participants)
+      );
+      allow create: if isAuthenticated();
+    }
+
+    // Notifications - user's own notifications or admin
+    match /notifications/{notificationId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        resource.data.userId == request.auth.uid
+      );
+      allow create: if isAuthenticated();
+      allow list: if isAuthenticated();
+    }
+
+    // Audit logs - authenticated users can write, admins can read
+    match /audit/{auditId} {
+      allow read: if isAdmin();
+      allow write: if isAuthenticated();
+    }
+
+    // Chat rooms - members or admin only
+    match /chatRooms/{chatId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        request.auth.uid in resource.data.participants
+      );
+      allow create: if isAuthenticated();
+      allow list: if isAuthenticated();
+    }
+
+    // Chat room messages - chat members or admin only
+    match /chatRooms/{chatId}/messages/{messageId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        request.auth.uid in get(/databases/$(database)/documents/chatRooms/$(chatId)).data.participants
+      );
+    }
+
+    // Group chats - members or admin only
+    match /groupChats/{chatId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        exists(/databases/$(database)/documents/groupChats/$(chatId)) &&
+        request.auth.uid in get(/databases/$(database)/documents/groupChats/$(chatId)).data.members
+      );
+      allow create: if isAuthenticated();
+    }
+
+    // Group chat messages - chat members or admin only
+    match /groupChats/{chatId}/messages/{messageId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        exists(/databases/$(database)/documents/groupChats/$(chatId)) &&
+        request.auth.uid in get(/databases/$(database)/documents/groupChats/$(chatId)).data.members
+      );
+    }
+
+    // RaftAI requests and results - user's own or admin
+    match /raftai_requests/{requestId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        exists(/databases/$(database)/documents/raftai_requests/$(requestId)) &&
+        get(/databases/$(database)/documents/raftai_requests/$(requestId)).data.userId == request.auth.uid
+      );
+      allow create: if isAuthenticated();
+    }
+
+    match /raftai_results/{resultId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        exists(/databases/$(database)/documents/raftai_results/$(resultId)) &&
+        get(/databases/$(database)/documents/raftai_results/$(resultId)).data.userId == request.auth.uid
+      );
+      allow create: if isAuthenticated();
+    }
+
+    // Chat interactions - user's own or admin
+    match /chat_interactions/{interactionId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        exists(/databases/$(database)/documents/chat_interactions/$(interactionId)) &&
+        get(/databases/$(database)/documents/chat_interactions/$(interactionId)).data.userId == request.auth.uid
+      );
+      allow create: if isAuthenticated();
+    }
+
+    // Deal rooms - members or admin only
+    match /dealRooms/{roomId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        exists(/databases/$(database)/documents/dealRooms/$(roomId)) &&
+        request.auth.uid in get(/databases/$(database)/documents/dealRooms/$(roomId)).data.members
+      );
+      allow create: if isAuthenticated();
+    }
+
+    // Founders subcollections - owner or admin only
+    match /founders/{founderId}/{subcollection=**} {
+      allow read, write: if isAuthenticated() && (isOwner(founderId) || isAdmin());
+    }
+
+    // VC subcollections - owner or admin only
+    match /vcs/{vcId}/{subcollection=**} {
+      allow read, write: if isAuthenticated() && (isOwner(vcId) || isAdmin());
+    }
+
+    // Exchange subcollections - owner or admin only
+    match /exchanges/{exchangeId}/{subcollection=**} {
+      allow read, write: if isAuthenticated() && (isOwner(exchangeId) || isAdmin());
+    }
+
+    // IDO subcollections - owner or admin only
+    match /idos/{idoId}/{subcollection=**} {
+      allow read, write: if isAuthenticated() && (isOwner(idoId) || isAdmin());
+    }
+
+    // Influencer subcollections - owner or admin only
+    match /influencers/{influencerId}/{subcollection=**} {
+      allow read, write: if isAuthenticated() && (isOwner(influencerId) || isAdmin());
+    }
+
+    // Agency subcollections - owner or admin only
+    match /agencies/{agencyId}/{subcollection=**} {
+      allow read, write: if isAuthenticated() && (isOwner(agencyId) || isAdmin());
+    }
+
+    // Admin subcollections - admin only
+    match /admins/{adminId}/{subcollection=**} {
+      allow read, write: if isAdmin();
+    }
+
+    // Metrics collection - authenticated users can read, admins can write
+    match /metrics/{metricId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Default deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

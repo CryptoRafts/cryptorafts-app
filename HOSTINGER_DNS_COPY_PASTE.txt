@@ -1,0 +1,40 @@
+﻿# ========================================
+# HOSTINGER DNS ZONE EDITOR - COPY & PASTE
+# ========================================
+# Go to: Domains â†’ DNS / Name Servers â†’ DNS Zone Editor
+# Domain: cryptorafts.com
+# ========================================
+
+# STEP 1: DELETE OLD MX RECORDS FIRST!
+# Find and delete any existing MX records
+
+# STEP 2: ADD THESE 4 RECORDS:
+
+# --- RECORD 1: MX (Priority 5) ---
+Type: MX
+Name: @
+Value: mx1.hostinger.com
+Priority: 5
+TTL: 14400
+
+# --- RECORD 2: MX (Priority 10) ---
+Type: MX
+Name: @
+Value: mx2.hostinger.com
+Priority: 10
+TTL: 14400
+
+# --- RECORD 3: SPF (TXT) ---
+Type: TXT
+Name: @
+Value: v=spf1 include:hostinger.com ~all
+TTL: 14400
+
+# --- RECORD 4: DKIM (TXT) ---
+Type: TXT
+Name: default._domainkey
+Value: v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtR70HDS2LO4deGoJbWzTISXiggtOOjibyWsgVmPRvaXPVCFC3onR2+G7TCmMxiysI7/0EZeIDlWAeRTLC9u0IOltZotZwbEBzlHX5tiZYA4JMMDobDnNG/P8sv5iYyUaStT7KOH2UJYUZbpoi9RjXg49lGEMIVrHh1LO5K2U5iMkVNgQTDrfhg2QUikp3ZMy31Rs3oo+PqeBDiggofE+93GdD+Nbnye9BNTOZk5GgLZzJli1WxoQcPsKtf76w2ABipaRpFcie+pLshTjcdYG0gw/i+R6uL9/ysHSi4J0ymt98RwFY9UcnLPNfaTvGxq8dZ8t3YF0ncavMOSslfS2ewIDAQAB
+
+TTL: 14400
+
+# ========================================

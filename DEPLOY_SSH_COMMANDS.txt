@@ -1,0 +1,58 @@
+==========================================
+DEPLOYMENT STEPS - RUN ON VPS VIA SSH
+==========================================
+
+STEP 1: Connect to VPS
+----------------------
+ssh root@72.61.98.99
+
+STEP 2: Navigate to project directory
+----------------------
+cd /var/www/cryptorafts
+
+STEP 3: Rebuild the app
+----------------------
+npm run build
+
+STEP 4: Restart PM2
+----------------------
+pm2 restart cryptorafts
+
+STEP 5: Check status
+----------------------
+pm2 status
+pm2 logs cryptorafts --lines 50
+
+==========================================
+ONE-LINER (from Windows PowerShell)
+==========================================
+
+After uploading files, run this:
+
+ssh root@72.61.98.99 "cd /var/www/cryptorafts; npm run build; pm2 restart cryptorafts"
+
+==========================================
+MANUAL FILE UPLOAD (from Windows PowerShell)
+==========================================
+
+# Upload page.tsx
+scp src/app/page.tsx root@72.61.98.99:/var/www/cryptorafts/src/app/page.tsx
+
+# Upload globals.css
+scp src/app/globals.css root@72.61.98.99:/var/www/cryptorafts/src/app/globals.css
+
+# Then rebuild on VPS
+ssh root@72.61.98.99 "cd /var/www/cryptorafts; npm run build; pm2 restart cryptorafts"
+
+
+
+
+
+
+
+
+
+
+
+
+

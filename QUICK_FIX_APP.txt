@@ -1,0 +1,79 @@
+# ============================================
+# QUICK FIX - App Not Working
+# ============================================
+# Run these commands on VPS to fix
+
+# ============================================
+# STEP 1: Test Local Response
+# ============================================
+cd /var/www/cryptorafts
+
+# Test if app responds locally
+curl http://localhost:3000
+
+# If no response, check port
+netstat -tlnp | grep 3000
+# OR
+ss -tlnp | grep 3000
+
+# ============================================
+# STEP 2: Check Logs
+# ============================================
+# Check recent errors
+pm2 logs cryptorafts --err --lines 50 --nostream
+
+# Check output
+pm2 logs cryptorafts --out --lines 50 --nostream
+
+# ============================================
+# STEP 3: Restart Application
+# ============================================
+pm2 restart cryptorafts
+sleep 5
+
+# Test again
+curl http://localhost:3000
+
+# ============================================
+# STEP 4: Check Firewall
+# ============================================
+# If port 3000 is blocked, allow it
+ufw allow 3000/tcp
+ufw reload
+
+# ============================================
+# STEP 5: Check Nginx (if using reverse proxy)
+# ============================================
+# Test Nginx config
+nginx -t
+
+# Check Nginx status
+systemctl status nginx
+
+# Restart Nginx if needed
+systemctl restart nginx
+
+# ============================================
+# STEP 6: Full Restart
+# ============================================
+pm2 stop cryptorafts
+pm2 delete cryptorafts
+pm2 start ecosystem.config.js
+pm2 save
+sleep 5
+
+# Test
+curl http://localhost:3000
+
+# ============================================
+# STEP 7: Check External Access
+# ============================================
+# From your local machine, test:
+# curl http://72.61.98.99:3000
+
+# If that works but browser doesn't, check:
+# - Nginx reverse proxy config
+# - DNS settings
+# - SSL certificate (if using HTTPS)
+# ============================================
+

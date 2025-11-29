@@ -1,0 +1,35 @@
+🚨 URGENT: FIREBASE RULES NOT DEPLOYED!
+
+The errors you're seeing are because Firebase rules are blocking all operations.
+
+IMMEDIATE ACTION REQUIRED:
+
+1. Open: https://console.firebase.google.com/project/cryptorafts-b9067/firestore/rules
+
+2. Delete ALL existing rules and paste this:
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    allow read, write: if true;
+  }
+}
+
+3. Click PUBLISH
+
+4. Open: https://console.firebase.google.com/project/cryptorafts-b9067/storage/rules
+
+5. Delete ALL existing rules and paste this:
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if true;
+    }
+  }
+}
+
+6. Click PUBLISH
+
+7. Wait 30 seconds and refresh your browser
+
+ALL ERRORS WILL BE FIXED!

@@ -1,0 +1,112 @@
+# ============================================
+# CRYPTORAFTS - POWERSHELL DEPLOYMENT COMMANDS
+# ============================================
+# Copy and paste these commands into PowerShell
+# ============================================
+
+# COMMAND 1: Run the automated deployment script
+.\DEPLOY_FROM_POWERSHELL.ps1
+
+# ============================================
+# ALTERNATIVE: Manual Deployment Commands
+# ============================================
+
+# COMMAND 2: Execute deployment directly via SSH (one-liner)
+Get-Content SSH_DEPLOY_COMMAND.txt -Raw | ssh root@72.61.98.99 bash
+
+# COMMAND 3: Or if you need to SSH manually first
+ssh root@72.61.98.99
+
+# Then in the SSH session, paste the contents of SSH_DEPLOY_COMMAND.txt
+
+# ============================================
+# QUICK DEPLOYMENT COMMANDS
+# ============================================
+
+# COMMAND 4: Quick deploy (if RUN_THIS_IN_SSH_NOW.sh exists)
+$script = Get-Content "RUN_THIS_IN_SSH_NOW.sh" -Raw; $cmd = "cd /var/www/cryptorafts 2>/dev/null || mkdir -p /var/www/cryptorafts && cd /var/www/cryptorafts && cat > RUN_THIS_IN_SSH_NOW.sh << 'DEPLOYEOF'`n$script`nDEPLOYEOF`nchmod +x RUN_THIS_IN_SSH_NOW.sh && bash RUN_THIS_IN_SSH_NOW.sh"; $cmd | ssh root@72.61.98.99 bash
+
+# COMMAND 5: Check SSH connection
+ssh root@72.61.98.99 "echo 'SSH connection successful'"
+
+# COMMAND 6: Check PM2 status on server
+ssh root@72.61.98.99 "pm2 status"
+
+# COMMAND 7: View PM2 logs
+ssh root@72.61.98.99 "pm2 logs cryptorafts --lines 50"
+
+# COMMAND 8: Restart PM2 app
+ssh root@72.61.98.99 "cd /var/www/cryptorafts && pm2 restart cryptorafts"
+
+# COMMAND 9: Check if app is running
+ssh root@72.61.98.99 "curl -I http://localhost:3000"
+
+# COMMAND 10: View Nginx status
+ssh root@72.61.98.99 "systemctl status nginx"
+
+# ============================================
+# FILE TRANSFER COMMANDS
+# ============================================
+
+# COMMAND 11: Copy file to VPS using SCP
+scp RUN_THIS_IN_SSH_NOW.sh root@72.61.98.99:/var/www/cryptorafts/
+
+# COMMAND 12: Copy ecosystem.config.js to VPS
+scp ecosystem.config.js root@72.61.98.99:/var/www/cryptorafts/
+
+# COMMAND 13: Copy server.js to VPS
+scp server.js root@72.61.98.99:/var/www/cryptorafts/
+
+# ============================================
+# TROUBLESHOOTING COMMANDS
+# ============================================
+
+# COMMAND 14: Check Node.js version on server
+ssh root@72.61.98.99 "node -v && npm -v"
+
+# COMMAND 15: Check disk space
+ssh root@72.61.98.99 "df -h"
+
+# COMMAND 16: Check memory usage
+ssh root@72.61.98.99 "free -h"
+
+# COMMAND 17: Check port 3000
+ssh root@72.61.98.99 "netstat -tlnp | grep 3000"
+
+# COMMAND 18: Kill process on port 3000
+ssh root@72.61.98.99 "lsof -ti:3000 | xargs kill -9"
+
+# COMMAND 19: Restart Nginx
+ssh root@72.61.98.99 "systemctl restart nginx"
+
+# COMMAND 20: Check SSL certificate
+ssh root@72.61.98.99 "certbot certificates"
+
+# ============================================
+# INSTALL OPENSSH (Run as Administrator)
+# ============================================
+
+# COMMAND 21: Install OpenSSH Client (Run PowerShell as Administrator)
+Add-WindowsCapability -Online -Name OpenSSH.Client~~~~0.0.1.0
+
+# COMMAND 22: Check if OpenSSH is installed
+Get-WindowsCapability -Online | Where-Object Name -like 'OpenSSH*'
+
+# ============================================
+# DEPLOYMENT CHECKLIST
+# ============================================
+#
+# 1. Run: .\DEPLOY_FROM_POWERSHELL.ps1
+#    OR
+# 2. Run: Get-Content SSH_DEPLOY_COMMAND.txt -Raw | ssh root@72.61.98.99 bash
+#
+# Wait 5-10 minutes for deployment
+#
+# 3. Check app: https://www.cryptorafts.com
+#
+# 4. Verify PM2: ssh root@72.61.98.99 "pm2 status"
+#
+# 5. View logs: ssh root@72.61.98.99 "pm2 logs cryptorafts --lines 20"
+#
+# ============================================
+

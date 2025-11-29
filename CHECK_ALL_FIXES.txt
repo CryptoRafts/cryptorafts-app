@@ -1,0 +1,70 @@
+# ============================================
+# CHECK ALL FIXES - Complete Verification
+# ============================================
+# Run this on VPS to verify all fixes are complete
+
+# ============================================
+# QUICK CHECK (Run on VPS)
+# ============================================
+cd /var/www/cryptorafts
+
+# 1. Check PM2 Status
+pm2 status
+pm2 describe cryptorafts | grep -E "restart|status|memory"
+
+# 2. Test App Response
+curl -I http://localhost:3000
+
+# 3. Test Static Files
+curl -I http://localhost:3000/site.webmanifest
+curl -I http://localhost:3000/favicon.ico
+curl -I http://localhost:3000/tablogo.ico
+
+# 4. Test Routes
+curl -I http://localhost:3000/spotlight/apply
+
+# 5. Check Memory Configuration
+PID=$(pm2 pid cryptorafts)
+cat /proc/$PID/environ | tr '\0' '\n' | grep NODE_OPTIONS
+
+# 6. Check Wrapper Script
+ls -lh start-server.sh
+cat start-server.sh | grep "max-old-space-size"
+
+# 7. Check PM2 Config
+cat ecosystem.config.js | grep -E "max-old-space-size|max_memory_restart"
+
+# 8. Check Port
+netstat -tlnp | grep 3000
+# OR
+ss -tlnp | grep 3000
+
+# 9. Check Recent Errors
+pm2 logs cryptorafts --err --lines 20 --nostream
+
+# 10. Check Memory Usage
+pm2 monit
+
+# ============================================
+# EXPECTED RESULTS
+# ============================================
+# ✅ PM2 Status: Online
+# ✅ App Response: HTTP 200
+# ✅ site.webmanifest: HTTP 200
+# ✅ favicon.ico: HTTP 200
+# ✅ tablogo.ico: HTTP 200
+# ✅ /spotlight/apply: HTTP 200
+# ✅ NODE_OPTIONS: --max-old-space-size=2048
+# ✅ Wrapper Script: Exists with memory settings
+# ✅ PM2 Config: Has memory settings
+# ✅ Port 3000: Listening
+# ✅ Errors: Only harmless warnings
+
+# ============================================
+# IF ANYTHING FAILS
+# ============================================
+# 1. Check logs: pm2 logs cryptorafts
+# 2. Restart: pm2 restart cryptorafts
+# 3. Check files: ls -la /var/www/cryptorafts
+# 4. Verify config: cat ecosystem.config.js
+

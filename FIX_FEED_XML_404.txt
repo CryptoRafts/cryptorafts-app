@@ -1,0 +1,105 @@
+# ============================================
+# FIX FEED.XML 404 ERROR - MANUAL STEPS
+# ============================================
+
+# Run these commands on your VPS to fix the 404 error
+
+cd /var/www/cryptorafts
+
+# ============================================
+# Step 1: Upload files from Windows
+# ============================================
+
+# On Windows PowerShell, run:
+# scp next.config.js root@72.61.98.99:/var/www/cryptorafts/next.config.js
+# scp src/app/api/blog/rss/route.ts root@72.61.98.99:/var/www/cryptorafts/src/app/api/blog/rss/route.ts
+# scp src/app/feed.xml/route.ts root@72.61.98.99:/var/www/cryptorafts/src/app/feed.xml/route.ts
+
+# ============================================
+# Step 2: Ensure directories exist
+# ============================================
+
+mkdir -p src/app/api/blog/rss
+mkdir -p src/app/feed.xml
+
+# ============================================
+# Step 3: Restart PM2
+# ============================================
+
+pm2 restart cryptorafts
+
+# Wait 10 seconds for app to rebuild
+sleep 10
+
+# ============================================
+# Step 4: Test RSS feed
+# ============================================
+
+# Test API endpoint
+curl -I http://localhost:3000/api/blog/rss
+
+# Expected: HTTP 200 OK, Content-Type: application/rss+xml; charset=utf-8
+
+# Test feed.xml (via rewrite)
+curl -I http://localhost:3000/feed.xml
+
+# Expected: HTTP 200 OK, Content-Type: application/rss+xml; charset=utf-8
+
+# Test content
+curl http://localhost:3000/feed.xml | head -20
+
+# Should show XML starting with:
+# <?xml version="1.0" encoding="UTF-8"?>
+# <rss version="2.0"...
+
+# ============================================
+# Step 5: Test from external
+# ============================================
+
+curl -I https://www.cryptorafts.com/feed.xml
+
+# Expected: HTTP 200 OK, Content-Type: application/rss+xml; charset=utf-8
+
+# ============================================
+# If Still Getting 404
+# ============================================
+
+# Check 1: Verify next.config.js has rewrites
+cat next.config.js | grep -A 5 "rewrites"
+
+# Should show:
+# async rewrites() {
+#   return [
+#     {
+#       source: '/feed.xml',
+#       destination: '/api/blog/rss',
+#     },
+
+# Check 2: Verify route files exist
+ls -la src/app/api/blog/rss/route.ts
+ls -la src/app/feed.xml/route.ts
+
+# Check 3: Check PM2 logs for errors
+pm2 logs cryptorafts --lines 50 | grep -i "error\|rewrite\|config"
+
+# Check 4: Restart PM2 completely
+pm2 delete cryptorafts
+pm2 start ecosystem.config.js
+sleep 10
+
+# Check 5: Test again
+curl -I http://localhost:3000/feed.xml
+
+# ============================================
+# Note About Other Errors
+# ============================================
+
+# The following errors are NOT related to RSS feed:
+# - analytics.js: Failed to load resource (Google Analytics)
+# - favicon.ico: Failed to load resource (just a missing icon)
+# - Tracking Prevention warnings (browser privacy feature)
+
+# These won't affect IFTTT RSS feed functionality!
+
+# ============================================
+

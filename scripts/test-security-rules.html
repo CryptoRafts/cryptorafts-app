@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Security Rules Tester</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: #00d4ff;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .test-section {
+            background: #16213e;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .test-section h2 {
+            color: #00d4ff;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+        
+        .test-item {
+            background: #0f3460;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #555;
+        }
+        
+        .test-item.success {
+            border-left-color: #00ff00;
+        }
+        
+        .test-item.error {
+            border-left-color: #ff0000;
+        }
+        
+        .test-item.pending {
+            border-left-color: #ffaa00;
+        }
+        
+        button {
+            background: #00d4ff;
+            color: #16213e;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 5px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 10px 10px 10px 0;
+            transition: all 0.3s;
+        }
+        
+        button:hover {
+            background: #00a8cc;
+            transform: scale(1.05);
+        }
+        
+        button:disabled {
+            background: #555;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        
+        .status.success {
+            background: #00ff00;
+            color: #000;
+        }
+        
+        .status.error {
+            background: #ff0000;
+            color: #fff;
+        }
+        
+        .status.pending {
+            background: #ffaa00;
+            color: #000;
+        }
+        
+        .test-description {
+            margin: 10px 0;
+            color: #bbb;
+        }
+        
+        .test-result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #0a0a0a;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        
+        input, select {
+            background: #0f3460;
+            color: #eee;
+            border: 1px solid #00d4ff;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 1em;
+            margin: 10px 10px 10px 0;
+            width: 250px;
+        }
+        
+        .login-form {
+            background: #0f3460;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .user-info {
+            background: #00d4ff;
+            color: #16213e;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔒 Firebase Security Rules Tester</h1>
+        
+        <div class="login-form" id="loginForm">
+            <h2>Login with Test Account</h2>
+            <select id="testUserSelect">
+                <option value="admin@test.com|TestAdmin123!">Admin</option>
+                <option value="founder@test.com|TestFounder123!">Founder</option>
+                <option value="vc@test.com|TestVC123!">VC</option>
+                <option value="exchange@test.com|TestExchange123!">Exchange</option>
+                <option value="ido@test.com|TestIDO123!">IDO</option>
+                <option value="influencer@test.com|TestInfluencer123!">Influencer</option>
+                <option value="agency@test.com|TestAgency123!">Agency</option>
+                <option value="trader@test.com|TestTrader123!">Trader</option>
+            </select>
+            <button onclick="loginWithTestUser()">Login</button>
+        </div>
+        
+        <div class="user-info" id="userInfo" style="display:none;">
+            <div>Logged in as: <span id="userEmail"></span></div>
+            <div>Role: <span id="userRole"></span></div>
+            <div>UID: <span id="userUid"></span></div>
+            <button onclick="logout()">Logout</button>
+        </div>
+        
+        <div class="test-section">
+            <h2>📋 Test Categories</h2>
+            <button onclick="testUserAccess()">Test User Profile Access</button>
+            <button onclick="testChatAccess()">Test Chat Access</button>
+            <button onclick="testProjectAccess()">Test Project Access</button>
+            <button onclick="testKYCAccess()">Test KYC Privacy</button>
+            <button onclick="testSpotlightAccess()">Test Spotlight Access</button>
+            <button onclick="testAuditLogs()">Test Audit Logs</button>
+            <button onclick="runAllTests()">Run All Tests</button>
+        </div>
+        
+        <div id="testResults"></div>
+    </div>
+    
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
+        import { getAuth, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
+        
+        // Firebase config (replace with your config)
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "cryptorafts-b9067",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        
+        window.auth = auth;
+        window.db = db;
+        
+        console.log('Firebase initialized');
+    </script>
+    
+    <script>
+        let currentUser = null;
+        
+        async function loginWithTestUser() {
+            const select = document.getElementById('testUserSelect');
+            const [email, password] = select.value.split('|');
+            
+            try {
+                const result = await window.auth.signInWithEmailAndPassword(window.auth, email, password);
+                currentUser = result.user;
+                
+                document.getElementById('userInfo').style.display = 'block';
+                document.getElementById('userEmail').textContent = currentUser.email;
+                document.getElementById('userUid').textContent = currentUser.uid;
+                
+                // Get user role
+                const token = await currentUser.getIdTokenResult();
+                document.getElementById('userRole').textContent = token.claims.role || 'trader';
+                
+                document.getElementById('loginForm').style.display = 'none';
+                
+                showTestResult('Login', 'success', `Logged in as ${email}`);
+            } catch (error) {
+                showTestResult('Login', 'error', error.message);
+            }
+        }
+        
+        async function logout() {
+            await window.auth.signOut(window.auth);
+            currentUser = null;
+            document.getElementById('userInfo').style.display = 'none';
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('testResults').innerHTML = '';
+        }
+        
+        function showTestResult(testName, status, message) {
+            const results = document.getElementById('testResults');
+            const testItem = document.createElement('div');
+            testItem.className = `test-item ${status}`;
+            testItem.innerHTML = `
+                <strong>${testName}</strong>
+                <span class="status ${status}">${status.toUpperCase()}</span>
+                <div class="test-result">${message}</div>
+            `;
+            results.appendChild(testItem);
+        }
+        
+        async function testUserAccess() {
+            if (!currentUser) {
+                showTestResult('User Access', 'error', 'Please login first');
+                return;
+            }
+            
+            try {
+                // Test 1: Read own profile
+                const userDoc = await window.db.doc(window.db, `users/${currentUser.uid}`).get();
+                const canReadOwn = userDoc.exists();
+                showTestResult('Read Own Profile', canReadOwn ? 'success' : 'error', 
+                    canReadOwn ? 'Can read own profile ✅' : 'Cannot read own profile ❌');
+                
+                // Test 2: Try to read another user's profile (should fail for non-admin)
+                const otherUserId = 'test-other-user-id';
+                try {
+                    const otherDoc = await window.db.doc(window.db, `users/${otherUserId}`).get();
+                    showTestResult('Read Other Profile', 'pending', 'Can read other profiles (expected for admin)');
+                } catch (error) {
+                    showTestResult('Read Other Profile', 'success', 'Blocked from reading other profiles ✅');
+                }
+                
+            } catch (error) {
+                showTestResult('User Access', 'error', error.message);
+            }
+        }
+        
+        window.loginWithTestUser = loginWithTestUser;
+        window.logout = logout;
+        window.testUserAccess = testUserAccess;
+        window.showTestResult = showTestResult;
+        
+        console.log('✅ Security tester loaded');
+    </script>
+</body>
+</html>
+

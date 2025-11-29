@@ -1,0 +1,110 @@
+# ============================================
+# DIAGNOSE APP NOT WORKING - Run on VPS
+# ============================================
+# PM2 shows app is online, but app is not working
+# Let's check what's wrong
+
+# ============================================
+# CHECK 1: Test App Response
+# ============================================
+cd /var/www/cryptorafts
+
+# Test localhost
+curl -v http://localhost:3000
+
+# Test with timeout
+curl -v --max-time 10 http://localhost:3000
+
+# Check if port 3000 is listening
+netstat -tlnp | grep 3000
+# OR
+ss -tlnp | grep 3000
+
+# ============================================
+# CHECK 2: Check Application Logs
+# ============================================
+# Check recent errors
+pm2 logs cryptorafts --err --lines 50 --nostream
+
+# Check output logs
+pm2 logs cryptorafts --out --lines 50 --nostream
+
+# Check log files directly
+tail -100 logs/err.log
+tail -100 logs/out.log
+
+# ============================================
+# CHECK 3: Check Process Status
+# ============================================
+# Check if process is actually running
+ps aux | grep cryptorafts | grep -v grep
+
+# Check PM2 status
+pm2 status
+pm2 describe cryptorafts
+
+# Check if process is listening
+lsof -i :3000
+# OR
+ss -tlnp | grep 3000
+
+# ============================================
+# CHECK 4: Check Network & Firewall
+# ============================================
+# Check if port 3000 is accessible from outside
+# From your local machine, test:
+# curl http://72.61.98.99:3000
+
+# Check firewall
+ufw status
+# If port 3000 is blocked:
+# ufw allow 3000/tcp
+
+# Check if Nginx is configured (if using reverse proxy)
+nginx -t
+systemctl status nginx
+
+# ============================================
+# CHECK 5: Check Application Code
+# ============================================
+# Verify server.js exists
+ls -lh server.js
+
+# Check if wrapper script is working
+cat start-server.sh
+bash start-server.sh &
+sleep 2
+curl http://localhost:3000
+pkill -f "node server.js"
+
+# ============================================
+# CHECK 6: Restart Application
+# ============================================
+# If app is not responding, restart it
+pm2 restart cryptorafts
+sleep 5
+curl http://localhost:3000
+
+# ============================================
+# CHECK 7: Check System Resources
+# ============================================
+# Check memory
+free -h
+
+# Check disk space
+df -h
+
+# Check CPU
+top -bn1 | head -20
+
+# ============================================
+# COMMON ISSUES:
+# ============================================
+# 1. App crashed but PM2 shows it as online
+# 2. Port 3000 is not accessible (firewall)
+# 3. Nginx reverse proxy not configured
+# 4. App is listening on wrong interface
+# 5. Application error in code
+# 6. Database/connection issues
+# ============================================
+

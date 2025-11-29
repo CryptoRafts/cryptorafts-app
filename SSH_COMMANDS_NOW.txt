@@ -1,0 +1,63 @@
+📋 COPY AND PASTE THESE COMMANDS INTO YOUR SSH TERMINAL
+=======================================================
+
+Run these commands ONE BY ONE:
+
+STEP 1: Navigate to directory
+-----------------------------
+cd ~/cryptorafts
+
+
+STEP 2: Check if files exist
+-----------------------------
+ls -la src/app/page.tsx
+
+
+If file NOT found:
+→ Files not uploaded correctly!
+→ Go back to Hostinger File Manager and upload again
+
+
+If file EXISTS:
+→ Continue to Step 3
+
+
+STEP 3: Run deployment (copy and paste this ENTIRE command)
+-----------------------------------------------------------
+export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" || curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash && export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && nvm install 18 && nvm use 18 && cd ~/cryptorafts && npm install --production && rm -rf .next out && NODE_ENV=production npm run build && cat > server.js << 'EOF'
+const { createServer } = require('http');
+const { parse } = require('url');
+const next = require('next');
+const dev = process.env.NODE_ENV !== 'production';
+const hostname = process.env.HOSTNAME || 'localhost';
+const port = parseInt(process.env.PORT || '3000', 10);
+const app = next({ dev, hostname, port });
+const handle = app.getRequestHandler();
+app.prepare().then(() => {
+  createServer(async (req, res) => {
+    try {
+      const parsedUrl = parse(req.url, true);
+      await handle(req, res, parsedUrl);
+    } catch (err) {
+      console.error('Error occurred handling', req.url, err);
+      res.statusCode = 500;
+      res.end('internal server error');
+    }
+  })
+    .once('error', (err) => {
+      console.error(err);
+      process.exit(1);
+    })
+    .listen(port, () => {
+      console.log(`> Ready on http://${hostname}:${port}`);
+    });
+});
+EOF
+npm install -g pm2 && pm2 stop cryptorafts || true && pm2 delete cryptorafts || true && pm2 start server.js --name cryptorafts && pm2 save && echo "✅ Done! Visit https://www.cryptorafts.com"
+
+
+WAIT 10-15 MINUTES...
+
+
+Then visit: https://www.cryptorafts.com
+

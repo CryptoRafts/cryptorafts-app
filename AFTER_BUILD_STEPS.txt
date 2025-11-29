@@ -1,0 +1,104 @@
+✅ BUILD IN PROGRESS - NEXT STEPS
+=================================
+
+After build completes, follow these steps:
+
+
+STEP 1: Wait for build to complete
+-----------------------------------
+Wait 5-10 minutes for:
+NODE_ENV=production npm run build
+
+To complete!
+
+
+STEP 2: Check if build succeeded
+----------------------------------
+After build completes, check:
+
+ls -la .next
+ls -la package.json
+
+If .next directory exists, build succeeded!
+
+
+STEP 3: Verify server.js exists
+--------------------------------
+ls -la server.js
+
+Should exist!
+
+
+STEP 4: Make sure ecosystem.config.js exists
+---------------------------------------------
+ls -la ecosystem.config.js
+
+If not, create it:
+
+
+STEP 5: Load Node.js 20 and start PM2
+---------------------------------------
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+nvm use 20
+node --version
+
+# Stop old PM2 processes
+pm2 stop all
+pm2 delete all
+
+# Start PM2 with Node.js 20
+NODE_PATH=$(which node)
+echo "Node.js path: $NODE_PATH"
+
+# Update ecosystem.config.js if needed
+cat > ecosystem.config.js << EOF
+module.exports = {
+  apps: [
+    {
+      name: 'cryptorafts',
+      script: './server.js',
+      instances: 1,
+      exec_mode: 'fork',
+      interpreter: '$NODE_PATH',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3000,
+      },
+      error_file: './logs/pm2-error.log',
+      out_file: './logs/pm2-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '1G',
+      min_uptime: '10s',
+      max_restarts: 10,
+      restart_delay: 4000,
+    },
+  ],
+};
+EOF
+
+mkdir -p logs
+pm2 start ecosystem.config.js
+pm2 save
+
+
+STEP 6: Check status
+--------------------
+pm2 status
+pm2 logs cryptorafts --lines 30
+
+Check for errors!
+
+
+STEP 7: Verify app is responding
+----------------------------------
+curl http://localhost:3000
+
+Should show HTML response (not 404 or error)!
+
+
+THEN VISIT: https://www.cryptorafts.com
+

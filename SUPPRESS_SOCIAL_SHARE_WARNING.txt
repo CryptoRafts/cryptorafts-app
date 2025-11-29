@@ -1,0 +1,28 @@
+# ============================================
+# SUPPRESS SOCIAL SHARE WARNING (Optional)
+# ============================================
+# The warning is harmless, but if you want to suppress it:
+
+# Option 1: Set environment variables (if you want to use social sharing)
+# Add to ecosystem.config.js:
+#   env: {
+#     ...
+#     TWITTER_API_KEY: '',
+#     FACEBOOK_APP_ID: '',
+#     ...
+#   }
+
+# Option 2: Suppress the warning in code
+# Find where the warning is logged and add a check
+
+# Option 3: Ignore it (Recommended)
+# The warning is harmless and doesn't affect functionality
+# Your app works perfectly without social sharing configured
+
+# ============================================
+# CURRENT STATUS: PERFECT
+# ============================================
+# The warning doesn't affect your app at all
+# Everything is working as expected
+# ============================================
+

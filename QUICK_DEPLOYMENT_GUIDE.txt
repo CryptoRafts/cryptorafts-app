@@ -1,0 +1,87 @@
+================================================================================
+QUICK DEPLOYMENT GUIDE - HOSTINGER VPS
+================================================================================
+
+STEP 1: UPLOAD FILES TO VPS
+---------------------------
+Upload these files to /var/www/cryptorafts/:
+
+1. src/app/page.tsx
+2. src/app/HomePageClient.tsx
+3. FINAL_DEPLOYMENT_COMPLETE.sh
+4. NGINX_CONFIG_CHECK.sh
+5. COMPREHENSIVE_VPS_DIAGNOSTIC.sh
+
+Method: Use Hostinger hPanel File Manager or SFTP/SCP
+
+
+STEP 2: SSH INTO VPS
+--------------------
+Option A: Hostinger hPanel Terminal
+- Login: https://hpanel.hostinger.com/
+- Go to: Advanced → SSH Access → Open Terminal
+
+Option B: SSH Client
+- ssh user@your-vps-ip
+
+
+STEP 3: RUN DEPLOYMENT
+----------------------
+cd /var/www/cryptorafts
+
+# Make scripts executable
+chmod +x *.sh
+
+# Check Nginx configuration
+./NGINX_CONFIG_CHECK.sh
+
+# Deploy fixed code
+./FINAL_DEPLOYMENT_COMPLETE.sh
+
+# Verify deployment
+curl -s http://127.0.0.1:3000/ | grep "WELCOME TO CRYPTORAFTS"
+
+
+STEP 4: TEST IN BROWSER
+-----------------------
+1. Open Incognito Window (Ctrl + Shift + N)
+2. Navigate to: https://www.cryptorafts.com
+3. Verify full page content renders
+
+
+TROUBLESHOOTING
+---------------
+If content still not rendering:
+
+1. Check PM2 logs:
+   pm2 logs cryptorafts --lines 50
+
+2. Check build output:
+   ls -la .next/
+
+3. Verify source files:
+   grep -n "'use client'" src/app/page.tsx
+
+4. Check Nginx:
+   sudo systemctl status nginx
+   sudo nginx -t
+   sudo systemctl restart nginx
+
+
+EXPECTED RESULTS
+----------------
+✅ Server responds with 200 OK
+✅ HTML contains "WELCOME TO CRYPTORAFTS"
+✅ Full page content renders immediately
+✅ No hydration warnings in console
+✅ All sections visible
+
+
+================================================================================
+
+
+
+
+
+
+

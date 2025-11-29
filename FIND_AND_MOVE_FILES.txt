@@ -1,0 +1,129 @@
+❌ FILES STILL MISSING - FIND OR UPLOAD
+======================================
+
+Files are NOT in /var/www/cryptorafts yet!
+
+
+STEP 1: Check if files are in wrong location
+---------------------------------------------
+In your SSH terminal, run:
+
+find /var/www/html -name "package.json" -type f
+find /var/www -name "package.json" -type f
+find /home -name "package.json" -type f
+find /root -name "package.json" -type f
+
+If found, note the location!
+
+
+STEP 2: If files found in wrong location, move them
+---------------------------------------------------
+If found in /var/www/html:
+cp -r /var/www/html/* /var/www/cryptorafts/ 2>/dev/null || true
+
+If found in /var/www/html/cryptorafts:
+cp -r /var/www/html/cryptorafts/* /var/www/cryptorafts/ 2>/dev/null || true
+
+If found in /root:
+cp -r /root/cryptorafts/* /var/www/cryptorafts/ 2>/dev/null || true
+
+If found in /home:
+cp -r /home/*/cryptorafts/* /var/www/cryptorafts/ 2>/dev/null || true
+
+
+STEP 3: If files NOT found anywhere
+------------------------------------
+Upload via Hostinger File Manager:
+
+1. Go to: https://hpanel.hostinger.com/
+2. Login with your Hostinger account
+3. Go to: File Manager
+4. Navigate to: /var/www/cryptorafts
+   - Type /var/www/cryptorafts in PATH BAR
+   - Press Enter
+5. Click "Upload" button
+6. Select ALL files from your local DEPLOY_TO_VPS folder:
+   - src/ folder (entire folder)
+   - package.json
+   - next.config.js
+   - tsconfig.json
+   - public/ folder (if exists)
+   - .env.production (if needed)
+   - All other files
+7. Wait for upload to complete
+
+
+STEP 4: After files are in correct location
+---------------------------------------------
+cd /var/www/cryptorafts
+ls -la package.json
+ls -la src/app/page.tsx
+
+If both exist, continue!
+
+
+STEP 5: Install dependencies and build
+-------------------------------------
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+nvm use 20
+node --version
+
+npm install --legacy-peer-deps
+rm -rf .next out node_modules/.cache
+NODE_ENV=production npm run build
+
+Wait 5-10 minutes!
+
+
+STEP 6: Start PM2
+-----------------
+After build completes:
+
+pm2 stop all
+pm2 delete all
+
+NODE_PATH=$(which node)
+cat > ecosystem.config.js << EOF
+module.exports = {
+  apps: [
+    {
+      name: 'cryptorafts',
+      script: './server.js',
+      instances: 1,
+      exec_mode: 'fork',
+      interpreter: '$NODE_PATH',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3000,
+      },
+      error_file: './logs/pm2-error.log',
+      out_file: './logs/pm2-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '1G',
+      min_uptime: '10s',
+      max_restarts: 10,
+      restart_delay: 4000,
+    },
+  ],
+};
+EOF
+
+mkdir -p logs
+pm2 start ecosystem.config.js
+pm2 save
+pm2 status
+
+
+STEP 7: Verify
+--------------
+curl http://localhost:3000
+
+Should show HTML (not error)!
+
+
+THEN VISIT: https://www.cryptorafts.com
+

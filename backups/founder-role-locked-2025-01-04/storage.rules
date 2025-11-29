@@ -1,0 +1,118 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.role == 'admin';
+    }
+
+    function isProjectMember(projectId) {
+      return isAuthenticated() && (
+        // Project founder
+        exists(/databases/(default)/documents/projects/$(projectId)) &&
+        get(/databases/(default)/documents/projects/$(projectId)).data.founderId == request.auth.uid ||
+        // Admin can access
+        isAdmin()
+      );
+    }
+
+    function isOrgMember(orgId) {
+      return isAuthenticated() && (
+        isAdmin() ||
+        exists(/databases/(default)/documents/organizations/$(orgId)) &&
+        request.auth.uid in get(/databases/(default)/documents/organizations/$(orgId)).data.members
+      );
+    }
+
+    // Users can read/write their own files
+    match /users/{userId}/{allPaths=**} {
+      allow read, write: if isAuthenticated() && (isOwner(userId) || isAdmin());
+    }
+
+    // Temporary permissive rule for user uploads
+    match /users/{allPaths=**} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Profile photos - users can read/write their own, others can read
+    match /profiles/{userId}/{allPaths=**} {
+      allow read, write: if isAuthenticated() && (isOwner(userId) || isAdmin());
+    }
+
+    // Temporary fix for profile uploads - allow all authenticated users
+    match /profiles/{allPaths=**} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Specific rule for avatar uploads
+    match /profiles/{userId}/avatar.* {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Profile photos - users can read/write their own, others can read
+    match /profile-photos/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (
+        isOwner(resource.metadata.userId) || isAdmin()
+      );
+    }
+
+    // KYC documents - private to users and admins
+    match /kyc-documents/{userId}/{fileName} {
+      allow read, write: if isAuthenticated() && (isOwner(userId) || isAdmin());
+    }
+
+    // KYB documents - private to organization members and admins
+    match /kyb-documents/{orgId}/{fileName} {
+      allow read, write: if isAuthenticated() && (isOrgMember(orgId) || isAdmin());
+    }
+
+    // Project artifacts - private to project members
+    match /projects/{projectId}/{allPaths=**} {
+      allow read, write: if isAuthenticated() && (isProjectMember(projectId) || isAdmin());
+    }
+
+    // Pitch documents - private to project founder and admins
+    match /pitch-documents/{projectId}/{fileName} {
+      allow read, write: if isAuthenticated() && (isProjectMember(projectId) || isAdmin());
+    }
+
+    // Audit documents - admin only
+    match /audit/{allPaths=**} {
+      allow read, write: if isAuthenticated() && isAdmin();
+    }
+
+    // Public assets - readable by all authenticated users, writable by admins
+    match /public/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isAdmin();
+    }
+
+    // Temporary uploads - users can write their own, auto-delete after time
+    match /temp/{userId}/{allPaths=**} {
+      allow read, write: if isAuthenticated() && (isOwner(userId) || isAdmin());
+    }
+
+    // Chat attachments - room members only
+    match /chat-attachments/{roomId}/{fileName} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        exists(/databases/(default)/documents/rooms/$(roomId)) &&
+        request.auth.uid in get(/databases/(default)/documents/rooms/$(roomId)).data.members
+      );
+    }
+
+    // Default rule - allow all authenticated users (temporary for development)
+    match /{allPaths=**} {
+      allow read, write: if isAuthenticated();
+    }
+  }
+}

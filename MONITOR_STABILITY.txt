@@ -1,0 +1,63 @@
+# ============================================
+# MONITOR APP STABILITY - Run on VPS
+# ============================================
+# App restarted once - need to monitor
+
+# ============================================
+# QUICK CHECK - Run This First
+# ============================================
+cd /var/www/cryptorafts
+
+# Check restart details
+pm2 describe cryptorafts | grep -E "restart|uptime|created"
+
+# Check recent errors
+pm2 logs cryptorafts --err --lines 30 --nostream
+
+# Check if app is responding
+curl -I http://localhost:3000
+
+# ============================================
+# DETAILED CHECK
+# ============================================
+
+# 1. Check error logs
+tail -50 logs/err.log
+
+# 2. Check output logs
+tail -50 logs/out.log
+
+# 3. Check system resources
+free -h
+df -h
+
+# 4. Check PM2 status
+pm2 status
+pm2 describe cryptorafts
+
+# 5. Monitor in real-time
+pm2 monit
+
+# ============================================
+# IF RESTART WAS NORMAL:
+# ============================================
+# - App may have restarted due to deployment
+# - One restart is OK if it's stable now
+# - Monitor to ensure it doesn't keep restarting
+
+# ============================================
+# IF RESTART WAS DUE TO ERROR:
+# ============================================
+# - Check error logs for specific error
+# - Fix the underlying issue
+# - Restart app manually if needed
+
+# ============================================
+# MONITOR FOR 5 MINUTES:
+# ============================================
+# Watch for more restarts:
+watch -n 5 'pm2 describe cryptorafts | grep -E "restart|status|uptime"'
+
+# Or use PM2 monitor:
+pm2 monit
+

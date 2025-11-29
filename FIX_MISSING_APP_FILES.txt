@@ -1,0 +1,81 @@
+❌ ARCHIVE DOESN'T CONTAIN APP FILES - FIX NOW
+===============================================
+
+Problem: The archive only contains home directory files, NOT the app files!
+Error: "Cannot find module 'next'" - because package.json and node_modules don't exist!
+
+
+STEP 1: Stop PM2 (it's crashing)
+---------------------------------
+cd /var/www/cryptorafts
+pm2 stop all
+pm2 delete all
+
+
+STEP 2: The archive is wrong - need actual app files
+---------------------------------------------------
+The archive (cryptorafts.tar.gz) only has:
+- .bash_history, .bashrc, .cache, etc.
+- NOT package.json, src/, next.config.js, etc.
+
+You need to upload the ACTUAL project files!
+
+
+STEP 3: Upload app files via Hostinger File Manager
+----------------------------------------------------
+1. Go to: https://hpanel.hostinger.com/
+2. Login with your Hostinger account
+3. Go to: File Manager
+4. Navigate to: /var/www/cryptorafts
+5. Upload ALL files from your local DEPLOY_TO_VPS folder:
+   - src/ folder
+   - package.json
+   - next.config.js
+   - tsconfig.json
+   - public/ folder (if exists)
+   - .env.production (if needed)
+
+
+STEP 4: After uploading, verify files exist
+------------------------------------------
+cd /var/www/cryptorafts
+ls -la package.json
+ls -la src/app/page.tsx
+ls -la next.config.js
+
+All should exist now!
+
+
+STEP 5: Install dependencies and build
+---------------------------------------
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+nvm use 20
+node --version
+
+# Install dependencies
+npm install --legacy-peer-deps
+
+# Build app
+rm -rf .next out node_modules/.cache
+NODE_ENV=production npm run build
+
+Wait 5-10 minutes!
+
+
+STEP 6: Start PM2 again
+-----------------------
+pm2 start ecosystem.config.js
+pm2 save
+pm2 status
+
+
+STEP 7: Verify
+--------------
+curl http://localhost:3000
+
+Should show HTML (not error)!
+
+
+THEN VISIT: https://www.cryptorafts.com
+

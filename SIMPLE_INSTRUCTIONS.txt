@@ -1,0 +1,38 @@
+═══════════════════════════════════════════════════════
+SIMPLE STEP-BY-STEP INSTRUCTIONS
+═══════════════════════════════════════════════════════
+
+STEP 1: UPLOAD FILES VIA FILE MANAGER
+
+  1. Open: https://hpanel.hostinger.com/
+  2. Click "File Manager"
+  3. Navigate to: /var/www/cryptorafts
+  4. Upload these files from C:\Users\dell\cryptorafts-starter:
+     ✅ src/ folder (ENTIRE folder)
+     ✅ package.json
+     ✅ next.config.js
+     ✅ tsconfig.json
+
+
+STEP 2: RUN DEPLOYMENT COMMAND
+
+  1. Open SSH terminal
+  2. Open file: RUN_THIS_IN_SSH.txt
+  3. Copy the ENTIRE command (it's one long line)
+  4. Paste into SSH terminal
+  5. Press Enter
+
+
+THAT'S IT! The command will:
+  ✅ Search for files
+  ✅ Fix permissions
+  ✅ Install dependencies
+  ✅ Build app
+  ✅ Deploy with PM2
+
+
+If files not found:
+  ❌ Upload files via File Manager again
+  ❌ Make sure you're in /var/www/cryptorafts
+  ❌ Check File Manager shows files after upload
+

@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="180" height="180" viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="glow-strong">
+      <feGaussianBlur stdDeviation="5" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="180" height="180" fill="#000000"/>
+  
+  <!-- Outer glow ring -->
+  <circle cx="90" cy="90" r="81" 
+    stroke="#06b6d4" stroke-width="1.5" fill="none" 
+    opacity="0.3" filter="url(#glow)"/>
+  
+  <!-- Middle ring -->
+  <circle cx="90" cy="90" r="62.99999999999999" 
+    stroke="#22d3ee" stroke-width="1.125" fill="none" 
+    opacity="0.4" filter="url(#glow)"/>
+  
+  <!-- Inner ring -->
+  <circle cx="90" cy="90" r="45" 
+    stroke="#67e8f9" stroke-width="0.75" fill="none" 
+    opacity="0.5" filter="url(#glow)"/>
+  
+  <!-- Shield shape -->
+  <path d="M90 27 L45 45 L45 81 C45 117 62.99999999999999 135 90 153 C117 135 135 117 135 81 L135 45 Z"
+    stroke="#06b6d4" stroke-width="1.5" fill="none" 
+    opacity="0.8" filter="url(#glow-strong)"/>
+  
+  <!-- Central hub -->
+  <circle cx="90" cy="90" r="14.4" 
+    fill="#22d3ee" opacity="0.9" filter="url(#glow-strong)"/>
+  
+  <!-- Network nodes inside shield -->
+  <circle cx="62.99999999999999" cy="62.99999999999999" r="3.5999999999999996" 
+    fill="#22d3ee" opacity="0.7"/>
+  <circle cx="117" cy="62.99999999999999" r="3.5999999999999996" 
+    fill="#22d3ee" opacity="0.7"/>
+  <circle cx="62.99999999999999" cy="117" r="3.5999999999999996" 
+    fill="#22d3ee" opacity="0.7"/>
+  <circle cx="117" cy="117" r="3.5999999999999996" 
+    fill="#22d3ee" opacity="0.7"/>
+  
+  <!-- Connection lines -->
+  <line x1="90" y1="90" x2="62.99999999999999" y2="62.99999999999999" 
+    stroke="#67e8f9" stroke-width="0.6000000000000001" opacity="0.5"/>
+  <line x1="90" y1="90" x2="117" y2="62.99999999999999" 
+    stroke="#67e8f9" stroke-width="0.6000000000000001" opacity="0.5"/>
+  <line x1="90" y1="90" x2="62.99999999999999" y2="117" 
+    stroke="#67e8f9" stroke-width="0.6000000000000001" opacity="0.5"/>
+  <line x1="90" y1="90" x2="117" y2="117" 
+    stroke="#67e8f9" stroke-width="0.6000000000000001" opacity="0.5"/>
+  
+  <!-- Particle nodes around the icon -->
+  
+  <circle cx="117" cy="90" r="3" 
+    fill="#22d3ee" opacity="0.6" filter="url(#glow)"/>
+  
+  <circle cx="109.09188309203678" cy="109.09188309203678" r="3" 
+    fill="#22d3ee" opacity="0.6" filter="url(#glow)"/>
+  
+  <circle cx="90" cy="117" r="3" 
+    fill="#22d3ee" opacity="0.6" filter="url(#glow)"/>
+  
+  <circle cx="70.90811690796322" cy="109.09188309203678" r="3" 
+    fill="#22d3ee" opacity="0.6" filter="url(#glow)"/>
+  
+  <circle cx="63" cy="90" r="3" 
+    fill="#22d3ee" opacity="0.6" filter="url(#glow)"/>
+  
+  <circle cx="70.9081169079632" cy="70.90811690796322" r="3" 
+    fill="#22d3ee" opacity="0.6" filter="url(#glow)"/>
+  
+  <circle cx="90" cy="63" r="3" 
+    fill="#22d3ee" opacity="0.6" filter="url(#glow)"/>
+  
+  <circle cx="109.09188309203678" cy="70.9081169079632" r="3" 
+    fill="#22d3ee" opacity="0.6" filter="url(#glow)"/>
+  
+</svg>

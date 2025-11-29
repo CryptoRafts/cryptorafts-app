@@ -1,0 +1,92 @@
+═══════════════════════════════════════════════════════
+🔧 FIX: npm install didn't run - Complete fix
+═══════════════════════════════════════════════════════
+
+❌ ERROR: Cannot find module 'next'
+This means npm install didn't run or failed!
+
+═══════════════════════════════════════════════════════
+📋 COMPLETE FIX COMMAND
+═══════════════════════════════════════════════════════
+
+Copy and paste this ENTIRE command:
+
+cd /var/www/cryptorafts && ls -la package.json && export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && nvm use 20 && NODE_PATH=$(which node) && echo "Using Node.js: $NODE_PATH ($(node --version))" && pm2 stop all && pm2 delete all && echo "Removing old node_modules..." && rm -rf node_modules package-lock.json && echo "Installing dependencies (5-10 minutes)..." && npm install --legacy-peer-deps && echo "Verifying next is installed..." && ls -la node_modules/next/package.json && echo "✅ Dependencies installed!" && rm -rf .next out && NODE_ENV=production npm run build && echo "✅ Build completed" && cat > server.js << 'EOFSERVER'
+const { createServer } = require('http');
+const { parse } = require('url');
+const next = require('next');
+const dev = process.env.NODE_ENV !== 'production';
+const hostname = process.env.HOSTNAME || 'localhost';
+const port = parseInt(process.env.PORT || '3000', 10);
+const app = next({ dev, hostname, port });
+const handle = app.getRequestHandler();
+app.prepare().then(() => {
+  createServer(async (req, res) => {
+    try {
+      const parsedUrl = parse(req.url, true);
+      await handle(req, res, parsedUrl);
+    } catch (err) {
+      console.error('Error occurred handling', req.url, err);
+      res.statusCode = 500;
+      res.end('internal server error');
+    }
+  })
+    .once('error', (err) => {
+      console.error(err);
+      process.exit(1);
+    })
+    .listen(port, () => {
+      console.log(`> Ready on http://${hostname}:${port}`);
+    });
+});
+EOFSERVER
+NODE_PATH=$(which node) && cat > ecosystem.config.js << EOF
+module.exports = {
+  apps: [
+    {
+      name: 'cryptorafts',
+      script: './server.js',
+      instances: 1,
+      exec_mode: 'fork',
+      interpreter: '$NODE_PATH',
+      env: { NODE_ENV: 'production', PORT: 3000 },
+      error_file: './logs/pm2-error.log',
+      out_file: './logs/pm2-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '1G',
+      min_uptime: '10s',
+      max_restarts: 10,
+      restart_delay: 4000,
+    },
+  ],
+};
+EOF
+mkdir -p logs && pm2 start ecosystem.config.js && pm2 save && pm2 status && sleep 15 && pm2 logs cryptorafts --lines 30 --nostream && echo "" && echo "✅ DEPLOYMENT COMPLETE! Visit: https://www.cryptorafts.com"
+
+═══════════════════════════════════════════════════════
+📋 What This Does
+═══════════════════════════════════════════════════════
+
+1. Verifies package.json exists
+2. Loads NVM and uses Node.js 20
+3. Stops and deletes PM2 processes
+4. Removes node_modules and package-lock.json
+5. Runs npm install --legacy-peer-deps (CRITICAL!)
+6. Verifies next module is installed
+7. Rebuilds app
+8. Creates server.js and ecosystem.config.js
+9. Starts PM2 with correct Node.js path
+10. Verifies deployment and shows logs
+
+═══════════════════════════════════════════════════════
+📋 IMPORTANT
+═══════════════════════════════════════════════════════
+
+⚠️  npm install takes 5-10 minutes - DO NOT INTERRUPT!
+⚠️  Wait for "✅ Dependencies installed!" message before continuing
+
+═══════════════════════════════════════════════════════
+

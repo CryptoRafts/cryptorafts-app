@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="192" height="192" viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="glow-strong">
+      <feGaussianBlur stdDeviation="5" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="192" height="192" fill="#000000"/>
+  
+  <!-- Outer glow ring -->
+  <circle cx="96" cy="96" r="86.4" 
+    stroke="#06b6d4" stroke-width="1.5" fill="none" 
+    opacity="0.3" filter="url(#glow)"/>
+  
+  <!-- Middle ring -->
+  <circle cx="96" cy="96" r="67.19999999999999" 
+    stroke="#22d3ee" stroke-width="1.125" fill="none" 
+    opacity="0.4" filter="url(#glow)"/>
+  
+  <!-- Inner ring -->
+  <circle cx="96" cy="96" r="48" 
+    stroke="#67e8f9" stroke-width="0.75" fill="none" 
+    opacity="0.5" filter="url(#glow)"/>
+  
+  <!-- Shield shape -->
+  <path d="M96 28.799999999999997 L48 48 L48 86.4 C48 124.80000000000001 67.19999999999999 144 96 163.2 C124.80000000000001 144 144 124.80000000000001 144 86.4 L144 48 Z"
+    stroke="#06b6d4" stroke-width="1.5" fill="none" 
+    opacity="0.8" filter="url(#glow-strong)"/>
+  
+  <!-- Central hub -->
+  <circle cx="96" cy="96" r="15.36" 
+    fill="#22d3ee" opacity="0.9" filter="url(#glow-strong)"/>
+  
+  <!-- Network nodes inside shield -->
+  <circle cx="67.19999999999999" cy="67.19999999999999" r="3.5999999999999996" 
+    fill="#22d3ee" opacity="0.7"/>
+  <circle cx="124.80000000000001" cy="67.19999999999999" r="3.5999999999999996" 
+    fill="#22d3ee" opacity="0.7"/>
+  <circle cx="67.19999999999999" cy="124.80000000000001" r="3.5999999999999996" 
+    fill="#22d3ee" opacity="0.7"/>
+  <circle cx="124.80000000000001" cy="124.80000000000001" r="3.5999999999999996" 
+    fill="#22d3ee" opacity="0.7"/>
+  
+  <!-- Connection lines -->
+  <line x1="96" y1="96" x2="67.19999999999999" y2="67.19999999999999" 
+    stroke="#67e8f9" stroke-width="0.6000000000000001" opacity="0.5"/>
+  <line x1="96" y1="96" x2="124.80000000000001" y2="67.19999999999999" 
+    stroke="#67e8f9" stroke-width="0.6000000000000001" opacity="0.5"/>
+  <line x1="96" y1="96" x2="67.19999999999999" y2="124.80000000000001" 
+    stroke="#67e8f9" stroke-width="0.6000000000000001" opacity="0.5"/>
+  <line x1="96" y1="96" x2="124.80000000000001" y2="124.80000000000001" 
+    stroke="#67e8f9" stroke-width="0.6000000000000001" opacity="0.5"/>
+  
+  <!-- Particle nodes around the icon -->
+  
+  <circle cx="124.8" cy="96" r="3" 
+    fill="#22d3ee" opacity="0.6" filter="url(#glow)"/>
+  
+  <circle cx="116.36467529817257" cy="116.36467529817256" r="3" 
+    fill="#22d3ee" opacity="0.6" filter="url(#glow)"/>
+  
+  <circle cx="96" cy="124.8" r="3" 
+    fill="#22d3ee" opacity="0.6" filter="url(#glow)"/>
+  
+  <circle cx="75.63532470182744" cy="116.36467529817257" r="3" 
+    fill="#22d3ee" opacity="0.6" filter="url(#glow)"/>
+  
+  <circle cx="67.2" cy="96" r="3" 
+    fill="#22d3ee" opacity="0.6" filter="url(#glow)"/>
+  
+  <circle cx="75.63532470182743" cy="75.63532470182744" r="3" 
+    fill="#22d3ee" opacity="0.6" filter="url(#glow)"/>
+  
+  <circle cx="96" cy="67.2" r="3" 
+    fill="#22d3ee" opacity="0.6" filter="url(#glow)"/>
+  
+  <circle cx="116.36467529817256" cy="75.63532470182743" r="3" 
+    fill="#22d3ee" opacity="0.6" filter="url(#glow)"/>
+  
+</svg>

@@ -1,0 +1,13 @@
+﻿
+> cryptorafts@1.0.0 lint
+> next lint
+
+npm : Invalid project directory provided, no such directory: 
+C:\Users\dell\cryptorafts-starter\lint
+At line:1 char:1
++ npm run lint 2>&1 | Out-File -FilePath lint-errors.txt -Encoding utf8 ...
++ ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Invalid project...ts-starter\lint 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

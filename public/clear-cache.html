@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clearing Cache...</title>
+    <meta http-equiv='cache-control' content='no-cache, no-store, must-revalidate'>
+    <meta http-equiv='expires' content='0'>
+    <meta http-equiv='pragma' content='no-cache'>
+</head>
+<body style='background: #0f172a; color: white; font-family: system-ui; display: flex; align-items: center; justify-content: center; min-height: 100vh; text-align: center;'>
+    <div>
+        <h1 style='font-size: 2rem; margin-bottom: 1rem;'> Clearing Cache...</h1>
+        <p style='color: #94a3b8; margin-bottom: 2rem;'>Please wait while we clear old files...</p>
+        <div style='width: 50px; height: 50px; border: 3px solid #1e40af; border-top-color: #3b82f6; border-radius: 50%; margin: 0 auto; animation: spin 1s linear infinite;'></div>
+        <style>
+            @keyframes spin {
+                to { transform: rotate(360deg); }
+            }
+        </style>
+        <script>
+            // Clear all caches
+            setTimeout(() => {
+                if ('caches' in window) {
+                    caches.keys().then(keys => {
+                        keys.forEach(key => caches.delete(key));
+                    });
+                }
+                localStorage.clear();
+                sessionStorage.clear();
+                
+                // Redirect with cache-busting parameter
+                const timestamp = Date.now();
+                window.location.href = '/?t=' + timestamp;
+            }, 2000);
+        </script>
+    </div>
+</body>
+</html>

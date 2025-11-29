@@ -1,0 +1,100 @@
+cd /var/www/cryptorafts && echo "🔧 SETTING UP API KEYS - PERFECT CONFIGURATION" && echo "========================================" && echo "" && echo "📋 Step 1: Creating .env.local file..." && cat > .env.local << 'ENVEOF'
+# ============================================
+# OPENAI CONFIGURATION (REQUIRED)
+# ============================================
+# Get your API key from: https://platform.openai.com/api-keys
+# Replace YOUR_OPENAI_API_KEY_HERE with your actual key
+OPENAI_API_KEY=YOUR_OPENAI_API_KEY_HERE
+
+# ============================================
+# SOCIAL SHARE SERVICE (OPTIONAL)
+# ============================================
+# Configure at least one platform to enable auto-sharing
+
+# Buffer (Multi-platform scheduling)
+# BUFFER_ACCESS_TOKEN=your_buffer_access_token
+# BUFFER_PROFILE_IDS=profile1,profile2
+
+# Twitter/X (API v2)
+# TWITTER_API_KEY=your_twitter_api_key
+# TWITTER_API_SECRET=your_twitter_api_secret
+# TWITTER_ACCESS_TOKEN=your_twitter_access_token
+# TWITTER_ACCESS_TOKEN_SECRET=your_twitter_access_token_secret
+
+# Facebook (Pages)
+# FACEBOOK_APP_ID=your_facebook_app_id
+# FACEBOOK_APP_SECRET=your_facebook_app_secret
+# FACEBOOK_PAGE_ACCESS_TOKEN=your_facebook_page_access_token
+
+# LinkedIn (Company Pages)
+# LINKEDIN_CLIENT_ID=your_linkedin_client_id
+# LINKEDIN_CLIENT_SECRET=your_linkedin_client_secret
+# LINKEDIN_ACCESS_TOKEN=your_linkedin_access_token
+
+# Telegram (Bot Messages)
+# TELEGRAM_BOT_TOKEN=your_telegram_bot_token
+# TELEGRAM_CHAT_ID=your_telegram_chat_id
+
+# ============================================
+# APP CONFIGURATION
+# ============================================
+NEXT_PUBLIC_APP_URL=https://www.cryptorafts.com
+NODE_ENV=production
+ENVEOF
+chmod 600 .env.local && echo "✅ .env.local created (secure permissions)" && echo "" && echo "📋 Step 2: Creating .env.example for reference..." && cp .env.local .env.example && echo "✅ .env.example created" && echo "" && echo "📋 Step 3: Updating server.js to load .env.local..." && cat > server.js << 'EOFSERVER'
+require('dotenv').config({ path: '.env.local' });
+const { createServer } = require('http');
+const { parse } = require('url');
+const next = require('next');
+const dev = process.env.NODE_ENV !== 'production';
+const port = parseInt(process.env.PORT || '3000', 10);
+const app = next({ dev, hostname: '0.0.0.0', port });
+const handle = app.getRequestHandler();
+app.prepare().then(() => {
+  createServer(async (req, res) => {
+    try {
+      const parsedUrl = parse(req.url, true);
+      await handle(req, res, parsedUrl);
+    } catch (err) {
+      console.error('Error occurred handling', req.url, err);
+      res.statusCode = 500;
+      res.end('internal server error');
+    }
+  })
+    .once('error', (err) => {
+      console.error(err);
+      process.exit(1);
+    })
+    .listen(port, '0.0.0.0', () => {
+      console.log(`> Ready on http://0.0.0.0:${port}`);
+    });
+});
+EOFSERVER
+echo "✅ server.js updated to load .env.local" && echo "" && echo "📋 Step 4: Updating ecosystem.config.js..." && NODE_PATH=$(which node) && cat > ecosystem.config.js << EOF
+module.exports = {
+  apps: [{
+    name: 'cryptorafts',
+    script: './server.js',
+    instances: 1,
+    exec_mode: 'fork',
+    interpreter: '${NODE_PATH}',
+    env: {
+      NODE_ENV: 'production',
+      PORT: 3000,
+      NEXT_PUBLIC_APP_URL: 'https://www.cryptorafts.com',
+    },
+    error_file: './logs/pm2-error.log',
+    out_file: './logs/pm2-out.log',
+    log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+    merge_logs: true,
+    autorestart: true,
+    watch: false,
+    max_memory_restart: '1G',
+    min_uptime: '10s',
+    max_restarts: 10,
+    restart_delay: 4000,
+  }],
+};
+EOF
+echo "✅ ecosystem.config.js updated" && echo "" && echo "📋 Step 5: Installing dotenv if not present..." && npm list dotenv > /dev/null 2>&1 || npm install dotenv --save --quiet && echo "✅ dotenv installed" && echo "" && echo "📋 Step 6: Restarting PM2 to load new environment..." && pm2 stop cryptorafts && pm2 delete cryptorafts && pm2 start ecosystem.config.js && pm2 save && sleep 10 && echo "✅ PM2 restarted with new environment" && echo "" && echo "📋 Step 7: Checking PM2 logs for API key status..." && sleep 3 && pm2 logs cryptorafts --lines 10 --nostream | grep -E "(OpenAI|Social Share)" || echo "Checking logs..." && echo "" && echo "✅ SETUP COMPLETE!" && echo "========================================" && echo "" && echo "📝 NEXT STEPS:" && echo "" && echo "1. Edit .env.local and add your API keys:" && echo "   nano .env.local" && echo "" && echo "2. At minimum, add your OpenAI API key:" && echo "   OPENAI_API_KEY=sk-proj-your-actual-key-here" && echo "" && echo "3. (Optional) Add social media API keys if you want auto-sharing" && echo "" && echo "4. Restart PM2 after editing:" && echo "   pm2 restart cryptorafts" && echo "" && echo "5. Check logs to verify:" && echo "   pm2 logs cryptorafts --lines 20" && echo "" && echo "✅ Environment file created at: /var/www/cryptorafts/.env.local" && echo "🔒 File permissions set to 600 (readable only by owner)" && echo "" && echo "🌐 Your app is ready! Visit: https://www.cryptorafts.com"
+

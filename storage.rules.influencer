@@ -1,0 +1,86 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    function isParticipant(roomId) {
+      return isAuthenticated() &&
+        request.auth.uid in firestore.get(/databases/(default)/documents/campaignRooms/$(roomId)).data.participants;
+    }
+
+    // Influencer profile photos - only owner can read/write
+    match /influencer-profiles/{userId}/{fileName} {
+      allow read: if isAuthenticated(); // Profile photos can be viewed by all authenticated users
+      allow write: if isOwner(userId);
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+
+    // KYC documents - only owner and admin can access
+    match /kyc-documents/{userId}/{fileName} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isOwner(userId);
+      allow delete: if false; // KYC documents cannot be deleted for compliance
+    }
+
+    // Campaign room files - only participants can access
+    match /campaign-rooms/{roomId}/files/{fileName} {
+      allow read: if isParticipant(roomId);
+      allow write: if isParticipant(roomId);
+      allow delete: if isParticipant(roomId) || isAdmin();
+      
+      // Check NDA gate for sensitive files
+      match /{allPaths=**} {
+        allow read: if isParticipant(roomId) &&
+          (!firestore.get(/databases/(default)/documents/campaignRooms/$(roomId)).data.nda.required ||
+           request.auth.uid in firestore.get(/databases/(default)/documents/campaignRooms/$(roomId)).data.nda.acceptedBy);
+      }
+    }
+
+    // Campaign room images - accessible to participants
+    match /campaign-rooms/{roomId}/images/{fileName} {
+      allow read: if isParticipant(roomId);
+      allow write: if isParticipant(roomId);
+      allow delete: if isParticipant(roomId) || isAdmin();
+    }
+
+    // Campaign room videos - accessible to participants
+    match /campaign-rooms/{roomId}/videos/{fileName} {
+      allow read: if isParticipant(roomId);
+      allow write: if isParticipant(roomId);
+      allow delete: if isParticipant(roomId) || isAdmin();
+    }
+
+    // Campaign room voice notes - accessible to participants
+    match /campaign-rooms/{roomId}/voice/{fileName} {
+      allow read: if isParticipant(roomId);
+      allow write: if isParticipant(roomId);
+      allow delete: if isParticipant(roomId) || isAdmin();
+    }
+
+    // Invoices - only owner and admin
+    match /invoices/{influencerId}/{fileName} {
+      allow read: if isOwner(influencerId) || isAdmin();
+      allow write: if isOwner(influencerId);
+      allow delete: if isOwner(influencerId) || isAdmin();
+    }
+
+    // Default deny all other paths
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
+

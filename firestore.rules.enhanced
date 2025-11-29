@@ -1,0 +1,246 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function hasRole(role) {
+      return isAuthenticated() && request.auth.token.role == role;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.role == 'admin';
+    }
+    
+    function isKYCApproved() {
+      return isAuthenticated() && request.auth.token.kycStatus == 'approved';
+    }
+    
+    function isKYBApproved() {
+      return isAuthenticated() && request.auth.token.kybStatus == 'approved';
+    }
+    
+    function canAccessPortal() {
+      return isAuthenticated() && hasRole('founder') && isKYCApproved();
+    }
+    
+    function isRoomMember(roomId) {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/rooms/$(roomId)) &&
+             request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.members[].uid;
+    }
+    
+    function isProjectOwner(projectId) {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/projects/$(projectId)) &&
+             get(/databases/$(database)/documents/projects/$(projectId)).data.founderId == request.auth.uid;
+    }
+    
+    function isPitchOwner(pitchId) {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/pitches/$(pitchId)) &&
+             get(/databases/$(database)/documents/pitches/$(pitchId)).data.founderId == request.auth.uid;
+    }
+    
+    function isOrgMember(orgId) {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/organizations/$(orgId)) &&
+             request.auth.uid in get(/databases/$(database)/documents/organizations/$(orgId)).data.members[].uid;
+    }
+    
+    // Users collection - role-scoped access
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+      allow read: if isAdmin();
+      
+      // Role locking - prevent role changes after initial selection
+      allow update: if isOwner(userId) && 
+                   (!('role' in request.resource.data.diff(resource.data).affectedKeys()) ||
+                    !resource.data.roleLocked);
+      
+      // KYC/KYB data - only owner can access
+      match /kyc/{kycId} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      match /kyb/{kybId} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      // Pitch data - only owner can access
+      match /pitch/{pitchId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+    
+    // Organizations collection
+    match /organizations/{orgId} {
+      allow read, write: if isOrgMember(orgId);
+      allow read: if isAdmin();
+      
+      // KYB data - only org members can access
+      match /kyb/{kybId} {
+        allow read, write: if isOrgMember(orgId);
+      }
+    }
+    
+    // Pitches collection - one-time submission enforcement
+    match /pitches/{pitchId} {
+      allow read, write: if isPitchOwner(pitchId);
+      allow read: if isAdmin();
+      
+      // Prevent duplicate pitches
+      allow create: if isAuthenticated() && 
+                   request.auth.uid == resource.data.founderId &&
+                   !exists(/databases/$(database)/documents/pitches/$(pitchId)) &&
+                   canAccessPortal();
+      
+      // Prevent pitch modification after submission
+      allow update: if isPitchOwner(pitchId) && 
+                   resource.data.status == 'DRAFT';
+    }
+    
+    // Projects collection - founder-only access
+    match /projects/{projectId} {
+      allow read, write: if isProjectOwner(projectId);
+      allow read: if isAdmin();
+      
+      // Only founders with approved KYC can create projects
+      allow create: if canAccessPortal() && 
+                   request.auth.uid == resource.data.founderId;
+    }
+    
+    // Routes collection - auto-created by system
+    match /routes/{routeId} {
+      allow read: if isAuthenticated() && 
+                 (request.auth.uid == resource.data.pitchId.founderId ||
+                  isOrgMember(resource.data.counterpartOrgId));
+      allow write: if isAdmin(); // Only system can create routes
+    }
+    
+    // Rooms collection - private, member-only access
+    match /rooms/{roomId} {
+      allow read, write: if isRoomMember(roomId);
+      allow read: if isAdmin();
+      
+      // Only system can create rooms
+      allow create: if isAdmin();
+      
+      // Messages subcollection
+      match /messages/{messageId} {
+        allow read, write: if isRoomMember(roomId);
+        allow read: if isAdmin();
+        
+        // Prevent cross-room leaks
+        allow create: if isRoomMember(roomId) && 
+                     request.auth.uid == resource.data.senderId;
+      }
+    }
+    
+    // Project artifacts - private to project owners
+    match /projectArtifacts/{artifactId} {
+      allow read, write: if isAuthenticated() && 
+                        isProjectOwner(resource.data.projectId);
+      allow read: if isAdmin();
+      
+      // NDA enforcement
+      allow read: if isAuthenticated() && 
+                 isProjectOwner(resource.data.projectId) &&
+                 (!resource.data.ndaRequired || 
+                  request.auth.uid in resource.data.ndaAcceptedBy);
+    }
+    
+    // Artifact versions - same access as artifacts
+    match /artifactVersions/{versionId} {
+      allow read, write: if isAuthenticated() && 
+                        isProjectOwner(resource.data.projectId);
+      allow read: if isAdmin();
+    }
+    
+    // NDA acceptances - audit trail
+    match /ndaAcceptances/{acceptanceId} {
+      allow read: if isAuthenticated() && 
+                 request.auth.uid == resource.data.userId;
+      allow read: if isAdmin();
+      allow create: if isAuthenticated() && 
+                   request.auth.uid == resource.data.userId;
+    }
+    
+    // Audits collection - immutable audit trail
+    match /audits/{auditId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated() && 
+                   request.auth.uid == resource.data.actor;
+      
+      // Prevent modification of audit entries
+      allow update, delete: if false;
+    }
+    
+    // Group chats - member-only access
+    match /groupChats/{chatId} {
+      allow read, write: if isAuthenticated() && 
+                        request.auth.uid in resource.data.members;
+      allow read: if isAdmin();
+    }
+    
+    // Role-specific collections
+    match /founders/{founderId} {
+      allow read, write: if isOwner(founderId) && hasRole('founder');
+      allow read: if isAdmin();
+    }
+    
+    match /vcs/{vcId} {
+      allow read, write: if isOwner(vcId) && hasRole('vc');
+      allow read: if isAdmin();
+    }
+    
+    match /exchanges/{exchangeId} {
+      allow read, write: if isOwner(exchangeId) && hasRole('exchange');
+      allow read: if isAdmin();
+    }
+    
+    match /idos/{idoId} {
+      allow read, write: if isOwner(idoId) && hasRole('ido');
+      allow read: if isAdmin();
+    }
+    
+    match /influencers/{influencerId} {
+      allow read, write: if isOwner(influencerId) && hasRole('influencer');
+      allow read: if isAdmin();
+    }
+    
+    match /agencies/{agencyId} {
+      allow read, write: if isOwner(agencyId) && hasRole('agency');
+      allow read: if isAdmin();
+    }
+    
+    match /admins/{adminId} {
+      allow read, write: if isOwner(adminId) && hasRole('admin');
+    }
+    
+    // Deal rooms - private access
+    match /dealRooms/{roomId} {
+      allow read, write: if isAuthenticated() && 
+                        request.auth.uid in resource.data.members;
+      allow read: if isAdmin();
+    }
+    
+    // Metrics collection - authenticated users can read, admins can write
+    match /metrics/{metricId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    // Default deny rule
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

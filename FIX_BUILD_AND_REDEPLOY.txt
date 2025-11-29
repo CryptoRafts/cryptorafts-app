@@ -1,0 +1,20 @@
+cd /var/www/cryptorafts && echo "🔧 Fixing missing layout..." && mkdir -p src/app && cat > src/app/layout.tsx << 'LAYOUTEOF'
+export const metadata = {
+  title: 'Cryptorafts',
+  description: 'Cryptorafts Platform',
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en">
+      <body>{children}</body>
+    </html>
+  );
+}
+LAYOUTEOF
+echo "✅ layout.tsx created" && rm -rf /var/www/package-lock.json 2>/dev/null || true && echo "✅ Removed conflicting lockfile" && echo "" && echo "🔨 Rebuilding..." && rm -rf .next out && export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && nvm use 20 && NODE_ENV=production npm run build && echo "✅ Build completed!" && echo "" && echo "🚀 Restarting PM2..." && pm2 stop cryptorafts && pm2 delete cryptorafts && pm2 start ecosystem.config.js && pm2 save && pm2 status && sleep 10 && pm2 logs cryptorafts --lines 30 --nostream && echo "" && echo "✅ DEPLOYMENT COMPLETE! Visit: https://www.cryptorafts.com"
+

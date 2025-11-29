@@ -1,0 +1,7 @@
+# ============================================
+# COPY-PASTE THIS INTO POWERSHELL
+# ============================================
+
+cd C:\Users\dell\cryptorafts-starter
+.\UPLOAD_COMPLETE_APP_FIXED.ps1
+

@@ -1,0 +1,6 @@
+═══════════════════════════════════════════════════════
+TRY EXTRACTING TAR.GZ FIRST - Run This Command
+═══════════════════════════════════════════════════════
+
+cd /var/www/cryptorafts && echo "📦 Trying to extract cryptorafts.tar.gz..." && tar -xzf cryptorafts.tar.gz 2>&1 | head -20 && echo "" && echo "✅ Extraction attempted" && chown -R root:root /var/www/cryptorafts && chmod -R 755 /var/www/cryptorafts && find /var/www/cryptorafts -type f -exec chmod 644 {} \; && echo "✅ Ownership and permissions fixed" && echo "" && echo "🔍 Checking for files..." && ls -la package.json src/app/page.tsx next.config.js 2>/dev/null && if [ $? -eq 0 ]; then echo ""; echo "✅ FILES FOUND! Run deployment command now!"; else echo ""; echo "❌ Files still NOT found - Upload via File Manager"; echo ""; echo "Upload to /var/www/cryptorafts:"; echo "  1. src/ folder"; echo "  2. package.json"; echo "  3. next.config.js"; echo "  4. tsconfig.json"; fi
+

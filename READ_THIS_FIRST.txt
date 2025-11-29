@@ -1,0 +1,62 @@
+═══════════════════════════════════════════════════════
+SIMPLE 3-STEP PROCESS
+═══════════════════════════════════════════════════════
+
+STEP 1: UPLOAD FILES VIA FILE MANAGER
+----------------------------------------
+
+1. Go to: https://hpanel.hostinger.com/
+2. Click "File Manager"
+3. Navigate to: /var/www/cryptorafts
+4. Upload from C:\Users\dell\cryptorafts-starter:
+   ✅ src/ folder (ENTIRE folder)
+   ✅ package.json
+   ✅ next.config.js
+   ✅ tsconfig.json
+
+5. Verify files appear in File Manager
+   - You should see src/ folder
+   - You should see package.json file
+
+
+STEP 2: VERIFY FILES IN SSH
+----------------------------------------
+
+Run this command (copy from STEP1_VERIFY_FILES.txt):
+
+cd /var/www/cryptorafts && ls -la package.json src/app/page.tsx next.config.js
+
+If files found:
+   ✅ Proceed to STEP 3
+
+If files NOT found:
+   ❌ Upload via File Manager again (STEP 1)
+   ❌ Make sure you're in /var/www/cryptorafts
+   ❌ Verify files appear in File Manager
+
+
+STEP 3: DEPLOY
+----------------------------------------
+
+Run this command (copy from STEP2_DEPLOY.txt):
+
+[The entire deployment command from STEP2_DEPLOY.txt]
+
+This will:
+  ✅ Install dependencies
+  ✅ Build app
+  ✅ Deploy with PM2
+  ✅ Configure Nginx
+
+
+═══════════════════════════════════════════════════════
+IMPORTANT NOTES
+═══════════════════════════════════════════════════════
+
+❌ DO NOT paste markdown files into SSH
+❌ DO NOT upload node_modules/ or .next/
+❌ tar.gz is corrupted - can't use it
+✅ Files MUST be visible in File Manager AND SSH
+
+═══════════════════════════════════════════════════════
+

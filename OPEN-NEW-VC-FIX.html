@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="cache-control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="pragma" content="no-cache">
+    <meta http-equiv="expires" content="0">
+    <title>🚀 NEW DEPLOYMENT - VC Portfolio JavaScript Fixed!</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 800px;
+            text-align: center;
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+        }
+        .timestamp {
+            background: #22c55e;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            display: inline-block;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        .fixes {
+            text-align: left;
+            background: #f0f9ff;
+            border-left: 4px solid #3b82f6;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .fixes h3 {
+            color: #3b82f6;
+            margin-top: 0;
+        }
+        .fixes ul {
+            color: #334155;
+        }
+        .fixes li {
+            margin: 10px 0;
+        }
+        .warning {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            text-align: left;
+        }
+        .warning h3 {
+            color: #f59e0b;
+            margin-top: 0;
+        }
+        .btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 40px;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 1.2em;
+            margin: 10px;
+            transition: transform 0.2s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        .deployment-id {
+            font-family: 'Courier New', monospace;
+            background: #f1f5f9;
+            padding: 10px;
+            border-radius: 8px;
+            color: #1e293b;
+            margin: 20px 0;
+        }
+        .countdown {
+            font-size: 3em;
+            color: #667eea;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 NEW DEPLOYMENT READY!</h1>
+        <div class="timestamp" id="timestamp">
+            Deployed: <span id="time"></span>
+        </div>
+        
+        <div class="countdown" id="countdown">3</div>
+        <p style="font-size: 1.2em; color: #64748b;">Opening in <span id="seconds">3</span> seconds...</p>
+        
+        <div class="deployment-id">
+            <strong>New Deployment ID:</strong> 5p4oyvo0k<br>
+            <strong>Previous (cached):</strong> qt3jlerzh
+        </div>
+
+        <div class="fixes">
+            <h3>✅ JAVASCRIPT ERRORS FIXED:</h3>
+            <ul>
+                <li><strong>Removed BlockchainCard component</strong> - causing "TypeError: t is not a function"</li>
+                <li><strong>Removed AnimatedButton component</strong> - JavaScript bundling issue</li>
+                <li><strong>Removed RoleGate component</strong> - complex dependency</li>
+                <li><strong>Simplified to basic React + Tailwind</strong> - no custom components</li>
+                <li><strong>Deployed Firestore indexes</strong> - fixed portfolio query errors</li>
+            </ul>
+        </div>
+
+        <div class="warning">
+            <h3>⚠️ CLEAR YOUR BROWSER CACHE!</h3>
+            <p><strong>IMPORTANT:</strong> Your browser is still loading old JavaScript files!</p>
+            <ol>
+                <li>Press <strong>Ctrl+Shift+Delete</strong></li>
+                <li>Select <strong>"Cached images and files"</strong></li>
+                <li>Click <strong>"Clear data"</strong></li>
+                <li>Close ALL browser windows</li>
+                <li>Open browser again and test</li>
+            </ol>
+        </div>
+
+        <a href="https://cryptorafts-starter-5p4oyvo0k-anas-s-projects-8d19f880.vercel.app/vc/portfolio?nocache=NEW_BUILD_VC_FIX" class="btn" id="testBtn">
+            🧪 TEST NEW VC PORTFOLIO
+        </a>
+        
+        <div style="margin-top: 30px;">
+            <a href="https://cryptorafts-starter-5p4oyvo0k-anas-s-projects-8d19f880.vercel.app/vc/dashboard?nocache=NEW_BUILD_VC_FIX" class="btn">
+                📊 VC Dashboard
+            </a>
+            <a href="https://cryptorafts-starter-5p4oyvo0k-anas-s-projects-8d19f880.vercel.app/vc/pipeline?nocache=NEW_BUILD_VC_FIX" class="btn">
+                🔍 VC Pipeline
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Set current time
+        const now = new Date();
+        document.getElementById('time').textContent = now.toLocaleTimeString();
+        
+        // Countdown and auto-redirect
+        let seconds = 3;
+        const countdownEl = document.getElementById('countdown');
+        const secondsEl = document.getElementById('seconds');
+        
+        const interval = setInterval(() => {
+            seconds--;
+            countdownEl.textContent = seconds;
+            secondsEl.textContent = seconds;
+            
+            if (seconds === 0) {
+                clearInterval(interval);
+                countdownEl.textContent = '🚀';
+                secondsEl.textContent = 'NOW';
+                
+                // Force open in new incognito-like window (if possible)
+                const newUrl = 'https://cryptorafts-starter-5p4oyvo0k-anas-s-projects-8d19f880.vercel.app/vc/portfolio?nocache=' + Date.now();
+                window.location.href = newUrl;
+            }
+        }, 1000);
+        
+        console.log('🚀 NEW DEPLOYMENT: 5p4oyvo0k');
+        console.log('✅ JavaScript errors fixed');
+        console.log('✅ Simplified components');
+        console.log('✅ Firestore indexes deployed');
+        console.log('⚠️  CLEAR YOUR BROWSER CACHE!');
+    </script>
+</body>
+</html>

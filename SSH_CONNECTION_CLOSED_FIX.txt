@@ -1,0 +1,119 @@
+❌ SSH CONNECTION CLOSED - FIX OPTIONS
+======================================
+
+Connection is being closed by remote host - likely due to:
+- Too many failed login attempts
+- SSH rate limiting
+- Security restrictions
+
+
+OPTION 1: Wait and Retry (Recommended)
+---------------------------------------
+Wait 10-15 minutes, then try again:
+
+1. Wait 10-15 minutes
+2. In PowerShell, run:
+   ssh -p 65002 u386122906@145.79.211.130
+3. Enter password: Shamsi2627@@
+4. Try connecting again
+
+
+OPTION 2: Use Hostinger Web Terminal (NO SSH PASSWORD NEEDED!)
+----------------------------------------------------------------
+This is EASIER and doesn't require SSH password!
+
+1. Go to: https://hpanel.hostinger.com/
+2. Login with your Hostinger account
+3. Go to: VPS → Your VPS → Terminal
+4. Click: "Open Terminal" or "Web Terminal"
+5. You'll see: [u386122906@... ~]$ directly!
+
+Then run these commands in the Web Terminal:
+
+1. Load NVM and upgrade to Node.js 20:
+   export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+   nvm install 20
+   nvm use 20
+   nvm alias default 20
+
+2. Verify Node.js version:
+   node --version
+   Should show: v20.x.x (NOT v18.x.x)
+
+3. Stop PM2:
+   pm2 stop cryptorafts
+   pm2 delete cryptorafts
+
+4. Navigate and rebuild:
+   cd ~/cryptorafts
+   rm -rf .next out node_modules/.cache
+   npm install --legacy-peer-deps
+   NODE_ENV=production npm run build
+
+5. Update PM2 config:
+   export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && nvm use 20
+   NODE_PATH=$(which node)
+   echo "Node.js path: $NODE_PATH"
+
+   cat > ecosystem.config.js << EOF
+module.exports = {
+  apps: [
+    {
+      name: 'cryptorafts',
+      script: './server.js',
+      instances: 1,
+      exec_mode: 'fork',
+      interpreter: '$NODE_PATH',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3000,
+      },
+      error_file: './logs/pm2-error.log',
+      out_file: './logs/pm2-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '1G',
+      min_uptime: '10s',
+      max_restarts: 10,
+      restart_delay: 4000,
+    },
+  ],
+};
+EOF
+
+6. Start PM2:
+   mkdir -p logs
+   export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && nvm use 20
+   pm2 start ecosystem.config.js
+   pm2 save
+
+7. Check status:
+   pm2 status
+   pm2 logs cryptorafts --lines 30
+
+8. Verify:
+   curl http://localhost:3000
+
+
+OPTION 3: Reset SSH Access in Hostinger Panel
+---------------------------------------------
+1. Go to: https://hpanel.hostinger.com/
+2. Login with your Hostinger account
+3. Go to: VPS → Your VPS → SSH Access
+4. Click: "Reset SSH Password" or "Disable SSH" then "Enable SSH"
+5. Wait 5 minutes
+6. Try SSH again
+
+
+RECOMMENDED: Use Option 2 (Hostinger Web Terminal)
+----------------------------------------------------
+- No SSH password needed
+- No connection issues
+- Direct access to terminal
+- Same commands work
+
+
+THEN VISIT: https://www.cryptorafts.com
+

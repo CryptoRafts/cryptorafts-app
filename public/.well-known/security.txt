@@ -1,0 +1,9 @@
+# Security Policy
+Contact: mailto:security@cryptorafts.com
+Expires: 2026-12-31T23:59:59.000Z
+Preferred-Languages: en
+Canonical: https://cryptorafts-starter-3ctfn0ush-anas-s-projects-8d19f880.vercel.app/.well-known/security.txt
+
+# Our security policy
+# If you discover a security vulnerability, please email us at security@cryptorafts.com
+

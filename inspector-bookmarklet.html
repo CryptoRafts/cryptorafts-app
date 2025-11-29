@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cryptorafts Inspector Bookmarklet</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .bookmarklet {
+            display: inline-block;
+            padding: 15px 30px;
+            background: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 18px;
+            margin: 20px 0;
+            cursor: move;
+        }
+        .bookmarklet:hover {
+            background: #45a049;
+        }
+        .instructions {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        code {
+            background: #1a1a1a;
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: #4CAF50;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Cryptorafts Inspector Bookmarklet</h1>
+    
+    <div class="instructions">
+        <h2>Method 1: Drag to Bookmarks (Easiest!)</h2>
+        <p>1. Drag the green button below to your bookmarks bar</p>
+        <p>2. Go to <code>https://www.cryptorafts.com/</code></p>
+        <p>3. Press <code>F12</code> to open Console</p>
+        <p>4. Click the bookmark you just created</p>
+        <p>5. Click the logo, then click the purple graphic</p>
+        <p>6. In console, type: <code>copy(window._CR_clickedElements)</code></p>
+        <p>7. Press Enter, then paste the results here</p>
+    </div>
+    
+    <a href="javascript:(()=>{if(!window._CR_clickedElements)window._CR_clickedElements=[];console.log('%cCryptorafts Inspector ready — click the logo, then the purple graphic.','color:teal;font-weight:bold');const describe=el=>{if(!el)return null;const cs=getComputedStyle(el);const bbox=el.getBoundingClientRect();const selector=(()=>{if(el.id)return `#${el.id}`;if(el.className&&typeof el.className==='string')return `${el.tagName.toLowerCase()}.${el.className.trim().split(/\s+/).join('.')}`;return el.tagName.toLowerCase();})();return{timestamp:new Date().toString(),selector,tag:el.tagName.toLowerCase(),id:el.id||null,classes:el.className?el.className.trim().split(/\s+/):[],outerHTML:el.outerHTML.slice(0,1000),boundingClientRect:{top:Math.round(bbox.top),left:Math.round(bbox.left),width:Math.round(bbox.width),height:Math.round(bbox.height),bottom:Math.round(bbox.bottom),right:Math.round(bbox.right)},computed:{display:cs.display,position:cs.position,visibility:cs.visibility,zIndex:cs.zIndex,pointerEvents:cs.pointerEvents,opacity:cs.opacity,width:cs.width,height:cs.height,overflow:cs.overflow},nearestPositionedAncestor:(()=>{let cur=el.parentElement;while(cur){const p=getComputedStyle(cur).position;if(p&&p!=='static')return{tag:cur.tagName.toLowerCase(),id:cur.id||null,classes:cur.className||null,position:p};cur=cur.parentElement;}return null;})()};}function clickHandler(e){e.preventDefault();e.stopPropagation();const el=e.target;const rep=describe(el);window._CR_clickedElements.push(rep);console.groupCollapsed(`%cCaptured element: ${rep.selector}`,'color:purple;font-weight:bold');console.log('Tag:',rep.tag,'ID:',rep.id,'Classes:',rep.classes);console.log('Bounding rect:',rep.boundingClientRect);console.log('Computed styles:',rep.computed);console.log('Nearest positioned ancestor:',rep.nearestPositionedAncestor);console.log('OuterHTML (truncated):',rep.outerHTML);console.groupEnd();const oldOutline=el.style.outline;el.style.outline='3px solid rgba(255,165,0,0.9)';setTimeout(()=>el.style.outline=oldOutline,2000);if(window._CR_clickedElements.length>=2){console.log('%cCaptured two elements. Listener removed. Inspect window._CR_clickedElements for results.','color:green;font-weight:bold');console.log('%cTo copy results, run: copy(window._CR_clickedElements)','color:cyan;font-weight:bold');window.removeEventListener('click',clickHandler,true);}else{console.log('%cClick the second element now (purple graphic).','color:orange;font-weight:bold');}}window.addEventListener('click',clickHandler,true);setTimeout(()=>{if(window._CR_clickedElements.length<2){window.removeEventListener('click',clickHandler,true);console.log('%cInspector timed out after 30s. Rerun the snippet to try again.','color:gray');}},30000);})();" class="bookmarklet">🔍 Cryptorafts Inspector</a>
+    
+    <div class="instructions">
+        <h2>Method 2: Add Script to Page Temporarily</h2>
+        <p>I can add the inspector code directly to your page temporarily. This will make it available automatically when the page loads.</p>
+        <p>Would you like me to add it to your homepage temporarily?</p>
+    </div>
+    
+    <div class="instructions">
+        <h2>Method 3: Use Elements Tab (No Script Needed!)</h2>
+        <p>1. Press <code>F12</code></p>
+        <p>2. Click the <code>Elements</code> tab</p>
+        <p>3. Press <code>Ctrl+Shift+C</code> (or click the cursor icon)</p>
+        <p>4. Click the logo on the page</p>
+        <p>5. On the right side, in the <code>Styles</code> panel, find:</p>
+        <ul>
+            <li><code>z-index</code> - tell me the value</li>
+            <li><code>position</code> - tell me the value</li>
+            <li><code>display</code> - tell me the value</li>
+            <li><code>visibility</code> - tell me the value</li>
+            <li><code>opacity</code> - tell me the value</li>
+        </ul>
+        <p>6. Click the purple graphic (scroll down)</p>
+        <p>7. Find the same properties and tell me the values</p>
+    </div>
+    
+    <div class="instructions">
+        <h2>Method 4: Simple Console Commands</h2>
+        <p>Type these commands one by one in the Console (you can type them manually):</p>
+        <ol>
+            <li><code>getComputedStyle(document.querySelector('#perfect-header')).zIndex</code></li>
+            <li><code>getComputedStyle(document.querySelector('section[aria-label*=\"Hero section\"]')).zIndex</code></li>
+            <li><code>document.querySelectorAll('div[hidden]').length</code></li>
+            <li><code>document.querySelector('div[id^=\"S:\"]')?.getAttribute('hidden')</code></li>
+        </ol>
+        <p>Tell me what each command says!</p>
+    </div>
+</body>
+</html>

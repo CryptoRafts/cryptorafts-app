@@ -1,0 +1,8 @@
+═══════════════════════════════════════════════════════
+VERIFY UPLOAD - Run This After Uploading Files
+═══════════════════════════════════════════════════════
+
+After uploading files via File Manager, run this to verify:
+
+cd /var/www/cryptorafts && echo "🔍 Checking for files..." && echo "" && if [ -f "package.json" ]; then echo "✅ package.json FOUND!"; ls -la package.json; else echo "❌ package.json NOT FOUND - Upload failed!"; fi && echo "" && if [ -d "src" ]; then echo "✅ src/ folder FOUND!"; ls -la src/ | head -5; else echo "❌ src/ folder NOT FOUND - Upload failed!"; fi && echo "" && if [ -f "next.config.js" ]; then echo "✅ next.config.js FOUND!"; else echo "❌ next.config.js NOT FOUND!"; fi && echo "" && if [ -f "tsconfig.json" ]; then echo "✅ tsconfig.json FOUND!"; else echo "❌ tsconfig.json NOT FOUND!"; fi && echo "" && echo "═══════════════════════════════════════════════════════" && if [ -f "package.json" ] && [ -d "src" ]; then echo "✅ ALL FILES FOUND! Ready for deployment!"; else echo "❌ FILES MISSING! Upload via File Manager:"; echo "   1. Navigate to /var/www/cryptorafts"; echo "   2. Upload: src/, package.json, next.config.js, tsconfig.json"; echo "   3. Run this command again"; fi
+

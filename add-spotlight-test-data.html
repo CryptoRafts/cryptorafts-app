@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Spotlight Test Data - CryptoRaft</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 100%);
+      color: white;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 20px;
+    }
+    h1 {
+      font-size: 32px;
+      margin-bottom: 10px;
+      background: linear-gradient(90deg, #06b6d4, #3b82f6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    button {
+      background: linear-gradient(90deg, #06b6d4, #3b82f6);
+      color: white;
+      border: none;
+      padding: 16px 32px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      width: 100%;
+      margin-top: 20px;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(6, 182, 212, 0.3);
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .status {
+      margin: 10px 0;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    .success { background: rgba(34, 197, 94, 0.2); border: 1px solid #22c55e; }
+    .error { background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; }
+    .info { background: rgba(59, 130, 246, 0.2); border: 1px solid #3b82f6; }
+    .member-list {
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+    .member-item {
+      padding: 12px;
+      margin: 8px 0;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .badge {
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .badge-admin { background: rgba(168, 85, 247, 0.2); color: #a855f7; }
+    .badge-staff { background: rgba(6, 182, 212, 0.2); color: #06b6d4; }
+    .badge-readonly { background: rgba(156, 163, 175, 0.2); color: #9ca3af; }
+    .badge-suspended { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+    pre {
+      background: rgba(0, 0, 0, 0.5);
+      padding: 16px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 13px;
+      margin: 16px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>🔍 Add Spotlight Test Data</h1>
+      <p style="color: rgba(255,255,255,0.7); margin-bottom: 20px;">
+        This will add 5 mock team members to your Spotlight department for testing
+      </p>
+
+      <div id="status"></div>
+
+      <button id="addMockData" onclick="addSpotlightMockData()">
+        Add 5 Mock Team Members to Spotlight
+      </button>
+
+      <div class="member-list">
+        <h3 style="margin-top: 0;">📋 Mock Team Members:</h3>
+        <div class="member-item">
+          <div>
+            <strong>spotlight-lead@cryptoraft.com</strong>
+            <br><span style="font-size: 12px; color: rgba(255,255,255,0.5);">Added Jan 15, 2024 • 1,247 searches</span>
+          </div>
+          <span class="badge badge-admin">Dept Admin</span>
+        </div>
+        <div class="member-item">
+          <div>
+            <strong>search-specialist@cryptoraft.com</strong>
+            <br><span style="font-size: 12px; color: rgba(255,255,255,0.5);">Added Jan 20, 2024 • 892 searches</span>
+          </div>
+          <span class="badge badge-staff">Staff</span>
+        </div>
+        <div class="member-item">
+          <div>
+            <strong>data-analyst@cryptoraft.com</strong>
+            <br><span style="font-size: 12px; color: rgba(255,255,255,0.5);">Added Feb 1, 2024 • 654 searches</span>
+          </div>
+          <span class="badge badge-staff">Staff</span>
+        </div>
+        <div class="member-item">
+          <div>
+            <strong>search-intern@cryptoraft.com</strong>
+            <br><span style="font-size: 12px; color: rgba(255,255,255,0.5);">Added Feb 15, 2024 • 234 searches</span>
+          </div>
+          <span class="badge badge-readonly">Read-only</span>
+        </div>
+        <div class="member-item">
+          <div>
+            <strong>former-member@cryptoraft.com</strong>
+            <br><span style="font-size: 12px; color: rgba(255,255,255,0.5);">Added Jan 25, 2024 • 445 searches</span>
+          </div>
+          <span class="badge badge-suspended">Suspended</span>
+        </div>
+      </div>
+
+      <div class="info status" style="margin-top: 20px;">
+        💡 <strong>After adding:</strong>
+        <ul style="margin: 10px 0; padding-left: 20px;">
+          <li>Go to <code>/admin/departments/spotlight</code></li>
+          <li>See 5 team members in the list</li>
+          <li>View stats (3,472 total searches)</li>
+          <li>Test add/remove/suspend features</li>
+          <li>Check role badges and permissions</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+    import { getFirestore, collection, addDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyD4u9bSdXm9xJO-WqgmVMY-zJQwQ8sF3p8",
+      authDomain: "cryptorafts-b9067.firebaseapp.com",
+      projectId: "cryptorafts-b9067",
+      storageBucket: "cryptorafts-b9067.firebasestorage.app",
+      messagingSenderId: "909155646246",
+      appId: "1:909155646246:web:85f9a68b9c4e3d8f8c8e3e"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const MOCK_TEAM = [
+      {
+        email: 'spotlight-lead@cryptoraft.com',
+        role: 'Dept Admin',
+        status: 'active',
+        department: 'Spotlight',
+        departmentId: 'Spotlight',
+        addedBy: 'admin@cryptoraft.com',
+        addedAt: new Date('2024-01-15T10:00:00').toISOString(),
+        searchCount: 1247,
+        lastActive: new Date('2024-10-16T08:30:00').toISOString()
+      },
+      {
+        email: 'search-specialist@cryptoraft.com',
+        role: 'Staff',
+        status: 'active',
+        department: 'Spotlight',
+        departmentId: 'Spotlight',
+        addedBy: 'spotlight-lead@cryptoraft.com',
+        addedAt: new Date('2024-01-20T14:30:00').toISOString(),
+        searchCount: 892,
+        lastActive: new Date('2024-10-16T07:15:00').toISOString()
+      },
+      {
+        email: 'data-analyst@cryptoraft.com',
+        role: 'Staff',
+        status: 'active',
+        department: 'Spotlight',
+        departmentId: 'Spotlight',
+        addedBy: 'spotlight-lead@cryptoraft.com',
+        addedAt: new Date('2024-02-01T09:00:00').toISOString(),
+        searchCount: 654,
+        lastActive: new Date('2024-10-15T16:45:00').toISOString()
+      },
+      {
+        email: 'search-intern@cryptoraft.com',
+        role: 'Read-only',
+        status: 'active',
+        department: 'Spotlight',
+        departmentId: 'Spotlight',
+        addedBy: 'spotlight-lead@cryptoraft.com',
+        addedAt: new Date('2024-02-15T11:00:00').toISOString(),
+        searchCount: 234,
+        lastActive: new Date('2024-10-16T06:00:00').toISOString()
+      },
+      {
+        email: 'former-member@cryptoraft.com',
+        role: 'Staff',
+        status: 'suspended',
+        department: 'Spotlight',
+        departmentId: 'Spotlight',
+        addedBy: 'spotlight-lead@cryptoraft.com',
+        addedAt: new Date('2024-01-25T13:00:00').toISOString(),
+        searchCount: 445,
+        lastActive: new Date('2024-09-30T12:00:00').toISOString()
+      }
+    ];
+
+    window.addSpotlightMockData = async function() {
+      const statusDiv = document.getElementById('status');
+      const button = document.getElementById('addMockData');
+      
+      statusDiv.innerHTML = '<div class="info status">⏳ Adding mock data to Spotlight department...</div>';
+      button.disabled = true;
+
+      try {
+        let addedCount = 0;
+        const errors = [];
+
+        for (const member of MOCK_TEAM) {
+          try {
+            console.log(`➕ Adding ${member.email}...`);
+            
+            await addDoc(collection(db, 'department_members'), member);
+            
+            addedCount++;
+            console.log(`   ✅ Added ${member.email}`);
+          } catch (err) {
+            console.error(`   ❌ Failed to add ${member.email}:`, err);
+            errors.push({ email: member.email, error: err.message });
+          }
+        }
+
+        if (addedCount === MOCK_TEAM.length) {
+          statusDiv.innerHTML = `
+            <div class="success status">
+              <strong>🎉 SUCCESS!</strong><br>
+              Added ${addedCount} mock team members to Spotlight department!<br><br>
+              <strong>📊 Team Summary:</strong><br>
+              • 1 Dept Admin<br>
+              • 2 Staff members<br>
+              • 1 Read-only<br>
+              • 1 Suspended<br><br>
+              <strong>✅ Go to <a href="/admin/departments/spotlight" style="color: #06b6d4;">/admin/departments/spotlight</a> to see them!</strong>
+            </div>
+          `;
+        } else {
+          statusDiv.innerHTML = `
+            <div class="info status">
+              <strong>⚠️ Partial Success</strong><br>
+              Added ${addedCount} of ${MOCK_TEAM.length} members<br>
+              ${errors.length} failed<br><br>
+              <strong>Errors:</strong><br>
+              <pre>${JSON.stringify(errors, null, 2)}</pre>
+            </div>
+          `;
+        }
+      } catch (error) {
+        console.error('❌ Error:', error);
+        statusDiv.innerHTML = `
+          <div class="error status">
+            <strong>❌ Error adding mock data:</strong><br>
+            ${error.message}<br><br>
+            Check console for details (F12)
+          </div>
+        `;
+      } finally {
+        button.disabled = false;
+        button.textContent = 'Add More Mock Data (Run Again)';
+      }
+    };
+
+    console.log('✅ Page loaded! Click the button to add mock Spotlight team members.');
+  </script>
+</body>
+</html>
+
+

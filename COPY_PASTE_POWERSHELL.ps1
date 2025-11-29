@@ -1,0 +1,39 @@
+# ============================================
+# CRYPTORAFTS - COMPLETE DEPLOYMENT
+# ============================================
+# COPY THIS ENTIRE FILE AND PASTE INTO POWERSHELL
+# ============================================
+
+$vpsIP = "72.61.98.99"
+$vpsUser = "root"
+$appDir = "/var/www/cryptorafts"
+$scriptFile = "RUN_THIS_IN_SSH_NOW.sh"
+
+Write-Host ""
+Write-Host "CRYPTORAFTS - DEPLOYMENT STARTING..." -ForegroundColor Cyan
+Write-Host "====================================" -ForegroundColor Cyan
+Write-Host ""
+
+if (-not (Test-Path $scriptFile)) {
+    Write-Host "ERROR: $scriptFile not found!" -ForegroundColor Red
+    exit 1
+}
+
+$scriptContent = Get-Content $scriptFile -Raw
+$deployCmd = "cd $appDir 2>/dev/null || mkdir -p $appDir && cd $appDir && cat > $scriptFile << 'DEPLOYEOF'`n$scriptContent`nDEPLOYEOF`nchmod +x $scriptFile && bash $scriptFile"
+
+Write-Host "Deploying to $vpsUser@$vpsIP..." -ForegroundColor Yellow
+Write-Host "This will take 5-10 minutes..." -ForegroundColor Yellow
+Write-Host ""
+
+$deployCmd | ssh "$vpsUser@$vpsIP" bash
+
+if ($LASTEXITCODE -eq 0) {
+    Write-Host ""
+    Write-Host "SUCCESS: DEPLOYMENT COMPLETE!" -ForegroundColor Green
+    Write-Host "Your app is live at: https://www.cryptorafts.com" -ForegroundColor Cyan
+} else {
+    Write-Host ""
+    Write-Host "WARNING: Exit code $LASTEXITCODE - Check output above" -ForegroundColor Yellow
+}
+

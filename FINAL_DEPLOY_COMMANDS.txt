@@ -1,0 +1,33 @@
+============================================
+FINAL DEPLOYMENT COMMANDS
+============================================
+
+Password: Shamsi2627@@
+
+Run these commands ONE AT A TIME in PowerShell:
+
+1. Upload SpotlightDisplay:
+   scp src/components/SpotlightDisplay.tsx root@72.61.98.99:/var/www/cryptorafts/src/components/SpotlightDisplay.tsx
+
+2. Upload PerfectHeader:
+   scp src/components/PerfectHeader.tsx root@72.61.98.99:/var/www/cryptorafts/src/components/PerfectHeader.tsx
+
+3. Upload SimpleAuthProvider:
+   scp src/providers/SimpleAuthProvider.tsx root@72.61.98.99:/var/www/cryptorafts/src/providers/SimpleAuthProvider.tsx
+
+4. Upload page:
+   scp src/app/page.tsx root@72.61.98.99:/var/www/cryptorafts/src/app/page.tsx
+
+5. SSH and rebuild:
+   ssh root@72.61.98.99
+   (Enter password: Shamsi2627@@)
+   
+   Then run:
+   cd /var/www/cryptorafts && npm run build && pm2 restart cryptorafts
+
+6. Verify:
+   Open: https://www.cryptorafts.com
+   Press Ctrl+Shift+R to refresh
+
+============================================
+

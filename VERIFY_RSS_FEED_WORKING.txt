@@ -1,0 +1,73 @@
+# ============================================
+# VERIFY RSS FEED IS WORKING
+# ============================================
+
+# Run these commands on your VPS to verify RSS feed:
+
+cd /var/www/cryptorafts
+
+# Step 1: Check if next.config.js has rewrites
+echo "Checking next.config.js for rewrites..."
+grep -A 10 "rewrites" next.config.js
+
+# Step 2: Test API endpoint directly
+echo ""
+echo "Testing /api/blog/rss..."
+curl -I http://localhost:3000/api/blog/rss
+
+# Expected: HTTP 200 OK, Content-Type: application/rss+xml
+
+# Step 3: Test feed.xml (via rewrite)
+echo ""
+echo "Testing /feed.xml..."
+curl -I http://localhost:3000/feed.xml
+
+# Expected: HTTP 200 OK, Content-Type: application/rss+xml
+
+# Step 4: Test RSS feed content
+echo ""
+echo "Testing RSS feed content..."
+curl http://localhost:3000/feed.xml | head -30
+
+# Should show XML starting with:
+# <?xml version="1.0" encoding="UTF-8"?>
+# <rss version="2.0"...
+
+# Step 5: Test from external
+echo ""
+echo "Testing from external URL..."
+curl -I https://www.cryptorafts.com/feed.xml
+
+# ============================================
+# IF RSS FEED STILL RETURNS 404
+# ============================================
+
+# Check 1: Verify next.config.js was deployed
+cat next.config.js | grep -A 5 "rewrites"
+
+# Check 2: Verify PM2 restarted
+pm2 describe cryptorafts | grep -i "restart\|uptime"
+
+# Check 3: Check PM2 logs
+pm2 logs cryptorafts --lines 50 | grep -i "error\|rewrite\|config"
+
+# Check 4: Restart PM2 completely
+pm2 delete cryptorafts
+pm2 start ecosystem.config.js
+sleep 5
+
+# Check 5: Test again
+curl -I http://localhost:3000/feed.xml
+
+# ============================================
+# FOR IFTTT
+# ============================================
+
+# ✅ Use this URL in IFTTT:
+# https://www.cryptorafts.com/feed.xml
+
+# ❌ DO NOT use:
+# https://www.cryptorafts.com/blog (this is a webpage, not RSS feed)
+
+# ============================================
+

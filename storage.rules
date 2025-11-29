@@ -1,0 +1,252 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+             (request.auth.token.admin == true || 
+              request.auth.token.isSuperAdmin == true);
+    }
+    
+    function hasRole(role) {
+      return isAuthenticated() && request.auth.token.role == role;
+    }
+    
+    function validFileSize(maxSizeMB) {
+      return request.resource.size < maxSizeMB * 1024 * 1024;
+    }
+    
+    function validImageType() {
+      return request.resource.contentType.matches('image/.*');
+    }
+    
+    function validPNGType() {
+      return request.resource.contentType == 'image/png';
+    }
+    
+    function validDocumentType() {
+      return request.resource.contentType.matches('application/pdf') ||
+             request.resource.contentType.matches('application/msword') ||
+             request.resource.contentType.matches('application/vnd.openxmlformats-officedocument.*') ||
+             request.resource.contentType.matches('text/.*');
+    }
+    
+    // User profile images - per-user isolation
+    match /profile-images/{userId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId) && 
+                     validImageType() && 
+                     validFileSize(5); // 5MB max
+    }
+    
+    // User profile photos - per-user isolation
+    match /profile-photos/{userId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId) && 
+                     validImageType() && 
+                     validFileSize(5); // 5MB max
+    }
+    
+    // User profile avatars - uploads/profiles path (common path structure)
+    match /uploads/profiles/{userId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId) && 
+                     validImageType() && 
+                     validFileSize(5); // 5MB max
+    }
+    
+    // User avatars - direct avatar path
+    match /avatars/{userId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId) && 
+                     validImageType() && 
+                     validFileSize(5); // 5MB max
+    }
+    
+    // User profile images - profiles path
+    match /profiles/{userId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId) && 
+                     validImageType() && 
+                     validFileSize(5); // 5MB max
+    }
+    
+    // Company logos - organization isolation
+    match /company-logos/{orgId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(orgId) && 
+                     validPNGType() && 
+                     validFileSize(2); // 2MB max for logos
+    }
+    
+    // Project documents - founder owns, verified roles can read
+    match /projects/{projectId}/{userId}/{fileName} {
+      allow read: if isAuthenticated() && 
+                    (hasRole('vc') || hasRole('exchange') || hasRole('ido') || 
+                     hasRole('agency') || hasRole('influencer') || 
+                     isOwner(userId) || isAdmin());
+      
+      allow write: if isOwner(userId) && 
+                     hasRole('founder') &&
+                     (validDocumentType() || validImageType()) &&
+                     validFileSize(50); // 50MB max for project docs
+    }
+    
+    // Pitch documents - authenticated users can upload to their own folder
+    // This allows founders to upload pitch materials during submission
+    match /pitch-documents/{userId}/{fileName} {
+      allow read: if isAuthenticated(); // All authenticated users can read pitch documents
+      
+      allow write: if isOwner(userId) && // Users can only write to their own folder
+                     isAuthenticated() && // Must be authenticated
+                     validFileSize(100); // 100MB max for pitch documents (all file types allowed)
+    }
+    
+    // KYC documents - strict user isolation
+    match /kyc/{userId}/{fileName} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isOwner(userId) && 
+                     (validImageType() || validDocumentType()) &&
+                     validFileSize(10); // 10MB max
+    }
+    
+    // KYC documents - alternate path for kyc-documents
+    match /kyc-documents/{userId}/{fileName} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isOwner(userId) && 
+                     (validImageType() || validDocumentType()) &&
+                     validFileSize(10); // 10MB max
+    }
+    
+    // KYC documents - uploads/kyc path (legacy path structure)
+    match /uploads/kyc/{userId}/{fileName} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isOwner(userId) && 
+                     (validImageType() || validDocumentType()) &&
+                     validFileSize(10); // 10MB max
+    }
+    
+    // KYB documents - organization isolation
+    match /kyb/{orgId}/{userId}/{fileName} {
+      allow read: if isOwner(orgId) || 
+                    isOwner(userId) || 
+                    isAdmin();
+      
+      allow write: if isOwner(userId) && 
+                     (hasRole('exchange') || hasRole('agency') || hasRole('ido')) &&
+                     (validImageType() || validDocumentType()) &&
+                     validFileSize(10); // 10MB max
+    }
+    
+    // KYB documents - VC registration path
+    match /kyb-documents/{userId}/{docType}/{fileName} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isOwner(userId) && 
+                     (validImageType() || validDocumentType()) &&
+                     validFileSize(10); // 10MB max
+    }
+    
+    // Listing room files - member-only access
+    match /listing-rooms/{roomId}/{userId}/{fileName} {
+      // Members only - validated via Firestore rules
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId) && 
+                     validFileSize(100); // 100MB max for room files
+    }
+    
+    // Deal room files - member-only access
+    match /deal-rooms/{roomId}/{userId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId) && 
+                     validFileSize(100); // 100MB max
+    }
+    
+    // Chat attachments - sender isolation
+    match /chat/{roomId}/{userId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId) && 
+                     validFileSize(50); // 50MB max for chat files
+    }
+    
+    // Chat files - deal room files (alternative path structure)
+    match /chat-files/{roomId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && 
+                     validFileSize(50); // 50MB max for chat files
+    }
+    
+    // Voice notes - chat room voice messages
+    match /voice-notes/{roomId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && 
+                     validFileSize(50); // 50MB max for voice notes
+    }
+    
+    // Chat attachments - images, videos, documents in chat
+    match /chat-attachments/{roomId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && 
+                     validFileSize(50); // 50MB max for chat attachments
+    }
+    
+    // Investment documents - VC and founder only
+    match /investments/{investmentId}/{userId}/{fileName} {
+      allow read: if isAuthenticated() && 
+                    (hasRole('vc') || hasRole('founder'));
+      
+      allow write: if isOwner(userId) && 
+                     hasRole('vc') &&
+                     validDocumentType() &&
+                     validFileSize(50);
+    }
+    
+    // Campaign assets - agency/influencer isolation
+    match /campaigns/{campaignId}/{userId}/{fileName} {
+      allow read: if isAuthenticated() && 
+                    (hasRole('agency') || hasRole('influencer') || hasRole('founder'));
+      
+      allow write: if isOwner(userId) && 
+                     (hasRole('agency') || hasRole('influencer')) &&
+                     validFileSize(100);
+    }
+    
+    // Audit documents - immutable, read-only for owners
+    match /audit/{resourceType}/{resourceId}/{userId}/{fileName} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if false; // Audit files are immutable
+    }
+    
+    // Admin-only storage
+    match /admin/{allPaths=**} {
+      allow read, write: if isAdmin();
+    }
+    
+    // Temporary uploads - user isolation with expiry
+    match /temp/{userId}/{fileName} {
+      allow read, write: if isOwner(userId) && 
+                           validFileSize(100);
+      // Note: Implement Cloud Function to clean up temp files after 24h
+    }
+    
+    // Public assets - read-only
+    match /public/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // Block all other access by default
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

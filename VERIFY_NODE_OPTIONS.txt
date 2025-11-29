@@ -1,0 +1,74 @@
+# ============================================
+# VERIFY NODE_OPTIONS IS APPLIED - Run on VPS
+# ============================================
+# Wrapper script is working (script path shows start-server.sh)
+# Now verify NODE_OPTIONS is actually set
+
+# ============================================
+# CHECK 1: Verify NODE_OPTIONS in Process
+# ============================================
+cd /var/www/cryptorafts
+
+# Get process ID
+PID=$(pm2 pid cryptorafts)
+echo "Process ID: $PID"
+
+# Check process environment
+echo "Checking process environment for NODE_OPTIONS..."
+cat /proc/$PID/environ | tr '\0' '\n' | grep NODE_OPTIONS
+
+# Check all environment variables
+echo "All environment variables:"
+cat /proc/$PID/environ | tr '\0' '\n' | grep -i node
+
+# ============================================
+# CHECK 2: Check Process Arguments
+# ============================================
+echo "Process details:"
+ps aux | grep $PID | grep -v grep
+
+# ============================================
+# CHECK 3: Check Node.js Heap Size
+# ============================================
+# This will show if NODE_OPTIONS is working
+echo "Checking if we can access heap statistics..."
+echo "Note: If NODE_OPTIONS is working, heap size should be ~2048MB"
+
+# ============================================
+# CHECK 4: Check PM2 Environment
+# ============================================
+pm2 env 0 | grep NODE_OPTIONS
+
+# ============================================
+# CHECK 5: Monitor Memory Usage
+# ============================================
+pm2 monit
+
+# ============================================
+# IF NODE_OPTIONS IS NOT FOUND
+# ============================================
+# The wrapper script might not be exporting correctly
+# Let's check the wrapper script:
+
+cat start-server.sh
+
+# If it doesn't show NODE_OPTIONS, fix it:
+cat > start-server.sh << 'EOF'
+#!/bin/bash
+export NODE_OPTIONS='--max-old-space-size=2048'
+cd /var/www/cryptorafts
+exec env NODE_OPTIONS='--max-old-space-size=2048' node server.js
+EOF
+
+chmod +x start-server.sh
+pm2 restart cryptorafts
+
+# ============================================
+# ALTERNATIVE: Direct Check
+# ============================================
+# Test if NODE_OPTIONS works by running Node directly:
+cd /var/www/cryptorafts
+NODE_OPTIONS='--max-old-space-size=2048' node -e "console.log('Heap Limit:', require('v8').getHeapStatistics().heap_size_limit / 1024 / 1024, 'MB')"
+
+# This should show ~2048 MB if it works
+

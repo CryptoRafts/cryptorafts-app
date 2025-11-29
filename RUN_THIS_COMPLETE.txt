@@ -1,0 +1,87 @@
+cd /var/www/cryptorafts && chown -R root:root /var/www/cryptorafts && chmod 755 /var/www/cryptorafts && find /var/www/cryptorafts -type d -exec chmod 755 {} \; && find /var/www/cryptorafts -type f -exec chmod 644 {} \; && echo "✅ Ownership fixed" && ls -la | head -20 && echo "" && if [ ! -f "package.json" ]; then echo "⚠️  Creating package.json..."; cat > package.json << 'PKGEOF'
+{
+  "name": "cryptorafts",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3001 --webpack",
+    "build": "next build --webpack",
+    "start": "next start"
+  },
+  "dependencies": {
+    "next": "^16.0.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}
+PKGEOF
+echo "✅ package.json created"; else echo "✅ package.json exists"; fi && if [ ! -f "src/app/page.tsx" ]; then echo "⚠️  Creating src/app/page.tsx..."; mkdir -p src/app && cat > src/app/page.tsx << 'PAGEEOF'
+export default function Home() {
+  return (
+    <div>
+      <h1>Cryptorafts</h1>
+      <p>Application is deploying...</p>
+    </div>
+  );
+}
+PAGEEOF
+echo "✅ src/app/page.tsx created"; else echo "✅ src/app/page.tsx exists"; fi && if [ ! -f "next.config.js" ]; then echo "⚠️  Creating next.config.js..."; cat > next.config.js << 'CONFIGEOF'
+/** @type {import('next').NextConfig} */
+const nextConfig = { reactStrictMode: true };
+module.exports = nextConfig;
+CONFIGEOF
+echo "✅ next.config.js created"; else echo "✅ next.config.js exists"; fi && echo "" && echo "✅ All files verified!" && ls -la package.json src/app/page.tsx next.config.js && echo "" && export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && nvm use 20 && NODE_PATH=$(which node) && echo "✅ Node.js: $NODE_PATH ($(node --version))" && pm2 stop all && pm2 delete all && rm -rf node_modules package-lock.json .next out && echo "📦 Installing dependencies (5-10 minutes)..." && npm install --legacy-peer-deps && echo "✅ Dependencies installed!" && NODE_ENV=production npm run build && echo "✅ Build completed!" && cat > server.js << 'EOFSERVER'
+const { createServer } = require('http');
+const { parse } = require('url');
+const next = require('next');
+const dev = process.env.NODE_ENV !== 'production';
+const hostname = process.env.HOSTNAME || 'localhost';
+const port = parseInt(process.env.PORT || '3000', 10);
+const app = next({ dev, hostname, port });
+const handle = app.getRequestHandler();
+app.prepare().then(() => {
+  createServer(async (req, res) => {
+    try {
+      const parsedUrl = parse(req.url, true);
+      await handle(req, res, parsedUrl);
+    } catch (err) {
+      console.error('Error occurred handling', req.url, err);
+      res.statusCode = 500;
+      res.end('internal server error');
+    }
+  })
+    .once('error', (err) => {
+      console.error(err);
+      process.exit(1);
+    })
+    .listen(port, () => {
+      console.log(`> Ready on http://${hostname}:${port}`);
+    });
+});
+EOFSERVER
+NODE_PATH=$(which node) && cat > ecosystem.config.js << EOF
+module.exports = {
+  apps: [
+    {
+      name: 'cryptorafts',
+      script: './server.js',
+      instances: 1,
+      exec_mode: 'fork',
+      interpreter: '${NODE_PATH}',
+      env: { NODE_ENV: 'production', PORT: 3000 },
+      error_file: './logs/pm2-error.log',
+      out_file: './logs/pm2-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '1G',
+      min_uptime: '10s',
+      max_restarts: 10,
+      restart_delay: 4000,
+    },
+  ],
+};
+EOF
+mkdir -p logs && pm2 start ecosystem.config.js && pm2 save && pm2 status && sleep 15 && pm2 logs cryptorafts --lines 30 --nostream && echo "" && echo "✅ DEPLOYMENT COMPLETE! Visit: https://www.cryptorafts.com"
+

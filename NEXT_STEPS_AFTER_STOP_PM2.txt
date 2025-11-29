@@ -1,0 +1,126 @@
+✅ PM2 STOPPED - NOW UPGRADE TO NODE.JS 20
+==========================================
+
+Great! PM2 process is stopped. Now follow these steps:
+
+
+STEP 1: Load NVM and upgrade to Node.js 20
+------------------------------------------
+export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+nvm install 20
+nvm use 20
+nvm alias default 20
+
+
+STEP 2: Verify Node.js version
+-------------------------------
+node --version
+
+Should show: v20.x.x (NOT v18.x.x)
+
+
+STEP 3: Navigate to app directory
+----------------------------------
+cd ~/cryptorafts
+
+
+STEP 4: Clean and rebuild with Node.js 20
+------------------------------------------
+rm -rf .next out node_modules/.cache
+npm install --legacy-peer-deps
+NODE_ENV=production npm run build
+
+Wait 5-10 minutes for build to complete!
+
+
+STEP 5: Create/Update server.js
+--------------------------------
+cat > server.js << 'EOF'
+const { createServer } = require('http');
+const { parse } = require('url');
+const next = require('next');
+const dev = process.env.NODE_ENV !== 'production';
+const hostname = process.env.HOSTNAME || 'localhost';
+const port = parseInt(process.env.PORT || '3000', 10);
+const app = next({ dev, hostname, port });
+const handle = app.getRequestHandler();
+app.prepare().then(() => {
+  createServer(async (req, res) => {
+    try {
+      const parsedUrl = parse(req.url, true);
+      await handle(req, res, parsedUrl);
+    } catch (err) {
+      console.error('Error occurred handling', req.url, err);
+      res.statusCode = 500;
+      res.end('internal server error');
+    }
+  })
+    .once('error', (err) => {
+      console.error(err);
+      process.exit(1);
+    })
+    .listen(port, () => {
+      console.log(`> Ready on http://${hostname}:${port}`);
+    });
+});
+EOF
+
+
+STEP 6: Update PM2 config to use Node.js 20
+--------------------------------------------
+export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && nvm use 20
+NODE_PATH=$(which node)
+echo "Node.js path: $NODE_PATH"
+
+cat > ecosystem.config.js << EOF
+module.exports = {
+  apps: [
+    {
+      name: 'cryptorafts',
+      script: './server.js',
+      instances: 1,
+      exec_mode: 'fork',
+      interpreter: '$NODE_PATH',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3000,
+      },
+      error_file: './logs/pm2-error.log',
+      out_file: './logs/pm2-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '1G',
+      min_uptime: '10s',
+      max_restarts: 10,
+      restart_delay: 4000,
+    },
+  ],
+};
+EOF
+
+
+STEP 7: Start PM2 with Node.js 20
+----------------------------------
+mkdir -p logs
+export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && nvm use 20
+pm2 start ecosystem.config.js
+pm2 save
+
+
+STEP 8: Check status
+--------------------
+pm2 status
+pm2 logs cryptorafts --lines 30
+
+
+STEP 9: Verify app is responding
+----------------------------------
+curl http://localhost:3000
+
+Should show HTML response (not 404 or error)
+
+
+THEN VISIT: https://www.cryptorafts.com
+

@@ -1,0 +1,129 @@
+═══════════════════════════════════════════════════════
+🚨 CRITICAL: YOU MUST UPLOAD FILES FIRST!
+═══════════════════════════════════════════════════════
+
+❌ ERROR: "package.json: No such file or directory"
+❌ ERROR: "Cannot find module 'next'"
+
+✅ SOLUTION: Upload files via Hostinger File Manager FIRST!
+
+═══════════════════════════════════════════════════════
+⚠️  STOP RUNNING DEPLOYMENT COMMANDS!
+═══════════════════════════════════════════════════════
+
+Files are NOT in /var/www/cryptorafts!
+You MUST upload files FIRST before deployment will work!
+NO deployment command will work until files are uploaded!
+
+═══════════════════════════════════════════════════════
+📋 SIMPLE 3-STEP PROCESS
+═══════════════════════════════════════════════════════
+
+STEP 1: Open Hostinger File Manager
+────────────────────────────────────
+→ Go to: https://hpanel.hostinger.com/
+→ Click "File Manager"
+→ Type in PATH BAR: /var/www/cryptorafts
+→ Press Enter
+
+
+STEP 2: Upload Files from Your Computer
+────────────────────────────────────────
+From: C:\Users\dell\cryptorafts-starter
+
+Upload to /var/www/cryptorafts:
+1. src/ folder (drag and drop entire folder)
+2. package.json (drag and drop file)
+3. next.config.js (drag and drop file)
+4. tsconfig.json (drag and drop file)
+5. public/ folder (if exists)
+
+⚠️  Wait for ALL uploads to complete!
+
+
+STEP 3: Verify Files Uploaded
+──────────────────────────────
+In Hostinger File Manager, check you see:
+✅ package.json
+✅ src/ folder
+✅ next.config.js
+✅ tsconfig.json
+
+Then in SSH, run:
+cd /var/www/cryptorafts
+ls -la package.json
+
+You MUST see the file! If not, upload again!
+
+═══════════════════════════════════════════════════════
+📋 AFTER FILES UPLOADED, RUN THIS IN SSH
+═══════════════════════════════════════════════════════
+
+cd /var/www/cryptorafts && ls -la package.json && ls -la src/app/page.tsx && export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && nvm use 20 && NODE_PATH=$(which node) && pm2 stop all && pm2 delete all && rm -rf node_modules package-lock.json && npm install --legacy-peer-deps && rm -rf .next out && NODE_ENV=production npm run build && cat > server.js << 'EOFSERVER'
+const { createServer } = require('http');
+const { parse } = require('url');
+const next = require('next');
+const dev = process.env.NODE_ENV !== 'production';
+const hostname = process.env.HOSTNAME || 'localhost';
+const port = parseInt(process.env.PORT || '3000', 10);
+const app = next({ dev, hostname, port });
+const handle = app.getRequestHandler();
+app.prepare().then(() => {
+  createServer(async (req, res) => {
+    try {
+      const parsedUrl = parse(req.url, true);
+      await handle(req, res, parsedUrl);
+    } catch (err) {
+      console.error('Error occurred handling', req.url, err);
+      res.statusCode = 500;
+      res.end('internal server error');
+    }
+  })
+    .once('error', (err) => {
+      console.error(err);
+      process.exit(1);
+    })
+    .listen(port, () => {
+      console.log(`> Ready on http://${hostname}:${port}`);
+    });
+});
+EOFSERVER
+NODE_PATH=$(which node) && cat > ecosystem.config.js << EOF
+module.exports = {
+  apps: [
+    {
+      name: 'cryptorafts',
+      script: './server.js',
+      instances: 1,
+      exec_mode: 'fork',
+      interpreter: '$NODE_PATH',
+      env: { NODE_ENV: 'production', PORT: 3000 },
+      error_file: './logs/pm2-error.log',
+      out_file: './logs/pm2-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '1G',
+      min_uptime: '10s',
+      max_restarts: 10,
+      restart_delay: 4000,
+    },
+  ],
+};
+EOF
+mkdir -p logs && pm2 start ecosystem.config.js && pm2 save && pm2 status && sleep 15 && pm2 logs cryptorafts --lines 30 --nostream && echo "" && echo "✅ DEPLOYMENT COMPLETE! Visit: https://www.cryptorafts.com"
+
+═══════════════════════════════════════════════════════
+⚠️  IMPORTANT REMINDERS
+═══════════════════════════════════════════════════════
+
+1. Files are NOT uploaded - you MUST upload them first!
+2. The tar.gz is corrupted - delete it!
+3. You MUST upload files DIRECTLY via Hostinger File Manager
+4. Upload files from C:\Users\dell\cryptorafts-starter
+5. VERIFY files are uploaded before running deployment!
+6. DO NOT run deployment until files are uploaded!
+
+═══════════════════════════════════════════════════════
+

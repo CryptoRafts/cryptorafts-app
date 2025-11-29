@@ -1,0 +1,156 @@
+✅ COMPLETE DEPLOYMENT - STEP BY STEP
+======================================
+
+Follow these steps in your terminal (where you are: /var/www/cryptorafts)
+
+
+STEP 1: Check archive and extract properly
+------------------------------------------
+cd /var/www
+tar -tzf cryptorafts.tar.gz | head -20
+
+# Extract to temp location first
+mkdir -p /tmp/extract_temp
+tar -xzf cryptorafts.tar.gz -C /tmp/extract_temp
+ls -la /tmp/extract_temp
+
+
+STEP 2: Find where package.json is
+----------------------------------
+find /tmp/extract_temp -name "package.json" -type f
+
+
+STEP 3: Copy files to /var/www/cryptorafts
+------------------------------------------
+# Option A: If files are in subdirectory
+cp -r /tmp/extract_temp/cryptorafts/* /var/www/cryptorafts/ 2>/dev/null || cp -r /tmp/extract_temp/* /var/www/cryptorafts/
+
+# Option B: Extract directly
+cd /var/www
+tar -xzf cryptorafts.tar.gz
+# If subdirectory created, move files:
+if [ -d "cryptorafts/cryptorafts" ]; then
+    mv cryptorafts/cryptorafts/* cryptorafts/
+    rmdir cryptorafts/cryptorafts 2>/dev/null
+fi
+
+
+STEP 4: Verify files exist
+---------------------------
+cd /var/www/cryptorafts
+ls -la package.json
+ls -la src/app/page.tsx
+ls -la next.config.js
+
+If files don't exist, check what's there:
+ls -la
+
+
+STEP 5: Load Node.js 20 and rebuild
+-----------------------------------
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+nvm use 20
+node --version
+
+# Clean and rebuild
+rm -rf .next out node_modules/.cache
+npm install --legacy-peer-deps
+NODE_ENV=production npm run build
+
+Wait 5-10 minutes!
+
+
+STEP 6: Create server.js
+-----------------------
+cat > server.js << 'EOF'
+const { createServer } = require('http');
+const { parse } = require('url');
+const next = require('next');
+const dev = process.env.NODE_ENV !== 'production';
+const hostname = process.env.HOSTNAME || 'localhost';
+const port = parseInt(process.env.PORT || '3000', 10);
+const app = next({ dev, hostname, port });
+const handle = app.getRequestHandler();
+app.prepare().then(() => {
+  createServer(async (req, res) => {
+    try {
+      const parsedUrl = parse(req.url, true);
+      await handle(req, res, parsedUrl);
+    } catch (err) {
+      console.error('Error occurred handling', req.url, err);
+      res.statusCode = 500;
+      res.end('internal server error');
+    }
+  })
+    .once('error', (err) => {
+      console.error(err);
+      process.exit(1);
+    })
+    .listen(port, () => {
+      console.log(`> Ready on http://${hostname}:${port}`);
+    });
+});
+EOF
+
+
+STEP 7: Update PM2 config with Node.js 20
+------------------------------------------
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+nvm use 20
+NODE_PATH=$(which node)
+echo "Node.js path: $NODE_PATH"
+
+cat > ecosystem.config.js << EOF
+module.exports = {
+  apps: [
+    {
+      name: 'cryptorafts',
+      script: './server.js',
+      instances: 1,
+      exec_mode: 'fork',
+      interpreter: '$NODE_PATH',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3000,
+      },
+      error_file: './logs/pm2-error.log',
+      out_file: './logs/pm2-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '1G',
+      min_uptime: '10s',
+      max_restarts: 10,
+      restart_delay: 4000,
+    },
+  ],
+};
+EOF
+
+
+STEP 8: Start PM2 with Node.js 20
+----------------------------------
+mkdir -p logs
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+nvm use 20
+pm2 start ecosystem.config.js
+pm2 save
+
+
+STEP 9: Check status
+--------------------
+pm2 status
+pm2 logs cryptorafts --lines 30
+
+
+STEP 10: Verify app
+--------------------
+curl http://localhost:3000
+
+
+THEN VISIT: https://www.cryptorafts.com
+

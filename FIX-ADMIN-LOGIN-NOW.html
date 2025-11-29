@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚨 FIX ADMIN LOGIN NOW!</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 800px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: slideUp 0.5s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            color: #667eea;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .error {
+            background: #fee;
+            border: 2px solid #f00;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            color: #c00;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .steps {
+            margin: 30px 0;
+        }
+        
+        .step {
+            background: #f5f5f5;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            transition: transform 0.2s;
+        }
+        
+        .step:hover {
+            transform: translateX(5px);
+            background: #ebebeb;
+        }
+        
+        .step-number {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 40px;
+            font-weight: bold;
+            margin-right: 15px;
+            font-size: 1.2rem;
+        }
+        
+        .step-content {
+            display: inline-block;
+            vertical-align: top;
+            width: calc(100% - 60px);
+        }
+        
+        .copy-box {
+            background: #2d3748;
+            color: #48bb78;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+            position: relative;
+            cursor: pointer;
+            border: 2px solid #48bb78;
+        }
+        
+        .copy-box:hover {
+            background: #1a202c;
+        }
+        
+        .copy-box::after {
+            content: '📋 Click to Copy';
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+        
+        .big-button {
+            display: block;
+            width: 100%;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 12px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin: 20px 0;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .big-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        
+        .success {
+            background: #d4edda;
+            border: 2px solid #28a745;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            color: #155724;
+            text-align: center;
+        }
+        
+        .visual-guide {
+            background: #f8f9fa;
+            border: 2px dashed #667eea;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        
+        .tooltip {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #48bb78;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            font-weight: bold;
+            display: none;
+            animation: fadeIn 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .emoji {
+            font-size: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚨 FIX ADMIN LOGIN NOW! 🚨</h1>
+        
+        <div class="error">
+            <strong>Current Error:</strong><br>
+            Firebase: Error (auth/unauthorized-domain)<br>
+            Domain: cryptorafts-starter-qt3jlerzh-anas-s-projects-8d19f880.vercel.app
+        </div>
+        
+        <p style="text-align: center; font-size: 1.2rem; margin: 20px 0; color: #555;">
+            <strong>Follow these 5 simple steps to fix your admin login:</strong>
+        </p>
+        
+        <div class="steps">
+            <div class="step">
+                <span class="step-number">1</span>
+                <div class="step-content">
+                    <strong>Click the button below to open Firebase Console</strong>
+                    <a href="https://console.firebase.google.com/project/cryptorafts-b9067/authentication/settings" target="_blank" class="big-button">
+                        🔥 Open Firebase Console →
+                    </a>
+                </div>
+            </div>
+            
+            <div class="step">
+                <span class="step-number">2</span>
+                <div class="step-content">
+                    <strong>Scroll down to "Authorized domains" section</strong>
+                    <p style="margin-top: 10px; color: #666;">
+                        You'll see a list with localhost and firebaseapp.com domains.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="step">
+                <span class="step-number">3</span>
+                <div class="step-content">
+                    <strong>Click the "Add domain" button</strong>
+                    <p style="margin-top: 10px; color: #666;">
+                        It's a blue button near the domain list.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="step">
+                <span class="step-number">4</span>
+                <div class="step-content">
+                    <strong>Copy and paste this domain (click the box below):</strong>
+                    <div class="copy-box" onclick="copyToClipboard('*.vercel.app')" id="domain1">
+                        *.vercel.app
+                    </div>
+                    <p style="margin-top: 10px; color: #666; font-size: 0.9rem;">
+                        ✨ This wildcard covers ALL your Vercel deployments!
+                    </p>
+                    
+                    <p style="margin-top: 15px;"><strong>OR add this specific domain:</strong></p>
+                    <div class="copy-box" onclick="copyToClipboard('cryptorafts-starter-qt3jlerzh-anas-s-projects-8d19f880.vercel.app')" id="domain2">
+                        cryptorafts-starter-qt3jlerzh-anas-s-projects-8d19f880.vercel.app
+                    </div>
+                </div>
+            </div>
+            
+            <div class="step">
+                <span class="step-number">5</span>
+                <div class="step-content">
+                    <strong>Click "Add" and wait 1-2 minutes</strong>
+                    <p style="margin-top: 10px; color: #666;">
+                        Firebase needs a moment to propagate the changes. Then test your admin login!
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="visual-guide">
+            <strong>📋 Visual Guide:</strong><br><br>
+            Firebase Console<br>
+            └── Authentication (left sidebar)<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;└── Settings (top menu)<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── Scroll to "Authorized domains"<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── Click "Add domain"<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── Paste: *.vercel.app<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── Click "Add"<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── ✅ DONE!
+        </div>
+        
+        <div class="success">
+            <p class="emoji">✅</p>
+            <strong>After fixing, your admin login will work perfectly!</strong><br>
+            Test at: <a href="https://cryptorafts-starter-qt3jlerzh-anas-s-projects-8d19f880.vercel.app/admin/login" target="_blank" style="color: #155724; text-decoration: underline;">
+                Admin Login Page
+            </a>
+        </div>
+        
+        <p style="text-align: center; color: #999; font-size: 0.9rem; margin-top: 30px;">
+            ⏱️ Total time required: <strong>2 minutes</strong><br>
+            🔄 This is a one-time fix!
+        </p>
+    </div>
+    
+    <div class="tooltip" id="tooltip">
+        ✅ Copied to clipboard!
+    </div>
+    
+    <script>
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                const tooltip = document.getElementById('tooltip');
+                tooltip.style.display = 'block';
+                setTimeout(() => {
+                    tooltip.style.display = 'none';
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>
+

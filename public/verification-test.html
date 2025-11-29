@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Verification Test - CryptoRafts</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #0f172a;
+            color: white;
+        }
+        .success { color: #22c55e; }
+        .error { color: #ef4444; }
+        pre {
+            background: #1e293b;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>✅ CryptoRafts - Verification Test</h1>
+    
+    <h2 class="success">✅ This site is working!</h2>
+    
+    <p>If you can see this page, your Vercel deployment is live and accessible.</p>
+    
+    <h3>Your verification file should be at:</h3>
+    <pre id="verificationUrl"></pre>
+    
+    <h3>Your sitemap should be at:</h3>
+    <pre id="sitemapUrl"></pre>
+    
+    <h3>Use this URL in Google Search Console:</h3>
+    <pre id="baseUrl"></pre>
+    
+    <p><strong>Steps:</strong></p>
+    <ol>
+        <li>Copy the URL above</li>
+        <li>Go to Google Search Console</li>
+        <li>Click "Add property"</li>
+        <li>Choose "URL prefix"</li>
+        <li>Paste the URL</li>
+        <li>Choose "HTML file" verification</li>
+        <li>Click "VERIFY"</li>
+        <li>✅ Success!</li>
+    </ol>
+    
+    <script>
+        const baseUrl = window.location.origin;
+        document.getElementById('baseUrl').textContent = baseUrl;
+        document.getElementById('verificationUrl').textContent = baseUrl + '/googleNH-4Ui7N_ldjOKI7wS0N4_s5g2o2770OxE_0im0Xw8o.html';
+        document.getElementById('sitemapUrl').textContent = baseUrl + '/sitemap.xml';
+    </script>
+</body>
+</html>
+

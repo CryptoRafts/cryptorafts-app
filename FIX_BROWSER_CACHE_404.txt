@@ -1,0 +1,138 @@
+# ============================================
+# FIX BROWSER CACHE 404
+# ============================================
+
+# The route works on VPS (HTTP 200) but browser shows 404
+# This is a browser cache issue - the browser cached the old 404
+
+cd /var/www/cryptorafts
+
+# ============================================
+# Step 1: Upload updated files from Windows
+# ============================================
+
+# On Windows PowerShell, run:
+# scp src/app/feed.xml/route.ts root@72.61.98.99:/var/www/cryptorafts/src/app/feed.xml/route.ts
+# scp src/app/api/blog/rss/route.ts root@72.61.98.99:/var/www/cryptorafts/src/app/api/blog/rss/route.ts
+# scp src/middleware.ts root@72.61.98.99:/var/www/cryptorafts/src/middleware.ts
+
+# ============================================
+# Step 2: Rebuild Next.js
+# ============================================
+
+echo "Rebuilding Next.js..."
+npm run build
+
+# Takes 2-3 minutes
+
+# ============================================
+# Step 3: Restart PM2
+# ============================================
+
+echo ""
+echo "Restarting PM2..."
+pm2 restart cryptorafts
+
+sleep 10
+
+# ============================================
+# Step 4: Test locally
+# ============================================
+
+echo ""
+echo "Testing feed..."
+curl -I http://localhost:3000/feed.xml
+
+# Should return: HTTP 200 OK, Content-Type: application/rss+xml
+
+# ============================================
+# Step 5: Clear Nginx cache
+# ============================================
+
+echo ""
+echo "Clearing Nginx cache..."
+sudo rm -rf /var/cache/nginx/*
+sudo systemctl reload nginx
+
+# ============================================
+# BROWSER SIDE FIXES
+# ============================================
+
+# Option 1: Clear browser cache
+# - Chrome/Edge: Ctrl+Shift+Delete
+# - Select "Cached images and files"
+# - Click "Clear data"
+
+# Option 2: Test in incognito/private mode
+# - Chrome/Edge: Ctrl+Shift+N
+# - Firefox: Ctrl+Shift+P
+# - Safari: Cmd+Shift+N
+
+# Option 3: Hard refresh
+# - Chrome/Edge: Ctrl+Shift+R or Ctrl+F5
+# - Firefox: Ctrl+Shift+R or Ctrl+F5
+# - Safari: Cmd+Shift+R
+
+# Option 4: Add cache-busting query parameter
+# https://www.cryptorafts.com/feed.xml?t=1234567890
+# (Replace 1234567890 with current timestamp)
+
+# Option 5: Disable cache in DevTools
+# - Open DevTools (F12)
+# - Go to Network tab
+# - Check "Disable cache"
+# - Refresh page
+
+# ============================================
+# Verify It's Working
+# ============================================
+
+# Test 1: Direct URL test
+curl -I https://www.cryptorafts.com/feed.xml
+
+# Expected: HTTP 200 OK, Content-Type: application/rss+xml
+
+# Test 2: Content test
+curl https://www.cryptorafts.com/feed.xml | head -20
+
+# Should show XML starting with:
+# <?xml version="1.0" encoding="UTF-8"?>
+# <rss version="2.0"...
+
+# Test 3: Browser test (in incognito)
+# Open: https://www.cryptorafts.com/feed.xml
+# Should show XML content (not 404)
+
+# ============================================
+# If Still Getting 404 in Browser
+# ============================================
+
+# Check 1: Verify route works on VPS
+curl -I http://localhost:3000/feed.xml
+
+# Check 2: Verify external works
+curl -I https://www.cryptorafts.com/feed.xml
+
+# Check 3: Check PM2 logs
+pm2 logs cryptorafts --lines 50 | grep -i "feed\|rss\|error"
+
+# Check 4: Try different browser
+# Or use curl from another machine
+
+# Check 5: Check if CDN is caching 404
+# If using Cloudflare or similar, purge cache
+
+# ============================================
+# Success Indicators
+# ============================================
+
+# ✓ VPS test: HTTP 200 OK
+# ✓ External test: HTTP 200 OK
+# ✓ Browser (incognito): Shows XML content
+# ✓ Content-Type: application/rss+xml
+
+# If all these pass, the feed is working!
+# The browser cache just needs to be cleared.
+
+# ============================================
+

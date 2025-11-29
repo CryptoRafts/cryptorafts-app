@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clear Role Data</title>
+    <style>
+        body { 
+            font-family: sans-serif; 
+            margin: 20px; 
+            background-color: #1a1a2e; 
+            color: #e0e0e0; 
+            line-height: 1.6;
+        }
+        h1 { color: #00bcd4; }
+        .status { 
+            padding: 15px; 
+            margin: 10px 0; 
+            border-radius: 5px; 
+            background-color: #2a2a4a;
+        }
+        .success { background-color: #1a4d1a; color: #90ee90; }
+        .error { background-color: #4d1a1a; color: #ffcccb; }
+        .warning { background-color: #4d4d1a; color: #ffffcc; }
+        .info { background-color: #1a3d4d; color: #add8e6; }
+        button {
+            display: inline-block;
+            padding: 15px 25px;
+            margin: 10px;
+            background-color: #00bcd4;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        button:hover { background-color: #0097a7; }
+        .clear { background-color: #e91e63; }
+        .clear:hover { background-color: #c2185b; }
+        .danger { background-color: #d32f2f; }
+        .danger:hover { background-color: #b71c1c; }
+        .success-btn { background-color: #4caf50; }
+        .success-btn:hover { background-color: #388e3c; }
+        pre { 
+            background-color: #1a1a1a; 
+            padding: 10px; 
+            border-radius: 5px; 
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Clear Role Data & Reset Authentication</h1>
+    <p>Use this page to clear stored role data and reset the authentication flow.</p>
+
+    <div class="status info">
+        <h3>Current Stored Data</h3>
+        <div id="current-data">Loading...</div>
+    </div>
+
+    <div class="status warning">
+        <h3>⚠️ Warning</h3>
+        <p>Clearing role data will:</p>
+        <ul>
+            <li>Remove all stored user roles and claims</li>
+            <li>Force you to go through role selection again</li>
+            <li>Clear any stored onboarding progress</li>
+            <li>Reset the authentication flow</li>
+        </ul>
+    </div>
+
+    <h2>Actions</h2>
+    <div>
+        <button onclick="showCurrentData()" class="info">Show Current Data</button>
+        <button onclick="clearRoleData()" class="warning">Clear Role Data Only</button>
+        <button onclick="clearAllAuthData()" class="danger">Clear All Auth Data</button>
+        <button onclick="clearEverything()" class="clear">Clear Everything & Reload</button>
+    </div>
+
+    <h2>After Clearing</h2>
+    <div>
+        <button onclick="goToRoleSelection()" class="success-btn">Go to Role Selection</button>
+        <button onclick="goToHome()" class="success-btn">Go to Home Page</button>
+        <button onclick="goToLogin()" class="success-btn">Go to Login</button>
+    </div>
+
+    <div id="result" class="status" style="display: none;">
+        <h3>Result</h3>
+        <div id="result-content"></div>
+    </div>
+
+    <script>
+        function showCurrentData() {
+            const currentDataDiv = document.getElementById('current-data');
+            
+            try {
+                const storage = {};
+                const session = {};
+                
+                // Get localStorage data
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && (key.includes('role') || key.includes('user') || key.includes('auth') || key.includes('claim'))) {
+                        storage[key] = localStorage.getItem(key);
+                    }
+                }
+                
+                // Get sessionStorage data
+                for (let i = 0; i < sessionStorage.length; i++) {
+                    const key = sessionStorage.key(i);
+                    if (key && (key.includes('role') || key.includes('user') || key.includes('auth') || key.includes('claim'))) {
+                        session[key] = sessionStorage.getItem(key);
+                    }
+                }
+                
+                let html = '<h4>LocalStorage (Role/Auth Related):</h4>';
+                if (Object.keys(storage).length > 0) {
+                    html += '<pre>' + JSON.stringify(storage, null, 2) + '</pre>';
+                } else {
+                    html += '<p>No role/auth data in localStorage</p>';
+                }
+                
+                html += '<h4>SessionStorage (Role/Auth Related):</h4>';
+                if (Object.keys(session).length > 0) {
+                    html += '<pre>' + JSON.stringify(session, null, 2) + '</pre>';
+                } else {
+                    html += '<p>No role/auth data in sessionStorage</p>';
+                }
+                
+                currentDataDiv.innerHTML = html;
+            } catch (error) {
+                currentDataDiv.innerHTML = '<p style="color: #ffcccb;">Error reading data: ' + error.message + '</p>';
+            }
+        }
+
+        function clearRoleData() {
+            try {
+                const keysToRemove = [];
+                
+                // Find all role-related keys
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && (key.includes('role') || key.includes('userRole') || key.includes('userClaims') || key.includes('globalRules'))) {
+                        keysToRemove.push(key);
+                    }
+                }
+                
+                // Remove role-related keys
+                keysToRemove.forEach(key => {
+                    localStorage.removeItem(key);
+                });
+                
+                showResult('success', `Cleared ${keysToRemove.length} role-related items from localStorage:\n${keysToRemove.join('\n')}`);
+                showCurrentData();
+            } catch (error) {
+                showResult('error', 'Error clearing role data: ' + error.message);
+            }
+        }
+
+        function clearAllAuthData() {
+            try {
+                const keysToRemove = [];
+                
+                // Find all auth-related keys
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && (key.includes('user') || key.includes('auth') || key.includes('claim') || key.includes('role') || key.includes('token'))) {
+                        keysToRemove.push(key);
+                    }
+                }
+                
+                // Remove auth-related keys
+                keysToRemove.forEach(key => {
+                    localStorage.removeItem(key);
+                });
+                
+                // Clear sessionStorage
+                sessionStorage.clear();
+                
+                showResult('success', `Cleared all authentication data:\nLocalStorage: ${keysToRemove.length} items\nSessionStorage: cleared`);
+                showCurrentData();
+            } catch (error) {
+                showResult('error', 'Error clearing auth data: ' + error.message);
+            }
+        }
+
+        function clearEverything() {
+            if (confirm('Are you sure you want to clear ALL data? This will remove everything from localStorage and sessionStorage.')) {
+                try {
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    showResult('success', 'All data cleared successfully! Reloading page...');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                } catch (error) {
+                    showResult('error', 'Error clearing data: ' + error.message);
+                }
+            }
+        }
+
+        function showResult(type, message) {
+            const resultDiv = document.getElementById('result');
+            const resultContent = document.getElementById('result-content');
+            
+            resultDiv.className = 'status ' + type;
+            resultContent.innerHTML = '<pre>' + message + '</pre>';
+            resultDiv.style.display = 'block';
+        }
+
+        function goToRoleSelection() {
+            window.open('http://localhost:3000/role', '_blank');
+        }
+
+        function goToHome() {
+            window.open('http://localhost:3000/', '_blank');
+        }
+
+        function goToLogin() {
+            window.open('http://localhost:3000/login', '_blank');
+        }
+
+        // Show current data on page load
+        showCurrentData();
+    </script>
+</body>
+</html>

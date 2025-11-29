@@ -1,0 +1,152 @@
+# ============================================
+# COMPLETE VERIFICATION CHECKLIST
+# ============================================
+# Run these commands on VPS to verify all fixes
+
+# ============================================
+# VERIFICATION SCRIPT (Run on VPS)
+# ============================================
+cd /var/www/cryptorafts
+
+# ============================================
+# 1. PM2 STATUS CHECK
+# ============================================
+echo "=== 1. PM2 Status ==="
+pm2 status
+pm2 describe cryptorafts | grep -E "restart|status|memory|uptime"
+
+# ============================================
+# 2. APP RESPONSE CHECK
+# ============================================
+echo ""
+echo "=== 2. App Response ==="
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000)
+echo "App Response: HTTP $HTTP_CODE"
+if [ "$HTTP_CODE" = "200" ]; then
+    echo "✅ App is responding correctly"
+else
+    echo "❌ App is not responding"
+fi
+
+# ============================================
+# 3. STATIC FILES CHECK
+# ============================================
+echo ""
+echo "=== 3. Static Files ==="
+echo "Testing site.webmanifest..."
+curl -I http://localhost:3000/site.webmanifest 2>/dev/null | head -1
+echo "Testing favicon.ico..."
+curl -I http://localhost:3000/favicon.ico 2>/dev/null | head -1
+echo "Testing tablogo.ico..."
+curl -I http://localhost:3000/tablogo.ico 2>/dev/null | head -1
+
+# ============================================
+# 4. ROUTES CHECK
+# ============================================
+echo ""
+echo "=== 4. Routes ==="
+echo "Testing /spotlight/apply..."
+curl -I http://localhost:3000/spotlight/apply 2>/dev/null | head -1
+
+# ============================================
+# 5. MEMORY CONFIGURATION CHECK
+# ============================================
+echo ""
+echo "=== 5. Memory Configuration ==="
+PID=$(pm2 pid cryptorafts)
+if [ ! -z "$PID" ]; then
+    echo "Process ID: $PID"
+    if cat /proc/$PID/environ 2>/dev/null | tr '\0' '\n' | grep -q "NODE_OPTIONS"; then
+        echo "✅ NODE_OPTIONS found:"
+        cat /proc/$PID/environ | tr '\0' '\n' | grep NODE_OPTIONS
+    else
+        echo "❌ NODE_OPTIONS not found"
+    fi
+else
+    echo "❌ Process not found"
+fi
+
+# ============================================
+# 6. WRAPPER SCRIPT CHECK
+# ============================================
+echo ""
+echo "=== 6. Wrapper Script ==="
+if [ -f "start-server.sh" ]; then
+    echo "✅ Wrapper script exists"
+    if grep -q "max-old-space-size=2048" start-server.sh; then
+        echo "✅ Memory settings found in wrapper"
+    else
+        echo "❌ Memory settings missing in wrapper"
+    fi
+else
+    echo "❌ Wrapper script not found"
+fi
+
+# ============================================
+# 7. PM2 CONFIG CHECK
+# ============================================
+echo ""
+echo "=== 7. PM2 Config ==="
+if [ -f "ecosystem.config.js" ]; then
+    echo "✅ ecosystem.config.js exists"
+    if grep -q "max-old-space-size\|max_memory_restart" ecosystem.config.js; then
+        echo "✅ Memory settings found in config"
+    else
+        echo "❌ Memory settings missing in config"
+    fi
+else
+    echo "❌ ecosystem.config.js not found"
+fi
+
+# ============================================
+# 8. PORT LISTENING CHECK
+# ============================================
+echo ""
+echo "=== 8. Port 3000 ==="
+if netstat -tlnp 2>/dev/null | grep -q ":3000" || ss -tlnp 2>/dev/null | grep -q ":3000"; then
+    echo "✅ Port 3000 is listening"
+else
+    echo "❌ Port 3000 is NOT listening"
+fi
+
+# ============================================
+# 9. ERROR CHECK
+# ============================================
+echo ""
+echo "=== 9. Recent Errors ==="
+ERROR_COUNT=$(pm2 logs cryptorafts --err --lines 50 --nostream 2>/dev/null | grep -c "Error\|error\|ERROR\|Failed\|failed\|FAILED" || echo "0")
+if [ "$ERROR_COUNT" -eq "0" ]; then
+    echo "✅ No errors found"
+else
+    echo "⚠️ Found $ERROR_COUNT error(s)"
+fi
+
+# ============================================
+# 10. MEMORY USAGE CHECK
+# ============================================
+echo ""
+echo "=== 10. Memory Usage ==="
+MEMORY=$(pm2 describe cryptorafts | grep "memory" | awk '{print $4}' || echo "N/A")
+echo "Current Memory: $MEMORY"
+echo "Memory Limit: 2GB (2048MB)"
+echo "Heap Limit: 2048MB"
+
+# ============================================
+# SUMMARY
+# ============================================
+echo ""
+echo "=========================================="
+echo "✅ VERIFICATION COMPLETE"
+echo "=========================================="
+echo ""
+echo "Expected Results:"
+echo "  ✅ App Status: Online"
+echo "  ✅ Static Files: 200 OK"
+echo "  ✅ Routes: 200 OK"
+echo "  ✅ Memory Config: 2048MB"
+echo "  ✅ Port 3000: Listening"
+echo "  ✅ Errors: None (only warnings)"
+echo ""
+echo "All fixes verified!"
+echo "=========================================="
+

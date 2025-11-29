@@ -1,0 +1,23 @@
+HTTP/1.1 200 OK
+Server: nginx/1.24.0 (Ubuntu)
+Date: Sat, 08 Nov 2025 18:10:28 GMT
+Content-Type: text/html; charset=utf-8
+Content-Length: 256336
+Connection: keep-alive
+cache-control: no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0
+expires: 0
+pragma: no-cache
+x-content-type-options: nosniff
+Vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding
+x-nextjs-cache: HIT
+x-nextjs-prerender: 1
+x-nextjs-prerender: 1
+x-nextjs-stale-time: 300
+X-Powered-By: Next.js
+ETag: "7sjshbtaum5hs7"
+X-Frame-Options: SAMEORIGIN
+X-Content-Type-Options: nosniff
+X-XSS-Protection: 1; mode=block
+Referrer-Policy: strict-origin-when-cross-origin
+Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+

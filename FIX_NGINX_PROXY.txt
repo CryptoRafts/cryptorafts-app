@@ -1,0 +1,83 @@
+# ============================================
+# FIX NGINX REVERSE PROXY - If Needed
+# ============================================
+# App is working on localhost:3000
+# If not accessible via https://www.cryptorafts.com
+# Configure Nginx reverse proxy
+
+# ============================================
+# CREATE NGINX CONFIG
+# ============================================
+# Create config file:
+sudo nano /etc/nginx/sites-available/cryptorafts
+
+# Add this content:
+cat > /etc/nginx/sites-available/cryptorafts << 'EOF'
+server {
+    listen 80;
+    server_name www.cryptorafts.com cryptorafts.com;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+
+# If using HTTPS/SSL:
+server {
+    listen 443 ssl http2;
+    server_name www.cryptorafts.com cryptorafts.com;
+
+    ssl_certificate /etc/letsencrypt/live/www.cryptorafts.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/www.cryptorafts.com/privkey.pem;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+EOF
+
+# ============================================
+# ENABLE CONFIG
+# ============================================
+# Create symlink:
+sudo ln -s /etc/nginx/sites-available/cryptorafts /etc/nginx/sites-enabled/
+
+# Test config:
+sudo nginx -t
+
+# Reload Nginx:
+sudo systemctl reload nginx
+
+# ============================================
+# VERIFY
+# ============================================
+# Test:
+curl http://localhost
+curl http://www.cryptorafts.com
+curl https://www.cryptorafts.com
+
+# ============================================
+# NOTES
+# ============================================
+# - App is working on localhost:3000 ✅
+# - Nginx is running ✅
+# - Firewall allows port 3000 ✅
+# - If not accessible externally, configure Nginx proxy
+# ============================================
+

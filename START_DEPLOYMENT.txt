@@ -1,0 +1,49 @@
+============================================
+🚀 QUICK START - DEPLOY TO VPS
+============================================
+
+STEP 1: Navigate to project directory
+--------------------------------------
+cd C:\Users\dell\cryptorafts-starter
+
+
+STEP 2: Run deployment script
+--------------------------------------
+.\DEPLOY_NOW.ps1
+
+
+OR with credentials:
+--------------------------------------
+.\DEPLOY_NOW.ps1 -VpsHost "your-vps-ip" -VpsUser "root" -VpsPath "/var/www/cryptorafts"
+
+
+============================================
+✅ WHAT THE SCRIPT DOES:
+============================================
+
+1. ✅ Navigates to project directory automatically
+2. ✅ Cleans previous builds
+3. ✅ Installs dependencies
+4. ✅ Builds production application
+5. ✅ Creates deployment package
+6. ✅ Creates tarball archive
+7. ✅ Provides upload instructions
+
+
+============================================
+📋 AFTER RUNNING THE SCRIPT:
+============================================
+
+You'll get:
+- 📦 Deployment archive (tar.gz file)
+- 📁 Deployment package folder
+- 📋 Upload instructions
+- 🚀 Optional auto-deployment
+
+
+============================================
+✨ READY TO DEPLOY!
+============================================
+
+Just run: .\DEPLOY_NOW.ps1
+

@@ -1,0 +1,76 @@
+================================================================================
+FILES TO UPLOAD TO VPS
+================================================================================
+
+Upload these files to /var/www/cryptorafts/ on your Hostinger VPS:
+
+1. FIXED SOURCE FILES:
+   --------------------
+   src/app/page.tsx
+   → Upload to: /var/www/cryptorafts/src/app/page.tsx
+   → This file contains the forced client-side rendering fix
+
+   src/app/HomePageClient.tsx
+   → Upload to: /var/www/cryptorafts/src/app/HomePageClient.tsx
+   → This file contains video hydration fixes + z-index fixes
+
+
+2. DEPLOYMENT SCRIPTS:
+   -------------------
+   FINAL_DEPLOYMENT_COMPLETE.sh
+   → Upload to: /var/www/cryptorafts/FINAL_DEPLOYMENT_COMPLETE.sh
+   → Main deployment script - run this after uploading files
+
+   NGINX_CONFIG_CHECK.sh
+   → Upload to: /var/www/cryptorafts/NGINX_CONFIG_CHECK.sh
+   → Nginx configuration checker - run before deployment
+
+   COMPREHENSIVE_VPS_DIAGNOSTIC.sh
+   → Upload to: /var/www/cryptorafts/COMPREHENSIVE_VPS_DIAGNOSTIC.sh
+   → Diagnostic script - run if issues persist
+
+
+3. DOCUMENTATION (Optional):
+   -------------------------
+   DEPLOYMENT_PACKAGE_README.md
+   COMPLETE_FIX_DOCUMENTATION.md
+   QUICK_DEPLOYMENT_GUIDE.txt
+   FILES_TO_UPLOAD.txt (this file)
+
+
+UPLOAD METHODS:
+---------------
+Method 1: Hostinger hPanel File Manager
+- Login: https://hpanel.hostinger.com/
+- Go to: File Manager
+- Navigate to: /var/www/cryptorafts/
+- Upload files
+
+Method 2: SFTP/SCP
+- Use FileZilla, WinSCP, or command line SCP
+- Connect to your VPS
+- Upload files to /var/www/cryptorafts/
+
+Method 3: SSH + Git (if using Git)
+- SSH into VPS
+- Pull latest changes from repository
+
+
+AFTER UPLOADING:
+----------------
+1. SSH into VPS
+2. cd /var/www/cryptorafts
+3. chmod +x *.sh
+4. ./NGINX_CONFIG_CHECK.sh
+5. ./FINAL_DEPLOYMENT_COMPLETE.sh
+6. Test in browser: https://www.cryptorafts.com
+
+
+================================================================================
+
+
+
+
+
+
+

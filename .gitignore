@@ -1,0 +1,153 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+**/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+*.log
+
+# next.js
+/.next/
+/out/
+/.swc/
+
+# production
+/build
+/dist
+
+# misc
+.DS_Store
+*.pem
+*.key
+*.cert
+Thumbs.db
+
+# Firebase Functions
+/functions
+
+# Secrets (Firebase service account files)
+/secrets
+!secrets/.gitkeep
+serviceAccount.json
+*-service-account.json
+firebase-adminsdk-*.json
+
+# Environment variables - NEVER commit these
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
+secure-email-config.env
+email-config.env
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+lerna-debug.log*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# Large files and archives
+*.tar.gz
+*.tar
+*.zip
+*.gz
+
+# Large media files (keep small ones, but exclude large videos)
+public/*.mp4
+public/*.mov
+public/*.avi
+public/*.mkv
+!public/*.webm
+
+# GitHub Actions (requires workflow scope in PAT)
+.github/
+
+# Documentation status files (cleanup)
+_*.md
+_*.txt
+_*.html
+✅_*.md
+✅_*.txt
+✅_*.html
+🎉_*.md
+🎊_*.md
+🚀_*.md
+⚡_*.md
+⭐_*.md
+🌟_*.md
+🎯_*.md
+🔧_*.md
+🔥_*.md
+📚_*.md
+📖_*.md
+🎨_*.md
+🎬_*.md
+🎥_*.md
+🌍_*.md
+🌐_*.md
+🔒_*.md
+🔐_*.md
+🔴_*.md
+🔵_*.md
+🖤_*.md
+🗺️_*.md
+🤖_*.md
+🧪_*.md
+🧹_*.md
+💬_*.md
+💯_*.md
+📊_*.md
+📋_*.md
+📏_*.md
+📱_*.md
+🔍_*.md
+🏆_*.md
+🏗️_*.md
+🏠_*.md
+🏢_*.md
+👉_*.md
+⬆️_*.md
+⚫_*.md
+🌑_*.md
+🎯_*.txt

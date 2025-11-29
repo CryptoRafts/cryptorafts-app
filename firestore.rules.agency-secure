@@ -1,0 +1,167 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions for strict tenant isolation
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function hasRole(role) {
+      return isAuthenticated() && request.auth.token.role == role;
+    }
+    
+    function isAgency() {
+      return hasRole('agency');
+    }
+    
+    function isFounder() {
+      return hasRole('founder');
+    }
+    
+    function getOrgId() {
+      return request.auth.token.orgId;
+    }
+    
+    function isProfileComplete() {
+      return request.auth.token.profileCompleted == true;
+    }
+    
+    function isKYBApproved() {
+      return request.auth.token.kybStatus == 'approved';
+    }
+    
+    function isKYCApproved() {
+      return request.auth.token.kycStatus == 'approved';
+    }
+    
+    // Reject any mock data in production
+    function isNotMock() {
+      return !('isMock' in request.resource.data) || request.resource.data.isMock != true;
+    }
+    
+    // User documents - strict access control
+    match /users/{userId} {
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      allow write: if isAuthenticated() && request.auth.uid == userId && isNotMock();
+    }
+    
+    // Projects - read only if KYB approved for agencies
+    match /projects/{projectId} {
+      allow read: if isAuthenticated() && (
+        isFounder() || // Founders can read their own
+        (isAgency() && isKYBApproved()) || // Agencies with KYB
+        hasRole('vc') ||
+        hasRole('exchange') ||
+        hasRole('ido')
+      );
+      allow create: if isFounder() && isKYCApproved() && isNotMock();
+      allow update: if isAuthenticated() && (
+        resource.data.founderId == request.auth.uid || // Founder can update own
+        (isAgency() && isKYBApproved()) || // Agency can update status
+        (hasRole('vc') && isKYBApproved()) ||
+        (hasRole('exchange') && isKYBApproved()) ||
+        (hasRole('ido') && isKYBApproved())
+      ) && isNotMock();
+    }
+    
+    // Proposal Rooms - STRICT tenant isolation via orgId
+    match /proposalRooms/{roomId} {
+      // Read: Must be a member OR orgId matches
+      allow read: if isAuthenticated() && (
+        request.auth.uid in resource.data.members ||
+        (isAgency() && getOrgId() == resource.data.orgId)
+      );
+      
+      // Create: Agency with approved KYB
+      allow create: if isAgency() && isKYBApproved() && 
+                      request.resource.data.orgId == getOrgId() && 
+                      request.auth.uid in request.resource.data.members &&
+                      isNotMock();
+      
+      // Update: Must be member AND orgId matches (strict isolation)
+      allow update: if isAuthenticated() && 
+                      request.auth.uid in resource.data.members &&
+                      (!isAgency() || getOrgId() == resource.data.orgId) &&
+                      isNotMock();
+    }
+    
+    // Proposal Room Messages - member access only
+    match /proposalRooms/{roomId}/messages/{messageId} {
+      allow read: if isAuthenticated() && (
+        request.auth.uid in get(/databases/$(database)/documents/proposalRooms/$(roomId)).data.members ||
+        (isAgency() && getOrgId() == get(/databases/$(database)/documents/proposalRooms/$(roomId)).data.orgId)
+      );
+      
+      allow create: if isAuthenticated() && 
+                      request.auth.uid in get(/databases/$(database)/documents/proposalRooms/$(roomId)).data.members &&
+                      request.resource.data.senderId == request.auth.uid &&
+                      isNotMock();
+      
+      allow update: if isAuthenticated() && 
+                      request.auth.uid in get(/databases/$(database)/documents/proposalRooms/$(roomId)).data.members &&
+                      (resource.data.senderId == request.auth.uid || 
+                       'readBy' in request.resource.data) &&
+                      isNotMock();
+    }
+    
+    // Tasks - member access only
+    match /proposalRooms/{roomId}/tasks/{taskId} {
+      allow read: if isAuthenticated() && 
+                    request.auth.uid in get(/databases/$(database)/documents/proposalRooms/$(roomId)).data.members;
+      
+      allow create: if isAuthenticated() && 
+                      request.auth.uid in get(/databases/$(database)/documents/proposalRooms/$(roomId)).data.members &&
+                      isNotMock();
+      
+      allow update: if isAuthenticated() && 
+                      request.auth.uid in get(/databases/$(database)/documents/proposalRooms/$(roomId)).data.members &&
+                      isNotMock();
+    }
+    
+    // Polls - member access only
+    match /proposalRooms/{roomId}/polls/{pollId} {
+      allow read: if isAuthenticated() && 
+                    request.auth.uid in get(/databases/$(database)/documents/proposalRooms/$(roomId)).data.members;
+      
+      allow create: if isAuthenticated() && 
+                      request.auth.uid in get(/databases/$(database)/documents/proposalRooms/$(roomId)).data.members &&
+                      isNotMock();
+      
+      allow update: if isAuthenticated() && 
+                      request.auth.uid in get(/databases/$(database)/documents/proposalRooms/$(roomId)).data.members &&
+                      isNotMock();
+    }
+    
+    // Group Chats (existing deal rooms) - member access only
+    match /groupChats/{chatId} {
+      allow read: if isAuthenticated() && request.auth.uid in resource.data.members;
+      allow create: if isAuthenticated() && request.auth.uid in request.resource.data.members && isNotMock();
+      allow update: if isAuthenticated() && request.auth.uid in resource.data.members && isNotMock();
+    }
+    
+    match /groupChats/{chatId}/messages/{messageId} {
+      allow read: if isAuthenticated() && request.auth.uid in get(/databases/$(database)/documents/groupChats/$(chatId)).data.members;
+      allow create: if isAuthenticated() && request.auth.uid in get(/databases/$(database)/documents/groupChats/$(chatId)).data.members && isNotMock();
+      allow update: if isAuthenticated() && request.auth.uid in get(/databases/$(database)/documents/groupChats/$(chatId)).data.members && isNotMock();
+    }
+    
+    // Audit logs - immutable, admin read-only
+    match /auditLogs/{logId} {
+      allow read: if hasRole('admin');
+      allow create: if isAuthenticated(); // System can create
+      allow update, delete: if false; // Immutable
+    }
+    
+    // Admin collections
+    match /admin/{document=**} {
+      allow read, write: if hasRole('admin');
+    }
+    
+    // Default deny all other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+

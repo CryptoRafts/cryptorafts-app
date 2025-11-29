@@ -1,0 +1,157 @@
+❌ FILES STILL MISSING - CHECK AND UPLOAD
+=========================================
+
+package.json is still missing!
+Files haven't been uploaded to /var/www/cryptorafts yet.
+
+
+STEP 1: Check current files in SSH
+-----------------------------------
+Run in your SSH terminal:
+
+cd /var/www/cryptorafts
+ls -la
+
+You should see files like:
+- package.json
+- src/ directory
+- next.config.js
+- public/ directory
+
+If you don't see these, files need to be uploaded!
+
+
+STEP 2: Upload files via Hostinger File Manager
+------------------------------------------------
+If files are missing:
+
+1. Go to: https://hpanel.hostinger.com/
+2. Login with your Hostinger account
+3. Click on: "File Manager" (or "Files")
+4. Navigate to: /var/www/cryptorafts
+   
+   Option A: Using Path Bar
+   - Look for PATH BAR at top of File Manager
+   - Type: /var/www/cryptorafts
+   - Press Enter
+   
+   Option B: Using Navigation
+   - Click "var" folder
+   - Click "www" folder  
+   - Click "cryptorafts" folder (create if doesn't exist)
+   
+5. You should now be in /var/www/cryptorafts
+
+6. Click "Upload" button (usually at top)
+
+7. Select ALL files from your local DEPLOY_TO_VPS folder:
+   - src/ folder (entire folder with all contents)
+   - package.json
+   - next.config.js
+   - tsconfig.json
+   - public/ folder (if exists)
+   - .env.production (if needed)
+   - All other files
+   
+8. Click "Upload" or "Open" to start upload
+
+9. Wait for ALL files to finish uploading
+   - Watch for upload progress
+   - Make sure ALL files complete successfully
+
+
+STEP 3: Verify files uploaded
+------------------------------
+After uploading, in your SSH terminal, run:
+
+cd /var/www/cryptorafts
+ls -la package.json
+ls -la src/app/page.tsx
+ls -la next.config.js
+
+All should exist now!
+
+
+STEP 4: Run deployment command
+-------------------------------
+After files are uploaded, run this complete command:
+
+cd /var/www/cryptorafts && ls -la package.json && ls -la src/app/page.tsx && export NVM_DIR="$HOME/.nvm" && ([ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" || (curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash && export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh")) && nvm install 20 && nvm use 20 && npm install --legacy-peer-deps && rm -rf .next out && NODE_ENV=production npm run build && cat > server.js << 'EOFSERVER'
+const { createServer } = require('http');
+const { parse } = require('url');
+const next = require('next');
+const dev = process.env.NODE_ENV !== 'production';
+const hostname = process.env.HOSTNAME || 'localhost';
+const port = parseInt(process.env.PORT || '3000', 10);
+const app = next({ dev, hostname, port });
+const handle = app.getRequestHandler();
+app.prepare().then(() => {
+  createServer(async (req, res) => {
+    try {
+      const parsedUrl = parse(req.url, true);
+      await handle(req, res, parsedUrl);
+    } catch (err) {
+      console.error('Error occurred handling', req.url, err);
+      res.statusCode = 500;
+      res.end('internal server error');
+    }
+  })
+    .once('error', (err) => {
+      console.error(err);
+      process.exit(1);
+    })
+    .listen(port, () => {
+      console.log(`> Ready on http://${hostname}:${port}`);
+    });
+});
+EOFSERVER
+NODE_PATH=$(which node) && cat > ecosystem.config.js << EOF
+module.exports = {
+  apps: [
+    {
+      name: 'cryptorafts',
+      script: './server.js',
+      instances: 1,
+      exec_mode: 'fork',
+      interpreter: '$NODE_PATH',
+      env: { NODE_ENV: 'production', PORT: 3000 },
+      error_file: './logs/pm2-error.log',
+      out_file: './logs/pm2-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '1G',
+      min_uptime: '10s',
+      max_restarts: 10,
+      restart_delay: 4000,
+    },
+  ],
+};
+EOF
+mkdir -p logs && pm2 stop all 2>/dev/null || true && pm2 delete all 2>/dev/null || true && pm2 start ecosystem.config.js && pm2 save && pm2 status && echo "✅ DEPLOYMENT COMPLETE! Visit: https://www.cryptorafts.com"
+
+
+STEP 5: Verify PM2 is running correctly
+----------------------------------------
+After deployment completes, check:
+
+pm2 status
+pm2 logs cryptorafts --lines 20
+
+Should show:
+- Status: "online"
+- No "Cannot find module" errors
+- "> Ready on http://localhost:3000" in logs
+
+Then test:
+curl http://localhost:3000
+
+Should show HTML (not error)!
+
+
+THEN VISIT: https://www.cryptorafts.com
+
+
+CRITICAL: Files MUST be uploaded first before running deployment command!
+

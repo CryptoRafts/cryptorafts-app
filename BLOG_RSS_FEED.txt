@@ -1,0 +1,81 @@
+# ============================================
+# BLOG RSS FEED LINKS
+# ============================================
+
+# ============================================
+# RSS FEED URLS
+# ============================================
+
+# Main RSS Feed:
+https://www.cryptorafts.com/feed.xml
+
+# Alternative RSS Feed:
+https://www.cryptorafts.com/api/blog/rss
+
+# ============================================
+# WHAT IS RSS?
+# ============================================
+# RSS (Really Simple Syndication) is a web feed
+# that allows users to subscribe to blog updates
+# 
+# Users can add these URLs to RSS readers like:
+# - Feedly
+# - Inoreader
+# - The Old Reader
+# - RSS Feed Reader
+# - Browser RSS extensions
+
+# ============================================
+# RSS FEED FEATURES
+# ============================================
+# ✅ Latest 50 published blog posts
+# ✅ Full post content
+# ✅ Author information
+# ✅ Category tags
+# ✅ Publication dates
+# ✅ Featured images
+# ✅ Auto-updates every hour
+
+# ============================================
+# HOW TO USE
+# ============================================
+# 1. Share the RSS link with users
+# 2. Users can subscribe in their RSS reader
+# 3. Feed updates automatically when new posts are published
+# 4. Users get notified of new blog posts
+
+# ============================================
+# TEST RSS FEED
+# ============================================
+# Test locally:
+# http://localhost:3000/feed.xml
+# http://localhost:3000/api/blog/rss
+
+# Test on VPS:
+# curl http://localhost:3000/feed.xml
+# curl http://localhost:3000/api/blog/rss
+
+# Test in browser:
+# https://www.cryptorafts.com/feed.xml
+# https://www.cryptorafts.com/api/blog/rss
+
+# ============================================
+# ADD RSS LINK TO BLOG PAGE
+# ============================================
+# Add this to your blog page (/blog):
+# <link rel="alternate" type="application/rss+xml" title="CryptoRafts Blog RSS" href="/feed.xml" />
+
+# ============================================
+# RSS FEED FORMAT
+# ============================================
+# The RSS feed follows RSS 2.0 standard
+# Includes:
+# - Channel information
+# - Blog description
+# - Latest posts
+# - Full content
+# - Metadata (author, category, tags)
+# - Publication dates
+
+# ============================================
+

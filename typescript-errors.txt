@@ -1,0 +1,494 @@
+﻿
+> cryptorafts@1.0.0 type-check
+> tsc --noEmit
+
+src/lib/deal-room-manager.ts(480,9): error TS2353: Object literal may only specify known properties, and 'invitation' does not exist in type '{ success: boolean; error?: string | undefined; invitationCode?: string | undefined; member?: any; }'.
+src/lib/deal-room-manager.ts(609,38): error TS2345: Argument of type '{ action: string; actor: string; target: string; metadata: { type: "system" | "text" | "summary" | "file" | "image" | "call_start" | "call_end"; contentLength: number; }; }' is not assignable to parameter of type 'Omit<{ id: string; action: string; actor: string; target?: string | undefined; timestamp: Date; metadata: any; }, "id">'.
+  Property 'timestamp' is missing in type '{ action: string; actor: string; target: string; metadata: { type: "system" | "text" | "summary" | "file" | "image" | "call_start" | "call_end"; contentLength: number; }; }' but required in type 'Omit<{ id: string; action: string; actor: string; target?: string | undefined; timestamp: Date; metadata: any; }, "id">'.
+src/lib/deal-room-manager.ts(679,38): error TS2345: Argument of type '{ action: string; actor: string; target: string; metadata: { memberName: string; memberEmail: string; }; }' is not assignable to parameter of type 'Omit<{ id: string; action: string; actor: string; target?: string | undefined; timestamp: Date; metadata: any; }, "id">'.
+  Property 'timestamp' is missing in type '{ action: string; actor: string; target: string; metadata: { memberName: string; memberEmail: string; }; }' but required in type 'Omit<{ id: string; action: string; actor: string; target?: string | undefined; timestamp: Date; metadata: any; }, "id">'.
+src/lib/deal-room-manager.ts(777,38): error TS2345: Argument of type '{ action: string; actor: string; target: string; metadata: { type: "video" | "voice"; participants: number; }; }' is not assignable to parameter of type 'Omit<{ id: string; action: string; actor: string; target?: string | undefined; timestamp: Date; metadata: any; }, "id">'.
+  Property 'timestamp' is missing in type '{ action: string; actor: string; target: string; metadata: { type: "video" | "voice"; participants: number; }; }' but required in type 'Omit<{ id: string; action: string; actor: string; target?: string | undefined; timestamp: Date; metadata: any; }, "id">'.
+src/lib/deal-room-manager.ts(857,38): error TS2345: Argument of type '{ action: string; actor: string; target: string; metadata: { reason: "error" | "manual" | "time_limit"; duration: number; type: "video" | "voice"; }; }' is not assignable to parameter of type 'Omit<{ id: string; action: string; actor: string; target?: string | undefined; timestamp: Date; metadata: any; }, "id">'.
+  Property 'timestamp' is missing in type '{ action: string; actor: string; target: string; metadata: { reason: "error" | "manual" | "time_limit"; duration: number; type: "video" | "voice"; }; }' but required in type 'Omit<{ id: string; action: string; actor: string; target?: string | undefined; timestamp: Date; metadata: any; }, "id">'.
+src/lib/deal-room.service.ts(108,37): error TS2339: Property 'get' does not exist on type 'DocumentReference<DocumentData, DocumentData>'.
+src/lib/email.service.ts(55,37): error TS2551: Property 'createTransporter' does not exist on type 'typeof import("C:/Users/dell/cryptorafts-starter/node_modules/@types/nodemailer/index")'. Did you mean 'createTransport'?
+src/lib/email.service.ts(59,15): error TS2531: Object is possibly 'null'.
+src/lib/firebase-connection-fix.ts(16,19): error TS2345: Argument of type 'FirebaseApp | null' is not assignable to parameter of type 'FirebaseApp | undefined'.
+  Type 'null' is not assignable to type 'FirebaseApp | undefined'.
+src/lib/firebase-connection-fix.ts(17,24): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(app: FirebaseApp): Firestore', gave the following error.
+    Argument of type 'FirebaseApp | null' is not assignable to parameter of type 'FirebaseApp'.
+      Type 'null' is not assignable to type 'FirebaseApp'.
+  Overload 2 of 4, '(databaseId: string): Firestore', gave the following error.
+    Argument of type 'FirebaseApp | null' is not assignable to parameter of type 'string'.
+      Type 'null' is not assignable to type 'string'.
+src/lib/firebase-connection-fix.ts(20,24): error TS2576: Property 'handleFirebaseError' does not exist on type 'FirebaseErrorHandler'. Did you mean to access the static member 'FirebaseErrorHandler.handleFirebaseError' instead?
+src/lib/firebase-connection-fix.ts(39,20): error TS2576: Property 'handleFirebaseError' does not exist on type 'FirebaseErrorHandler'. Did you mean to access the static member 'FirebaseErrorHandler.handleFirebaseError' instead?
+src/lib/firebase-sdk-interceptor.ts(86,5): error TS2322: Type '(method: string, url: string | URL, args_0: unknown, args_1?: unknown, args_2?: unknown) => void' is not assignable to type '{ (method: string, url: string | URL): void; (method: string, url: string | URL, async: boolean, username?: string | null | undefined, password?: string | null | undefined): void; }'.
+  Target signature provides too few arguments. Expected 3 or more, but got 2.
+src/lib/firebase-sdk-interceptor.ts(87,12): error TS2339: Property '_url' does not exist on type 'XMLHttpRequest'.
+src/lib/firebase-sdk-interceptor.ts(88,12): error TS2339: Property '_method' does not exist on type 'XMLHttpRequest'.
+src/lib/firebase-sdk-interceptor.ts(89,54): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'boolean'.
+src/lib/firebase-sdk-interceptor.ts(95,18): error TS2339: Property '_url' does not exist on type 'XMLHttpRequest'.
+src/lib/firebase-sdk-interceptor.ts(95,76): error TS2339: Property '_url' does not exist on type 'XMLHttpRequest'.
+src/lib/firebase-sdk-interceptor.ts(102,18): error TS2339: Property '_url' does not exist on type 'XMLHttpRequest'.
+src/lib/firebase-sdk-interceptor.ts(102,76): error TS2339: Property '_url' does not exist on type 'XMLHttpRequest'.
+src/lib/firebase-sdk-interceptor.ts(133,5): error TS2322: Type '<T = never>(reason: any) => Promise<unknown>' is not assignable to type '<T = never>(reason?: any) => Promise<T>'.
+  Type 'Promise<unknown>' is not assignable to type 'Promise<T>'.
+    Type 'unknown' is not assignable to type 'T'.
+      'T' could be instantiated with an arbitrary type which could be unrelated to 'unknown'.
+src/lib/firebaseAdmin.ts(13,5): error TS2322: Type 'App | null' is not assignable to type 'App'.
+  Type 'null' is not assignable to type 'App'.
+src/lib/firebaseFileUpload.ts(60,30): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(storage: FirebaseStorage, url?: string | undefined): StorageReference', gave the following error.
+    Argument of type 'FirebaseStorage | null' is not assignable to parameter of type 'FirebaseStorage'.
+      Type 'null' is not assignable to type 'FirebaseStorage'.
+  Overload 2 of 2, '(storageOrRef: FirebaseStorage | StorageReference, path?: string | undefined): StorageReference', gave the following error.
+    Argument of type 'FirebaseStorage | null' is not assignable to parameter of type 'FirebaseStorage | StorageReference'.
+      Type 'null' is not assignable to type 'FirebaseStorage | StorageReference'.
+src/lib/firebaseFileUpload.ts(100,27): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(storage: FirebaseStorage, url?: string | undefined): StorageReference', gave the following error.
+    Argument of type 'FirebaseStorage | null' is not assignable to parameter of type 'FirebaseStorage'.
+      Type 'null' is not assignable to type 'FirebaseStorage'.
+  Overload 2 of 2, '(storageOrRef: FirebaseStorage | StorageReference, path?: string | undefined): StorageReference', gave the following error.
+    Argument of type 'FirebaseStorage | null' is not assignable to parameter of type 'FirebaseStorage | StorageReference'.
+src/lib/firestore-connection-fix.ts(51,28): error TS2345: Argument of type 'Firestore | null' is not assignable to parameter of type 'Firestore'.
+  Type 'null' is not assignable to type 'Firestore'.
+src/lib/firestore-connection-fix.ts(53,27): error TS2345: Argument of type 'Firestore | null' is not assignable to parameter of type 'Firestore'.
+  Type 'null' is not assignable to type 'Firestore'.
+src/lib/firestore-connection-fix.ts(192,8): error TS7006: Parameter 'doc' implicitly has an 'any' type.
+src/lib/firestore-connection-fix.ts(195,14): error TS7006: Parameter 'error' implicitly has an 'any' type.
+src/lib/firestore-listener-manager.ts(34,7): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type 'DocumentReference<DocumentData, DocumentData> | Query<DocumentData, DocumentData>' is not assignable to parameter of type 'Query<DocumentData, DocumentData>'.
+      Type 'DocumentReference<DocumentData, DocumentData>' is not assignable to type 'Query<DocumentData, DocumentData>'.
+        Types of property 'type' are incompatible.
+          Type '"document"' is not assignable to type '"collection" | "query"'.
+src/lib/firestore-listener-manager.ts(35,8): error TS7006: Parameter 'snapshot' implicitly has an 'any' type.
+src/lib/firestore-listener-manager.ts(39,8): error TS7006: Parameter 'error' implicitly has an 'any' type.
+src/lib/global-error-interceptor.ts(46,5): error TS2322: Type '(method: string, url: string | URL, args_0: unknown, args_1?: unknown, args_2?: unknown) => void' is not assignable to type '{ (method: string, url: string | URL): void; (method: string, url: string | URL, async: boolean, username?: string | null | undefined, password?: string | null | undefined): void; }'.
+  Target signature provides too few arguments. Expected 3 or more, but got 2.
+src/lib/global-error-interceptor.ts(47,12): error TS2339: Property '_url' does not exist on type 'XMLHttpRequest'.
+src/lib/global-error-interceptor.ts(48,54): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'boolean'.
+src/lib/global-error-interceptor.ts(53,18): error TS2339: Property '_url' does not exist on type 'XMLHttpRequest'.
+src/lib/global-error-interceptor.ts(53,31): error TS2339: Property '_url' does not exist on type 'XMLHttpRequest'.
+src/lib/global-error-interceptor.ts(60,18): error TS2339: Property '_url' does not exist on type 'XMLHttpRequest'.
+src/lib/global-error-interceptor.ts(60,31): error TS2339: Property '_url' does not exist on type 'XMLHttpRequest'.
+src/lib/google-dept-assignment.ts(35,20): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(firestore: Firestore, path: string, ...pathSegments: string[]): CollectionReference<DocumentData, DocumentData>', gave the following error.
+    Argument of type 'Firestore | null' is not assignable to parameter of type 'Firestore'.
+      Type 'null' is not assignable to type 'Firestore'.
+  Overload 2 of 3, '(reference: CollectionReference<unknown, DocumentData>, path: string, ...pathSegments: string[]): CollectionReference<DocumentData, DocumentData>', gave the following error.
+    Argument of type 'Firestore | null' is not assignable to parameter of type 'CollectionReference<unknown, DocumentData>'.
+      Type 'null' is not assignable to type 'CollectionReference<unknown, DocumentData>'.
+  Overload 3 of 3, '(reference: DocumentReference<unknown, DocumentData>, path: string, ...pathSegments: string[]): CollectionReference<DocumentData, DocumentData>', gave the following error.
+    Argument of type 'Firestore | null' is not assignable to parameter of type 'DocumentReference<unknown, DocumentData>'.
+      Type 'null' is not assignable to type 'DocumentReference<unknown, DocumentData>'.
+src/lib/google-dept-assignment.ts(65,24): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(firestore: Firestore, path: string, ...pathSegments: string[]): CollectionReference<DocumentData, DocumentData>', gave the following error.
+    Argument of type 'Firestore | null' is not assignable to parameter of type 'Firestore'.
+      Type 'null' is not assignable to type 'Firestore'.
+  Overload 2 of 3, '(reference: CollectionReference<unknown, DocumentData>, path: string, ...pathSegments: string[]): CollectionReference<DocumentData, DocumentData>', gave the following error.
+    Argument of type 'Firestore | null' is not assignable to parameter of type 'CollectionReference<unknown, DocumentData>'.
+      Type 'null' is not assignable to type 'CollectionReference<unknown, DocumentData>'.
+  Overload 3 of 3, '(reference: DocumentReference<unknown, DocumentData>, path: string, ...pathSegments: string[]): CollectionReference<DocumentData, DocumentData>', gave the following error.
+    Argument of type 'Firestore | null' is not assignable to parameter of type 'DocumentReference<unknown, DocumentData>'.
+      Type 'null' is not assignable to type 'DocumentReference<unknown, DocumentData>'.
+src/lib/hooks/useIsolatedData.ts(9,25): error TS2307: Cannot find module '@/contexts/AuthContext' or its corresponding type declarations.
+src/lib/hooks/useRankedProjects.ts(8,25): error TS2307: Cannot find module '@/contexts/AuthContext' or its corresponding type declarations.
+src/lib/hooks/useRankedProjects.ts(9,10): error TS2724: '"@/lib/raftai"' has no exported member named 'raftAI'. Did you mean 'raftai'?
+src/lib/hooks/useRankedProjects.ts(41,10): error TS7006: Parameter 'rankedProjects' implicitly has an 'any' type.
+src/lib/live-calls.ts(231,44): error TS2339: Property 'getUserInfo' does not exist on type 'VCAuthManager'.
+src/lib/live-calls.ts(234,7): error TS2739: Type '{ id: string; name: any; email: any; role: any; }' is missing the following properties from type 'CallParticipant': joinedAt, isMuted, isVideoEnabled, connectionStatus
+src/lib/network-level-interceptor.ts(36,61): error TS2339: Property 'url' does not exist on type 'Request | URL'.
+  Property 'url' does not exist on type 'URL'.
+src/lib/network-level-interceptor.ts(71,5): error TS2322: Type '(method: string, url: string | URL, args_0: unknown, args_1?: unknown, args_2?: unknown) => void' is not assignable to type '{ (method: string, url: string | URL): void; (method: string, url: string | URL, async: boolean, username?: string | null | undefined, password?: string | null | undefined): void; }'.
+  Target signature provides too few arguments. Expected 3 or more, but got 2.
+src/lib/network-level-interceptor.ts(72,12): error TS2339: Property '_interceptorUrl' does not exist on type 'XMLHttpRequest'.
+src/lib/network-level-interceptor.ts(73,12): error TS2339: Property '_interceptorMethod' does not exist on type 'XMLHttpRequest'.
+src/lib/network-level-interceptor.ts(74,52): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'boolean'.
+src/lib/network-level-interceptor.ts(78,24): error TS2339: Property '_interceptorUrl' does not exist on type 'XMLHttpRequest'.
+src/lib/network-level-interceptor.ts(120,5): error TS2322: Type '(callback: any, delay: any, ...args: any[]) => Timeout' is not assignable to type '((handler: TimerHandler, timeout?: number | undefined, ...arguments: any[]) => number) & typeof setTimeout'.
+  Type '(callback: any, delay: any, ...args: any[]) => Timeout' is not assignable to type '(handler: TimerHandler, timeout?: number | undefined, ...arguments: any[]) => number'.
+    Type 'Timeout' is not assignable to type 'number'.
+src/lib/network-level-interceptor.ts(120,34): error TS7006: Parameter 'callback' implicitly has an 'any' type.
+src/lib/network-level-interceptor.ts(120,44): error TS7006: Parameter 'delay' implicitly has an 'any' type.
+src/lib/network-level-interceptor.ts(120,51): error TS7019: Rest parameter 'args' implicitly has an 'any[]' type.
+src/lib/network-level-interceptor.ts(131,17): error TS2556: A spread argument must either have a tuple type or be passed to a rest parameter.
+src/lib/network-level-interceptor.ts(136,5): error TS2322: Type 'typeof Promise' is not assignable to type 'PromiseConstructor'.
+  Types of property 'prototype' are incompatible.
+    Type 'Promise' is missing the following properties from type 'Promise<any>': then, catch, finally, [Symbol.toStringTag]
+src/lib/network-level-interceptor.ts(136,36): error TS2508: No base constructor has the specified number of type arguments.
+src/lib/network-level-interceptor.ts(137,19): error TS7006: Parameter 'executor' implicitly has an 'any' type.
+src/lib/network-level-interceptor.ts(138,16): error TS7006: Parameter 'resolve' implicitly has an 'any' type.
+src/lib/network-level-interceptor.ts(138,25): error TS7006: Parameter 'reject' implicitly has an 'any' type.
+src/lib/network-level-interceptor.ts(141,14): error TS7006: Parameter 'reason' implicitly has an 'any' type.
+src/lib/notification.service.ts(84,49): error TS2339: Property 'get' does not exist on type 'Query<DocumentData, DocumentData>'.
+src/lib/notification.service.ts(85,21): error TS18047: 'db' is possibly 'null'.
+src/lib/notification.service.ts(85,24): error TS2339: Property 'batch' does not exist on type 'Firestore'.
+src/lib/notification.service.ts(87,30): error TS7006: Parameter 'doc' implicitly has an 'any' type.
+src/lib/notification.service.ts(254,21): error TS18047: 'db' is possibly 'null'.
+src/lib/notification.service.ts(254,24): error TS2339: Property 'batch' does not exist on type 'Firestore'.
+src/lib/notification.service.ts(314,32): error TS2339: Property 'get' does not exist on type 'Query<DocumentData, DocumentData>'.
+src/lib/nuclear-firestore-fix.ts(36,61): error TS2339: Property 'url' does not exist on type 'Request | URL'.
+  Property 'url' does not exist on type 'URL'.
+src/lib/nuclear-firestore-fix.ts(72,5): error TS2322: Type '(method: string, url: string | URL, args_0: unknown, args_1?: unknown, args_2?: unknown) => void' is not assignable to type '{ (method: string, url: string | URL): void; (method: string, url: string | URL, async: boolean, username?: string | null | undefined, password?: string | null | undefined): void; }'.
+  Target signature provides too few arguments. Expected 3 or more, but got 2.
+src/lib/nuclear-firestore-fix.ts(73,12): error TS2339: Property '_nuclearUrl' does not exist on type 'XMLHttpRequest'.
+src/lib/nuclear-firestore-fix.ts(74,12): error TS2339: Property '_nuclearMethod' does not exist on type 'XMLHttpRequest'.
+src/lib/nuclear-firestore-fix.ts(75,52): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'boolean'.
+src/lib/nuclear-firestore-fix.ts(79,24): error TS2339: Property '_nuclearUrl' does not exist on type 'XMLHttpRequest'.
+src/lib/nuclear-firestore-fix.ts(126,5): error TS2322: Type '(callback: any, delay: any, ...args: any[]) => Timeout' is not assignable to type '((handler: TimerHandler, timeout?: number | undefined, ...arguments: any[]) => number) & typeof setTimeout'.
+  Type '(callback: any, delay: any, ...args: any[]) => Timeout' is not assignable to type '(handler: TimerHandler, timeout?: number | undefined, ...arguments: any[]) => number'.
+    Type 'Timeout' is not assignable to type 'number'.
+src/lib/nuclear-firestore-fix.ts(126,34): error TS7006: Parameter 'callback' implicitly has an 'any' type.
+src/lib/nuclear-firestore-fix.ts(126,44): error TS7006: Parameter 'delay' implicitly has an 'any' type.
+src/lib/nuclear-firestore-fix.ts(126,51): error TS7019: Rest parameter 'args' implicitly has an 'any[]' type.
+src/lib/nuclear-firestore-fix.ts(137,17): error TS2556: A spread argument must either have a tuple type or be passed to a rest parameter.
+src/lib/nuclear-firestore-fix.ts(142,5): error TS2322: Type 'typeof Promise' is not assignable to type 'PromiseConstructor'.
+  Types of property 'prototype' are incompatible.
+    Type 'Promise' is missing the following properties from type 'Promise<any>': then, catch, finally, [Symbol.toStringTag]
+src/lib/nuclear-firestore-fix.ts(142,36): error TS2508: No base constructor has the specified number of type arguments.
+src/lib/nuclear-firestore-fix.ts(143,19): error TS7006: Parameter 'executor' implicitly has an 'any' type.
+src/lib/nuclear-firestore-fix.ts(144,16): error TS7006: Parameter 'resolve' implicitly has an 'any' type.
+src/lib/nuclear-firestore-fix.ts(144,25): error TS7006: Parameter 'reject' implicitly has an 'any' type.
+src/lib/nuclear-firestore-fix.ts(147,14): error TS7006: Parameter 'reason' implicitly has an 'any' type.
+src/lib/onboarding-state.ts(188,7): error TS2322: Type '{ approvedAt: Date; fullName?: string | undefined; nationality?: string | undefined; dateOfBirth?: string | undefined; idType?: string | undefined; idNumber?: string | undefined; ... 4 more ...; rejectionReasons?: string[]; }' is not assignable to type '{ fullName: string; nationality: string; dateOfBirth: string; idType: string; idNumber: string; selfieUrl?: string | undefined; idImageUrl?: string | undefined; submittedAt?: Date | undefined; approvedAt?: Date | undefined; rejectedAt?: Date | undefined; rejectionReasons?: string[] | undefined; }'.
+  Types of property 'fullName' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/lib/onboarding-state.ts(208,7): error TS2322: Type '{ rejectedAt: Date; rejectionReasons: string[]; fullName?: string | undefined; nationality?: string | undefined; dateOfBirth?: string | undefined; idType?: string | undefined; idNumber?: string | undefined; selfieUrl?: string; idImageUrl?: string; submittedAt?: Date; approvedAt?: Date; }' is not assignable to type '{ fullName: string; nationality: string; dateOfBirth: string; idType: string; idNumber: string; selfieUrl?: string | undefined; idImageUrl?: string | undefined; submittedAt?: Date | undefined; approvedAt?: Date | undefined; rejectedAt?: Date | undefined; rejectionReasons?: string[] | undefined; }'.
+  Types of property 'fullName' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/lib/organization-manager.ts(253,62): error TS2345: Argument of type 'string' is not assignable to parameter of type '"pending" | "approved" | "rejected" | "skipped"'.
+src/lib/performance-utils.ts(188,21): error TS2345: Argument of type '() => Promise<{ default: T; }>' is not assignable to parameter of type '() => Promise<{ default: ComponentType<any>; }>'.
+  Type 'Promise<{ default: T; }>' is not assignable to type 'Promise<{ default: ComponentType<any>; }>'.
+    Type '{ default: T; }' is not assignable to type '{ default: ComponentType<any>; }'.
+      Types of property 'default' are incompatible.
+        Type 'T' is not assignable to type 'ComponentType<any>'.
+          Type 'T' is not assignable to type 'FunctionComponent<any>'.
+src/lib/pitch-manager.ts(133,35): error TS2345: Argument of type 'Pitch' is not assignable to parameter of type '{ [x: string]: any; } & AddPrefixToKeys<string, any>'.
+  Type 'Pitch' is not assignable to type 'AddPrefixToKeys<string, any>'.
+    Index signature for type '`${string}.${string}`' is missing in type 'Pitch'.
+src/lib/raftai-bot-service.ts(145,40): error TS2345: Argument of type 'string' is not assignable to parameter of type 'never'.
+src/lib/raftai-bot-service.ts(157,42): error TS2345: Argument of type 'string' is not assignable to parameter of type 'never'.
+src/lib/raftai-bot-service.ts(164,28): error TS2345: Argument of type 'string' is not assignable to parameter of type 'never'.
+src/lib/raftai-bot-service.ts(177,48): error TS2345: Argument of type 'string' is not assignable to parameter of type 'never'.
+src/lib/raftai-bot-service.ts(390,7): error TS2365: Operator '>=' cannot be applied to types 'Date' and 'number'.
+src/lib/raftai-bot-service.ts(420,26): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ decision: string; action: string; risk: string; question: string; milestone: string; technical: string; business: string; financial: string; }'.
+  No index signature with a parameter of type 'string' was found on type '{ decision: string; action: string; risk: string; question: string; milestone: string; technical: string; business: string; financial: string; }'.
+src/lib/raftai-bot-service.ts(421,23): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ decision: string; action: string; risk: string; question: string; milestone: string; technical: string; business: string; financial: string; }'.
+  No index signature with a parameter of type 'string' was found on type '{ decision: string; action: string; risk: string; question: string; milestone: string; technical: string; business: string; financial: string; }'.
+src/lib/raftai-bot-service.ts(503,7): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{}'.
+  No index signature with a parameter of type 'string' was found on type '{}'.
+src/lib/raftai-bot-service.ts(503,24): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{}'.
+  No index signature with a parameter of type 'string' was found on type '{}'.
+src/lib/raftai-pitch.ts(180,9): error TS2353: Object literal may only specify known properties, and 'ownerId' does not exist in type 'Project'.
+src/lib/raftai-pitch.ts(253,65): error TS2339: Property 'analyzedAt' does not exist on type 'RaftAIPitchAnalysis'.
+src/lib/raftai.service.ts(312,10): error TS2339: Property 'createHmac' does not exist on type '{ randomUUID: () => string; }'.
+src/lib/raftai.service.ts(316,21): error TS2339: Property 'timingSafeEqual' does not exist on type '{ randomUUID: () => string; }'.
+src/lib/raftai/project-ranking.ts(392,48): error TS7006: Parameter 'snapshot' implicitly has an 'any' type.
+src/lib/raftai/project-ranking.ts(395,31): error TS7006: Parameter 'docSnap' implicitly has an 'any' type.
+src/lib/raftai/project-ranking.ts(435,11): error TS7006: Parameter 'error' implicitly has an 'any' type.
+src/lib/raftai/project-ranking.ts(519,66): error TS2304: Cannot find name 'Query'.
+src/lib/raftai/videoAnalysis.ts(769,7): error TS2349: This expression is not callable.
+  Type 'Number' has no call signatures.
+src/lib/real-time-chat.ts(81,40): error TS2339: Property 'getCurrentUser' does not exist on type 'VCAuthManager'.
+src/lib/real-time-chat.ts(337,40): error TS2339: Property 'getCurrentUser' does not exist on type 'VCAuthManager'.
+src/lib/realtime-notifications.ts(98,39): error TS2345: Argument of type 'string | null' is not assignable to parameter of type 'string'.
+  Type 'null' is not assignable to type 'string'.
+src/lib/realtime-notifications.ts(383,7): error TS2322: Type 'string' is not assignable to type '"system" | "milestone" | "chat" | "project" | "team"'.
+src/lib/runtime-config.ts(51,5): error TS2322: Type '{ projectId: string | undefined; authDomain: string | undefined; apiKey: string | undefined; }' is not assignable to type '{ projectId: string; authDomain: string; apiKey: string; }'.
+  Types of property 'projectId' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/lib/runtime-config.ts(64,3): error TS2322: Type 'RuntimeConfig | null' is not assignable to type 'RuntimeConfig'.
+  Type 'null' is not assignable to type 'RuntimeConfig'.
+src/lib/security/data-isolation.ts(416,29): error TS2698: Spread types may only be created from object types.
+src/lib/security/data-isolation.ts(451,34): error TS7006: Parameter 'snapshot' implicitly has an 'any' type.
+src/lib/security/data-isolation.ts(454,25): error TS7006: Parameter 'doc' implicitly has an 'any' type.
+src/lib/security/index.ts(37,3): error TS18004: No value exists in scope for the shorthand property 'validateUID'. Either declare one or provide an initializer.
+src/lib/security/index.ts(38,12): error TS2304: Cannot find name 'DataIsolation'.
+src/lib/security/index.ts(39,16): error TS2304: Cannot find name 'DataIsolation'.
+src/lib/security/index.ts(42,13): error TS2304: Cannot find name 'Isolated'.
+src/lib/security/index.ts(43,10): error TS2304: Cannot find name 'Isolated'.
+src/lib/security/index.ts(44,18): error TS2304: Cannot find name 'Isolated'.
+src/lib/security/index.ts(45,10): error TS2304: Cannot find name 'Isolated'.
+src/lib/security/index.ts(46,10): error TS2304: Cannot find name 'Isolated'.
+src/lib/security/index.ts(49,13): error TS2304: Cannot find name 'DataIsolation'.
+src/lib/security/index.ts(50,15): error TS2304: Cannot find name 'DataIsolation'.
+src/lib/security/index.ts(51,14): error TS2304: Cannot find name 'DataIsolation'.
+src/lib/simple-guards.ts(27,27): error TS2367: This comparison appears to be unintentional because the types '"pending" | "approved" | "rejected" | undefined' and '"verified"' have no overlap.
+src/lib/simple-guards.ts(28,27): error TS2367: This comparison appears to be unintentional because the types '"pending" | "approved" | "rejected" | undefined' and '"verified"' have no overlap.
+src/lib/simpleFirebaseCallManager.ts(82,51): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(firestore: Firestore, path: string, ...pathSegments: string[]): CollectionReference<DocumentData, DocumentData>', gave the following error.
+    Argument of type 'Firestore | null' is not assignable to parameter of type 'Firestore'.
+      Type 'null' is not assignable to type 'Firestore'.
+  Overload 2 of 3, '(reference: CollectionReference<unknown, DocumentData>, path: string, ...pathSegments: string[]): CollectionReference<DocumentData, DocumentData>', gave the following error.
+    Argument of type 'Firestore | null' is not assignable to parameter of type 'CollectionReference<unknown, DocumentData>'.
+      Type 'null' is not assignable to type 'CollectionReference<unknown, DocumentData>'.
+  Overload 3 of 3, '(reference: DocumentReference<unknown, DocumentData>, path: string, ...pathSegments: string[]): CollectionReference<DocumentData, DocumentData>', gave the following error.
+    Argument of type 'Firestore | null' is not assignable to parameter of type 'DocumentReference<unknown, DocumentData>'.
+      Type 'null' is not assignable to type 'DocumentReference<unknown, DocumentData>'.
+src/lib/simpleFirebaseCallManager.ts(203,53): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(firestore: Firestore, path: string, ...pathSegments: string[]): CollectionReference<DocumentData, DocumentData>', gave the following error.
+    Argument of type 'Firestore | null' is not assignable to parameter of type 'Firestore'.
+      Type 'null' is not assignable to type 'Firestore'.
+  Overload 2 of 3, '(reference: CollectionReference<unknown, DocumentData>, path: string, ...pathSegments: string[]): CollectionReference<DocumentData, DocumentData>', gave the following error.
+    Argument of type 'Firestore | null' is not assignable to parameter of type 'CollectionReference<unknown, DocumentData>'.
+      Type 'null' is not assignable to type 'CollectionReference<unknown, DocumentData>'.
+  Overload 3 of 3, '(reference: DocumentReference<unknown, DocumentData>, path: string, ...pathSegments: string[]): CollectionReference<DocumentData, DocumentData>', gave the following error.
+    Argument of type 'Firestore | null' is not assignable to parameter of type 'DocumentReference<unknown, DocumentData>'.
+      Type 'null' is not assignable to type 'DocumentReference<unknown, DocumentData>'.
+src/lib/social-share-service.ts(41,11): error TS2564: Property 'config' has no initializer and is not definitely assigned in the constructor.
+src/lib/spotlight-service.ts(418,32): error TS2345: Argument of type 'Firestore | null' is not assignable to parameter of type 'Firestore'.
+  Type 'null' is not assignable to type 'Firestore'.
+src/lib/storage-test.ts(14,25): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(storage: FirebaseStorage, url?: string | undefined): StorageReference', gave the following error.
+    Argument of type 'FirebaseStorage | null' is not assignable to parameter of type 'FirebaseStorage'.
+      Type 'null' is not assignable to type 'FirebaseStorage'.
+  Overload 2 of 2, '(storageOrRef: FirebaseStorage | StorageReference, path?: string | undefined): StorageReference', gave the following error.
+    Argument of type 'FirebaseStorage | null' is not assignable to parameter of type 'FirebaseStorage | StorageReference'.
+src/lib/storage-test.ts(35,25): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(storage: FirebaseStorage, url?: string | undefined): StorageReference', gave the following error.
+    Argument of type 'FirebaseStorage | null' is not assignable to parameter of type 'FirebaseStorage'.
+      Type 'null' is not assignable to type 'FirebaseStorage'.
+  Overload 2 of 2, '(storageOrRef: FirebaseStorage | StorageReference, path?: string | undefined): StorageReference', gave the following error.
+    Argument of type 'FirebaseStorage | null' is not assignable to parameter of type 'FirebaseStorage | StorageReference'.
+src/lib/storage.ts(94,30): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(storage: FirebaseStorage, url?: string | undefined): StorageReference', gave the following error.
+    Argument of type 'FirebaseStorage | null' is not assignable to parameter of type 'FirebaseStorage'.
+      Type 'null' is not assignable to type 'FirebaseStorage'.
+  Overload 2 of 2, '(storageOrRef: FirebaseStorage | StorageReference, path?: string | undefined): StorageReference', gave the following error.
+    Argument of type 'FirebaseStorage | null' is not assignable to parameter of type 'FirebaseStorage | StorageReference'.
+src/lib/storage.ts(274,30): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(storage: FirebaseStorage, url?: string | undefined): StorageReference', gave the following error.
+    Argument of type 'FirebaseStorage | null' is not assignable to parameter of type 'FirebaseStorage'.
+      Type 'null' is not assignable to type 'FirebaseStorage'.
+  Overload 2 of 2, '(storageOrRef: FirebaseStorage | StorageReference, path?: string | undefined): StorageReference', gave the following error.
+    Argument of type 'FirebaseStorage | null' is not assignable to parameter of type 'FirebaseStorage | StorageReference'.
+src/lib/storage.ts(286,30): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(storage: FirebaseStorage, url?: string | undefined): StorageReference', gave the following error.
+    Argument of type 'FirebaseStorage | null' is not assignable to parameter of type 'FirebaseStorage'.
+      Type 'null' is not assignable to type 'FirebaseStorage'.
+  Overload 2 of 2, '(storageOrRef: FirebaseStorage | StorageReference, path?: string | undefined): StorageReference', gave the following error.
+    Argument of type 'FirebaseStorage | null' is not assignable to parameter of type 'FirebaseStorage | StorageReference'.
+src/lib/storage.ts(299,30): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(storage: FirebaseStorage, url?: string | undefined): StorageReference', gave the following error.
+    Argument of type 'FirebaseStorage | null' is not assignable to parameter of type 'FirebaseStorage'.
+      Type 'null' is not assignable to type 'FirebaseStorage'.
+  Overload 2 of 2, '(storageOrRef: FirebaseStorage | StorageReference, path?: string | undefined): StorageReference', gave the following error.
+    Argument of type 'FirebaseStorage | null' is not assignable to parameter of type 'FirebaseStorage | StorageReference'.
+src/lib/storage.ts(306,67): error TS2339: Property 'getTime' does not exist on type 'string'.
+src/lib/storage.ts(318,30): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(storage: FirebaseStorage, url?: string | undefined): StorageReference', gave the following error.
+    Argument of type 'FirebaseStorage | null' is not assignable to parameter of type 'FirebaseStorage'.
+      Type 'null' is not assignable to type 'FirebaseStorage'.
+  Overload 2 of 2, '(storageOrRef: FirebaseStorage | StorageReference, path?: string | undefined): StorageReference', gave the following error.
+    Argument of type 'FirebaseStorage | null' is not assignable to parameter of type 'FirebaseStorage | StorageReference'.
+src/lib/token.ts(9,24): error TS2345: Argument of type 'FirebaseApp | null' is not assignable to parameter of type 'FirebaseApp | undefined'.
+src/lib/token.ts(20,24): error TS2345: Argument of type 'FirebaseApp | null' is not assignable to parameter of type 'FirebaseApp | undefined'.
+src/lib/total-isolation.ts(8,65): error TS2614: Module '"./firebase.client"' has no exported member 'QueryConstraint'. Did you mean to use 'import QueryConstraint from "./firebase.client"' instead?
+src/lib/ultra-aggressive-firestore-fix.ts(48,61): error TS2339: Property 'url' does not exist on type 'Request | URL'.
+  Property 'url' does not exist on type 'URL'.
+src/lib/ultra-aggressive-firestore-fix.ts(80,5): error TS2322: Type '(method: string, url: string | URL, args_0: unknown, args_1?: unknown, args_2?: unknown) => any' is not assignable to type '{ (method: string, url: string | URL): void; (method: string, url: string | URL, async: boolean, username?: string | null | undefined, password?: string | null | undefined): void; }'.
+  Target signature provides too few arguments. Expected 3 or more, but got 2.
+src/lib/ultra-aggressive-firestore-fix.ts(81,12): error TS2339: Property '_ultraUrl' does not exist on type 'XMLHttpRequest'.
+src/lib/ultra-aggressive-firestore-fix.ts(82,12): error TS2339: Property '_ultraMethod' does not exist on type 'XMLHttpRequest'.
+src/lib/ultra-aggressive-firestore-fix.ts(83,19): error TS2339: Property 'originalXHROpen' does not exist on type 'XMLHttpRequest'.
+src/lib/ultra-aggressive-firestore-fix.ts(87,24): error TS2339: Property '_ultraUrl' does not exist on type 'XMLHttpRequest'.
+src/lib/ultra-aggressive-firestore-fix.ts(124,19): error TS2339: Property 'originalXHRSend' does not exist on type 'XMLHttpRequest'.
+src/lib/ultra-aggressive-firestore-fix.ts(132,5): error TS2322: Type '(callback: any, delay: any, ...args: any[]) => any' is not assignable to type '((handler: TimerHandler, timeout?: number | undefined, ...arguments: any[]) => number) & typeof setTimeout'.
+  Property '__promisify__' is missing in type '(callback: any, delay: any, ...args: any[]) => any' but required in type 'typeof setTimeout'.
+src/lib/ultra-aggressive-firestore-fix.ts(132,34): error TS7006: Parameter 'callback' implicitly has an 'any' type.
+src/lib/ultra-aggressive-firestore-fix.ts(132,44): error TS7006: Parameter 'delay' implicitly has an 'any' type.
+src/lib/ultra-aggressive-firestore-fix.ts(132,51): error TS7019: Rest parameter 'args' implicitly has an 'any[]' type.
+src/lib/ultra-aggressive-firestore-fix.ts(133,19): error TS2339: Property 'originalSetTimeout' does not exist on type 'Window & typeof globalThis'.
+src/lib/ultra-aggressive-firestore-fix.ts(133,56): error TS7019: Rest parameter 'cbArgs' implicitly has an 'any[]' type.
+src/lib/ultra-aggressive-firestore-fix.ts(151,5): error TS2740: Type 'typeof Promise' is missing the following properties from type 'PromiseConstructor': all, race, reject, resolve, and 3 more.
+src/lib/ultra-aggressive-firestore-fix.ts(152,19): error TS7006: Parameter 'executor' implicitly has an 'any' type.
+src/lib/ultra-aggressive-firestore-fix.ts(153,16): error TS7006: Parameter 'resolve' implicitly has an 'any' type.
+src/lib/ultra-aggressive-firestore-fix.ts(153,25): error TS7006: Parameter 'reject' implicitly has an 'any' type.
+src/lib/ultra-aggressive-firestore-fix.ts(156,14): error TS7006: Parameter 'reason' implicitly has an 'any' type.
+src/lib/ultra-aggressive-firestore-fix.ts(305,18): error TS2339: Property 'firebase' does not exist on type 'Window & typeof globalThis'.
+src/lib/ultra-aggressive-firestore-fix.ts(305,37): error TS2339: Property 'firebase' does not exist on type 'Window & typeof globalThis'.
+src/lib/ultra-robust-firestore-fix.ts(70,28): error TS2345: Argument of type 'Firestore | null' is not assignable to parameter of type 'Firestore'.
+  Type 'null' is not assignable to type 'Firestore'.
+src/lib/ultra-robust-firestore-fix.ts(77,27): error TS2345: Argument of type 'Firestore | null' is not assignable to parameter of type 'Firestore'.
+  Type 'null' is not assignable to type 'Firestore'.
+src/lib/ultra-robust-firestore-fix.ts(269,8): error TS7006: Parameter 'doc' implicitly has an 'any' type.
+src/lib/ultra-robust-firestore-fix.ts(272,14): error TS7006: Parameter 'error' implicitly has an 'any' type.
+src/lib/useFirestore.ts(97,40): error TS7006: Parameter 'doc' implicitly has an 'any' type.
+src/lib/useFirestore.ts(134,48): error TS2304: Cannot find name 'where'.
+src/lib/user-isolation-service.ts(7,20): error TS2307: Cannot find module './firebase' or its corresponding type declarations.
+src/lib/validation.ts(173,9): error TS2588: Cannot assign to 'age' because it is a constant.
+src/lib/vc-ai-manager.ts(18,3): error TS2305: Module '"./vc-data-models"' has no exported member 'VCAISession'.
+src/lib/vc-ai-manager.ts(479,7): error TS2349: This expression is not callable.
+  Type 'Number' has no call signatures.
+src/lib/vc-ai-manager.ts(576,5): error TS2322: Type 'DocumentData[]' is not assignable to type '{ content?: string | undefined; authorId: string; type: string; createdAt: any; }[]'.
+  Type 'DocumentData' is missing the following properties from type '{ content?: string | undefined; authorId: string; type: string; createdAt: any; }': authorId, type, createdAt
+src/lib/vc-auth-fallback.ts(32,58): error TS2345: Argument of type '{ name: string; website: string; country: string; logoUrl: string; thesis: string; aum: string; contactEmail: string; }' is not assignable to parameter of type 'Omit<VCOrganization, "updatedAt" | "type" | "createdAt" | "members" | "id">'.
+  Types of property 'thesis' are incompatible.
+    Type 'string' is not assignable to type '{ stages: string[]; sectors: string[]; chains: string[]; }'.
+src/lib/vc-deal-room-manager.ts(22,3): error TS2305: Module '"./vc-data-models"' has no exported member 'VCAISession'.
+src/lib/vc-deal-room-manager.ts(148,7): error TS2353: Object literal may only specify known properties, and 'attachments' does not exist in type 'DealRoomMessage'.
+src/lib/vc-deal-room-manager.ts(206,21): error TS2551: Property 'userIds' does not exist on type '{ emoji: string; userId: string; createdAt: any; }'. Did you mean 'userId'?
+src/lib/vc-deal-room-manager.ts(207,18): error TS2551: Property 'userIds' does not exist on type '{ emoji: string; userId: string; createdAt: any; }'. Did you mean 'userId'?
+src/lib/vc-deal-room-manager.ts(214,9): error TS2561: Object literal may only specify known properties, but 'userIds' does not exist in type '{ emoji: string; userId: string; createdAt: any; }'. Did you mean to write 'userId'?
+src/lib/vc-deal-room-manager.ts(247,16): error TS2551: Property 'userIds' does not exist on type '{ emoji: string; userId: string; createdAt: any; }'. Did you mean 'userId'?
+src/lib/vc-deal-room-manager.ts(247,35): error TS2551: Property 'userIds' does not exist on type '{ emoji: string; userId: string; createdAt: any; }'. Did you mean 'userId'?
+src/lib/vc-deal-room-manager.ts(247,50): error TS7006: Parameter 'id' implicitly has an 'any' type.
+src/lib/vc-deal-room-manager.ts(249,20): error TS2551: Property 'userIds' does not exist on type '{ emoji: string; userId: string; createdAt: any; }'. Did you mean 'userId'?
+src/lib/vc-deal-room-manager.ts(323,28): error TS2339: Property 'pinned' does not exist on type 'DealRoomMessage'.
+src/lib/vc-deal-room-manager.ts(424,22): error TS2339: Property 'termSheet' does not exist on type 'DealRoom'.
+src/lib/vc-deal-room-manager.ts(436,19): error TS2339: Property 'termSheet' does not exist on type 'DealRoom'.
+src/lib/vc-deal-room-manager.ts(450,36): error TS2339: Property 'termSheet' does not exist on type 'DealRoom'.
+src/lib/vc-deal-room-manager.ts(493,19): error TS2339: Property 'termSheet' does not exist on type 'DealRoom'.
+src/lib/vc-deal-room-manager.ts(497,18): error TS2339: Property 'termSheet' does not exist on type 'DealRoom'.
+src/lib/vc-deal-room-manager.ts(502,36): error TS2339: Property 'termSheet' does not exist on type 'DealRoom'.
+src/lib/vc-deal-room-manager.ts(502,63): error TS7006: Parameter 's' implicitly has an 'any' type.
+src/lib/vc-deal-room-manager.ts(507,33): error TS2339: Property 'termSheet' does not exist on type 'DealRoom'.
+src/lib/vc-deal-room-manager.ts(602,9): error TS2345: Argument of type '"ai"' is not assignable to parameter of type '"video" | "system" | "text" | "file" | "image" | "voice" | undefined'.
+src/lib/vc-dealflow-manager.ts(129,3): error TS2393: Duplicate function implementation.
+src/lib/vc-dealflow-manager.ts(171,9): error TS2393: Duplicate function implementation.
+src/lib/vc-dealflow-manager.ts(261,9): error TS2393: Duplicate function implementation.
+src/lib/vc-dealflow-manager.ts(338,9): error TS2393: Duplicate function implementation.
+src/lib/vc-dealflow-manager.ts(364,9): error TS2393: Duplicate function implementation.
+src/lib/vc-dealflow-manager.ts(584,9): error TS2393: Duplicate function implementation.
+src/lib/vc-dealflow-manager.ts(612,17): error TS2339: Property 'pitch' does not exist on type 'Project'.
+src/lib/vc-dealflow-manager.ts(624,19): error TS2551: Property 'chains' does not exist on type 'Project'. Did you mean 'chain'?
+src/lib/vc-dealflow-manager.ts(624,37): error TS2551: Property 'chains' does not exist on type 'Project'. Did you mean 'chain'?
+src/lib/vc-dealflow-manager.ts(638,19): error TS2551: Property 'getMockProjects' does not exist on type 'VCDealflowManager'. Did you mean 'getProjects'?
+src/lib/vc-dealflow-manager.ts(674,19): error TS2339: Property 'pitch' does not exist on type 'Project'.
+src/lib/vc-dealflow-manager.ts(686,21): error TS2551: Property 'chains' does not exist on type 'Project'. Did you mean 'chain'?
+src/lib/vc-dealflow-manager.ts(686,39): error TS2551: Property 'chains' does not exist on type 'Project'. Did you mean 'chain'?
+src/lib/vc-dealflow-manager.ts(709,21): error TS2551: Property 'getMockProjects' does not exist on type 'VCDealflowManager'. Did you mean 'getProjects'?
+src/lib/vc-dealflow-manager.ts(717,9): error TS2393: Duplicate function implementation.
+src/lib/vc-dealflow-manager.ts(737,20): error TS2551: Property 'getMockPipeline' does not exist on type 'VCDealflowManager'. Did you mean 'getPipeline'?
+src/lib/vc-dealflow-manager.ts(745,3): error TS2393: Duplicate function implementation.
+src/lib/vc-dealflow-manager.ts(774,21): error TS2551: Property 'getMockPipeline' does not exist on type 'VCDealflowManager'. Did you mean 'getPipeline'?
+src/lib/vc-dealflow-manager.ts(782,9): error TS2393: Duplicate function implementation.
+src/lib/vc-dealflow-manager.ts(782,36): error TS2366: Function lacks ending return statement and return type does not include 'undefined'.
+src/lib/vc-dealflow-manager.ts(790,16): error TS2353: Object literal may only specify known properties, and 'success' does not exist in type 'VCMetrics'.
+src/lib/vc-dealflow-manager.ts(813,13): error TS2322: Type 'number' is not assignable to type 'Record<string, number>'.
+src/lib/vc-dealflow-manager.ts(840,9): error TS2322: Type 'number' is not assignable to type 'Record<string, number>'.
+src/lib/vc-dealflow-manager.ts(859,9): error TS2393: Duplicate function implementation.
+src/lib/vc-dealflow-manager.ts(886,9): error TS2393: Duplicate function implementation.
+src/lib/vc-dealflow-manager.ts(1159,9): error TS2393: Duplicate function implementation.
+src/lib/vc-dealflow-manager.ts(1192,9): error TS2393: Duplicate function implementation.
+src/lib/vc-dealflow-manager.ts(1256,9): error TS2393: Duplicate function implementation.
+src/lib/vc-dealflow-manager.ts(1285,9): error TS2393: Duplicate function implementation.
+src/lib/vc-dealflow-manager.ts(1307,9): error TS2393: Duplicate function implementation.
+src/lib/vc-dealflow-manager.ts(1331,9): error TS2393: Duplicate function implementation.
+src/lib/vc-dealflow-manager.ts(1349,17): error TS2339: Property 'pitch' does not exist on type 'Project'.
+src/lib/vc-dealflow-manager.ts(1362,9): error TS2393: Duplicate function implementation.
+src/lib/vc-dealflow-manager.ts(1362,36): error TS2366: Function lacks ending return statement and return type does not include 'undefined'.
+src/lib/vc-term-sheet-manager.ts(305,22): error TS2339: Property 'termSheet' does not exist on type 'DealRoom'.
+src/lib/vc-term-sheet-manager.ts(317,19): error TS2339: Property 'termSheet' does not exist on type 'DealRoom'.
+src/lib/vc-term-sheet-manager.ts(331,36): error TS2339: Property 'termSheet' does not exist on type 'DealRoom'.
+src/lib/vc-term-sheet-manager.ts(366,19): error TS2339: Property 'termSheet' does not exist on type 'DealRoom'.
+src/lib/vc-term-sheet-manager.ts(370,37): error TS2339: Property 'termSheet' does not exist on type 'DealRoom'.
+src/lib/vc-term-sheet-manager.ts(379,42): error TS2339: Property 'termSheet' does not exist on type 'DealRoom'.
+src/lib/vc-term-sheet-manager.ts(408,19): error TS2339: Property 'termSheet' does not exist on type 'DealRoom'.
+src/lib/vc-term-sheet-manager.ts(412,18): error TS2339: Property 'termSheet' does not exist on type 'DealRoom'.
+src/lib/vc-term-sheet-manager.ts(417,36): error TS2339: Property 'termSheet' does not exist on type 'DealRoom'.
+src/lib/vc-term-sheet-manager.ts(417,63): error TS7006: Parameter 's' implicitly has an 'any' type.
+src/lib/vc-term-sheet-manager.ts(422,33): error TS2339: Property 'termSheet' does not exist on type 'DealRoom'.
+src/lib/vc-term-sheet-manager.ts(462,19): error TS2339: Property 'termSheet' does not exist on type 'DealRoom'.
+src/lib/vc-term-sheet-manager.ts(466,36): error TS2339: Property 'termSheet' does not exist on type 'DealRoom'.
+src/lib/vc-term-sheet-manager.ts(466,64): error TS2339: Property 'termSheet' does not exist on type 'DealRoom'.
+src/lib/vc-term-sheet-manager.ts(480,28): error TS2339: Property 'termSheet' does not exist on type 'DealRoom'.
+src/lib/vc-term-sheet-manager.ts(481,31): error TS2339: Property 'termSheet' does not exist on type 'DealRoom'.
+src/lib/vc-term-sheet-manager.ts(482,28): error TS2339: Property 'termSheet' does not exist on type 'DealRoom'.
+src/lib/vc-term-sheet-manager.ts(483,28): error TS2339: Property 'termSheet' does not exist on type 'DealRoom'.
+src/lib/vc-term-sheet-manager.ts(484,32): error TS2339: Property 'termSheet' does not exist on type 'DealRoom'.
+src/lib/vc-term-sheet-manager.ts(517,59): error TS2339: Property 'termSheet' does not exist on type 'DealRoom'.
+src/lib/vc-term-sheet-manager.ts(528,27): error TS2339: Property 'termSheet' does not exist on type 'DealRoom'.
+src/lib/vc-term-sheet-manager.ts(538,12): error TS2339: Property 'termSheet' does not exist on type 'DealRoom'.
+src/lib/vc-term-sheet-manager.ts(538,42): error TS2339: Property 'termSheet' does not exist on type 'DealRoom'.
+src/lib/vc-term-sheet-manager.ts(543,37): error TS2339: Property 'termSheet' does not exist on type 'DealRoom'.
+src/lib/verifySession.ts(6,33): error TS18047: 'adminAuth' is possibly 'null'.
+src/lib/verifySession.ts(15,36): error TS18047: 'adminAuth' is possibly 'null'.
+src/middleware/isolation-middleware.ts(7,26): error TS2307: Cannot find module 'next-auth/jwt' or its corresponding type declarations.
+src/providers/AuthProvider.tsx(106,9): error TS2304: Cannot find name 'AdminCache'.
+src/providers/AuthProvider.tsx(150,32): error TS2304: Cannot find name 'AdminCache'.
+src/providers/AuthProvider.tsx(164,15): error TS2304: Cannot find name 'AdminCache'.
+src/providers/AuthProvider.tsx(218,13): error TS2304: Cannot find name 'AdminCache'.
+src/providers/AuthProvider.tsx(222,15): error TS2304: Cannot find name 'AdminSession'.
+src/providers/AuthProvider.tsx(237,32): error TS2339: Property 'role' does not exist on type '{}'.
+src/providers/AuthProvider.tsx(248,46): error TS2339: Property 'role' does not exist on type '{}'.
+src/providers/AuthProvider.tsx(261,67): error TS2339: Property 'role' does not exist on type '{}'.
+src/providers/AuthProvider.tsx(327,7): error TS2304: Cannot find name 'AdminCache'.
+src/providers/AuthProvider.tsx(328,7): error TS2304: Cannot find name 'AdminSession'.
+src/providers/EnhancedAuthProvider.tsx(91,36): error TS2345: Argument of type '{}' is not assignable to parameter of type 'string'.
+src/providers/FounderAuthProvider.tsx(115,18): error TS2345: Argument of type '{ uid: string; email: string; displayName: string; role: string; onboardingStep: string; profileCompleted: boolean; kycStatus: string; kybStatus: string; kybSkipped: boolean; createdAt: Date; updatedAt: Date; lastLoginAt: Date; isActive: boolean; }' is not assignable to parameter of type 'SetStateAction<FounderProfile | null>'.
+  Type '{ uid: string; email: string; displayName: string; role: string; onboardingStep: string; profileCompleted: boolean; kycStatus: string; kybStatus: string; kybSkipped: boolean; createdAt: Date; updatedAt: Date; lastLoginAt: Date; isActive: boolean; }' is not assignable to type 'FounderProfile'.
+    Types of property 'role' are incompatible.
+      Type 'string' is not assignable to type '"founder"'.
+src/providers/NotificationsProvider.tsx(83,32): error TS2345: Argument of type 'Firestore | null' is not assignable to parameter of type 'Firestore'.
+  Type 'null' is not assignable to type 'Firestore'.
+src/server/auditLogger.ts(2,30): error TS7016: Could not find a declaration file for module 'uuid'. 'C:/Users/dell/cryptorafts-starter/node_modules/uuid/dist/esm-browser/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/uuid` if it exists or add a new declaration (.d.ts) file containing `declare module 'uuid';`
+src/server/auditLogger.ts(35,13): error TS2531: Object is possibly 'null'.
+temp_admin/add-spotlight/page.tsx(50,46): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(firestore: Firestore, path: string, ...pathSegments: string[]): CollectionReference<DocumentData, DocumentData>', gave the following error.
+    Argument of type 'Firestore | null' is not assignable to parameter of type 'Firestore'.
+      Type 'null' is not assignable to type 'Firestore'.
+  Overload 2 of 3, '(reference: CollectionReference<unknown, DocumentData>, path: string, ...pathSegments: string[]): CollectionReference<DocumentData, DocumentData>', gave the following error.
+    Argument of type 'Firestore | null' is not assignable to parameter of type 'CollectionReference<unknown, DocumentData>'.
+      Type 'null' is not assignable to type 'CollectionReference<unknown, DocumentData>'.
+  Overload 3 of 3, '(reference: DocumentReference<unknown, DocumentData>, path: string, ...pathSegments: string[]): CollectionReference<DocumentData, DocumentData>', gave the following error.
+    Argument of type 'Firestore | null' is not assignable to parameter of type 'DocumentReference<unknown, DocumentData>'.
+      Type 'null' is not assignable to type 'DocumentReference<unknown, DocumentData>'.
+temp_admin/dashboard/page.tsx(88,28): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(firestore: Firestore, path: string, ...pathSegments: string[]): CollectionReference<DocumentData, DocumentData>', gave the following error.
+    Argument of type 'Firestore | null' is not assignable to parameter of type 'Firestore'.
+      Type 'null' is not assignable to type 'Firestore'.
+  Overload 2 of 3, '(reference: CollectionReference<unknown, DocumentData>, path: string, ...pathSegments: string[]): CollectionReference<DocumentData, DocumentData>', gave the following error.
+    Argument of type 'Firestore | null' is not assignable to parameter of type 'CollectionReference<unknown, DocumentData>'.
+      Type 'null' is not assignable to type 'CollectionReference<unknown, DocumentData>'.
+  Overload 3 of 3, '(reference: DocumentReference<unknown, DocumentData>, path: string, ...pathSegments: string[]): CollectionReference<DocumentData, DocumentData>', gave the following error.
+    Argument of type 'Firestore | null' is not assignable to parameter of type 'DocumentReference<unknown, DocumentData>'.
+      Type 'null' is not assignable to type 'DocumentReference<unknown, DocumentData>'.
+temp_admin/dashboard/page.tsx(89,28): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(firestore: Firestore, path: string, ...pathSegments: string[]): CollectionReference<DocumentData, DocumentData>', gave the following error.
+    Argument of type 'Firestore | null' is not assignable to parameter of type 'Firestore'.
+      Type 'null' is not assignable to type 'Firestore'.
+  Overload 2 of 3, '(reference: CollectionReference<unknown, DocumentData>, path: string, ...pathSegments: string[]): CollectionReference<DocumentData, DocumentData>', gave the following error.
+    Argument of type 'Firestore | null' is not assignable to parameter of type 'CollectionReference<unknown, DocumentData>'.
+      Type 'null' is not assignable to type 'CollectionReference<unknown, DocumentData>'.
+  Overload 3 of 3, '(reference: DocumentReference<unknown, DocumentData>, path: string, ...pathSegments: string[]): CollectionReference<DocumentData, DocumentData>', gave the following error.
+    Argument of type 'Firestore | null' is not assignable to parameter of type 'DocumentReference<unknown, DocumentData>'.
+      Type 'null' is not assignable to type 'DocumentReference<unknown, DocumentData>'.
+temp_admin/dashboard/page.tsx(90,28): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(firestore: Firestore, path: string, ...pathSegments: string[]): CollectionReference<DocumentData, DocumentData>', gave the following error.
+    Argument of type 'Firestore | null' is not assignable to parameter of type 'Firestore'.
+      Type 'null' is not assignable to type 'Firestore'.
+  Overload 2 of 3, '(reference: CollectionReference<unknown, DocumentData>, path: string, ...pathSegments: string[]): CollectionReference<DocumentData, DocumentData>', gave the following error.
+    Argument of type 'Firestore | null' is not assignable to parameter of type 'CollectionReference<unknown, DocumentData>'.
+      Type 'null' is not assignable to type 'CollectionReference<unknown, DocumentData>'.
+  Overload 3 of 3, '(reference: DocumentReference<unknown, DocumentData>, path: string, ...pathSegments: string[]): CollectionReference<DocumentData, DocumentData>', gave the following error.
+    Argument of type 'Firestore | null' is not assignable to parameter of type 'DocumentReference<unknown, DocumentData>'.
+      Type 'null' is not assignable to type 'DocumentReference<unknown, DocumentData>'.
+temp_admin/dashboard/page.tsx(91,28): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(firestore: Firestore, path: string, ...pathSegments: string[]): CollectionReference<DocumentData, DocumentData>', gave the following error.
+    Argument of type 'Firestore | null' is not assignable to parameter of type 'Firestore'.
+      Type 'null' is not assignable to type 'Firestore'.
+  Overload 2 of 3, '(reference: CollectionReference<unknown, DocumentData>, path: string, ...pathSegments: string[]): CollectionReference<DocumentData, DocumentData>', gave the following error.
+    Argument of type 'Firestore | null' is not assignable to parameter of type 'CollectionReference<unknown, DocumentData>'.
+      Type 'null' is not assignable to type 'CollectionReference<unknown, DocumentData>'.
+  Overload 3 of 3, '(reference: DocumentReference<unknown, DocumentData>, path: string, ...pathSegments: string[]): CollectionReference<DocumentData, DocumentData>', gave the following error.
+    Argument of type 'Firestore | null' is not assignable to parameter of type 'DocumentReference<unknown, DocumentData>'.
+      Type 'null' is not assignable to type 'DocumentReference<unknown, DocumentData>'.
+temp_admin/dashboard/page.tsx(92,28): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(firestore: Firestore, path: string, ...pathSegments: string[]): CollectionReference<DocumentData, DocumentData>', gave the following error.
+    Argument of type 'Firestore | null' is not assignable to parameter of type 'Firestore'.
+      Type 'null' is not assignable to type 'Firestore'.
+  Overload 2 of 3, '(reference: CollectionReference<unknown, DocumentData>, path: string, ...pathSegments: string[]): CollectionReference<DocumentData, DocumentData>', gave the following error.
+    Argument of type 'Firestore | null' is not assignable to parameter of type 'CollectionReference<unknown, DocumentData>'.
+      Type 'null' is not assignable to type 'CollectionReference<unknown, DocumentData>'.
+  Overload 3 of 3, '(reference: DocumentReference<unknown, DocumentData>, path: string, ...pathSegments: string[]): CollectionReference<DocumentData, DocumentData>', gave the following error.
+    Argument of type 'Firestore | null' is not assignable to parameter of type 'DocumentReference<unknown, DocumentData>'.
+      Type 'null' is not assignable to type 'DocumentReference<unknown, DocumentData>'.

@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Chat Debug Tool</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 900px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #0f172a;
+      color: #e2e8f0;
+    }
+    h1 { color: #60a5fa; }
+    h2 { color: #818cf8; margin-top: 30px; }
+    button {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      margin: 10px 5px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    button:hover { background: #2563eb; }
+    button.danger {
+      background: #ef4444;
+    }
+    button.danger:hover {
+      background: #dc2626;
+    }
+    .output {
+      background: #1e293b;
+      border: 1px solid #334155;
+      padding: 15px;
+      margin-top: 15px;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      white-space: pre-wrap;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .success { color: #34d399; }
+    .error { color: #f87171; }
+    .info { color: #60a5fa; }
+    input, select {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #e2e8f0;
+      padding: 10px;
+      margin: 5px;
+      border-radius: 6px;
+      width: 300px;
+    }
+    .section {
+      background: #1e293b;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 10px;
+      border: 1px solid #334155;
+    }
+  </style>
+</head>
+<body>
+  <h1>🐛 Chat System Debug Tool</h1>
+  <p>This tool helps you debug and test chat functionality by creating test rooms and messages.</p>
+
+  <div class="section">
+    <h2>📊 Check Status</h2>
+    <button onclick="checkFirebaseConnection()">Check Firebase Connection</button>
+    <button onclick="listAllRooms()">List All Chat Rooms</button>
+    <button onclick="checkCurrentUser()">Check Current User</button>
+    <div id="status-output" class="output"></div>
+  </div>
+
+  <div class="section">
+    <h2>➕ Create Test Room</h2>
+    <div>
+      <input type="text" id="roomName" placeholder="Room Name (e.g., Test Deal Room)" />
+      <select id="roomType">
+        <option value="deal">Deal Room</option>
+        <option value="listing">Listing Room</option>
+        <option value="ido">IDO Room</option>
+        <option value="campaign">Campaign Room</option>
+        <option value="proposal">Proposal Room</option>
+        <option value="team">Team Room</option>
+        <option value="ops">Operations Room</option>
+      </select>
+    </div>
+    <button onclick="createTestRoom()">Create Test Room</button>
+    <div id="create-output" class="output"></div>
+  </div>
+
+  <div class="section">
+    <h2>💬 Add Test Messages</h2>
+    <div>
+      <input type="text" id="targetRoomId" placeholder="Room ID" />
+      <input type="number" id="messageCount" placeholder="Number of messages" value="5" min="1" max="50" />
+    </div>
+    <button onclick="addTestMessages()">Add Test Messages</button>
+    <div id="messages-output" class="output"></div>
+  </div>
+
+  <div class="section">
+    <h2>🔍 Inspect Room</h2>
+    <div>
+      <input type="text" id="inspectRoomId" placeholder="Room ID to inspect" />
+    </div>
+    <button onclick="inspectRoom()">Inspect Room</button>
+    <button onclick="listRoomMessages()">List Messages in Room</button>
+    <div id="inspect-output" class="output"></div>
+  </div>
+
+  <div class="section">
+    <h2>🗑️ Cleanup</h2>
+    <button class="danger" onclick="deleteTestRoom()">Delete Test Room</button>
+    <button class="danger" onclick="clearAllTestRooms()">Clear All Test Rooms</button>
+    <div id="cleanup-output" class="output"></div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { 
+      getFirestore, 
+      collection, 
+      doc, 
+      addDoc, 
+      getDocs, 
+      getDoc,
+      query,
+      where,
+      orderBy,
+      deleteDoc,
+      serverTimestamp 
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+    import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+
+    // Initialize Firebase (get config from your app)
+    let firebaseConfig;
+    try {
+      // Try to get config from localStorage or environment
+      const storedConfig = localStorage.getItem('firebaseConfig');
+      if (storedConfig) {
+        firebaseConfig = JSON.parse(storedConfig);
+      } else {
+        // You'll need to add your Firebase config here
+        firebaseConfig = {
+          // Add your config from Firebase Console
+          apiKey: "YOUR_API_KEY",
+          authDomain: "YOUR_AUTH_DOMAIN",
+          projectId: "YOUR_PROJECT_ID",
+          storageBucket: "YOUR_STORAGE_BUCKET",
+          messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+          appId: "YOUR_APP_ID"
+        };
+      }
+    } catch (e) {
+      console.error("Error loading Firebase config:", e);
+    }
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    let currentUser = null;
+
+    onAuthStateChanged(auth, (user) => {
+      currentUser = user;
+      if (user) {
+        log('status-output', `✅ Logged in as: ${user.email} (${user.uid})`, 'success');
+      } else {
+        log('status-output', '⚠️ Not logged in. Please login to your app first.', 'error');
+      }
+    });
+
+    function log(elementId, message, type = 'info') {
+      const output = document.getElementById(elementId);
+      const timestamp = new Date().toLocaleTimeString();
+      const className = type;
+      output.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+      output.scrollTop = output.scrollHeight;
+    }
+
+    function clearLog(elementId) {
+      document.getElementById(elementId).innerHTML = '';
+    }
+
+    window.checkFirebaseConnection = async function() {
+      clearLog('status-output');
+      try {
+        log('status-output', 'Checking Firebase connection...', 'info');
+        const testRef = collection(db, 'groupChats');
+        const snapshot = await getDocs(query(testRef));
+        log('status-output', `✅ Firebase connected! Found ${snapshot.size} chat rooms`, 'success');
+      } catch (error) {
+        log('status-output', `❌ Error: ${error.message}`, 'error');
+      }
+    };
+
+    window.checkCurrentUser = function() {
+      clearLog('status-output');
+      if (currentUser) {
+        log('status-output', `User ID: ${currentUser.uid}`, 'info');
+        log('status-output', `Email: ${currentUser.email}`, 'info');
+        log('status-output', `Display Name: ${currentUser.displayName || 'Not set'}`, 'info');
+      } else {
+        log('status-output', 'Not logged in', 'error');
+      }
+    };
+
+    window.listAllRooms = async function() {
+      clearLog('status-output');
+      try {
+        log('status-output', 'Loading all chat rooms...', 'info');
+        const snapshot = await getDocs(collection(db, 'groupChats'));
+        
+        if (snapshot.empty) {
+          log('status-output', '📭 No chat rooms found', 'info');
+          return;
+        }
+
+        log('status-output', `Found ${snapshot.size} rooms:\n`, 'success');
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          log('status-output', `\nRoom ID: ${doc.id}`, 'info');
+          log('status-output', `  Name: ${data.name}`, 'info');
+          log('status-output', `  Type: ${data.type}`, 'info');
+          log('status-output', `  Members: ${data.members?.length || 0}`, 'info');
+          log('status-output', `  Status: ${data.status}`, 'info');
+        });
+      } catch (error) {
+        log('status-output', `❌ Error: ${error.message}`, 'error');
+      }
+    };
+
+    window.createTestRoom = async function() {
+      clearLog('create-output');
+      
+      if (!currentUser) {
+        log('create-output', '❌ Please login first', 'error');
+        return;
+      }
+
+      const roomName = document.getElementById('roomName').value || 'Test Chat Room';
+      const roomType = document.getElementById('roomType').value;
+
+      try {
+        log('create-output', `Creating ${roomType} room: ${roomName}...`, 'info');
+        
+        const roomData = {
+          name: roomName,
+          type: roomType,
+          members: [currentUser.uid],
+          ownerId: currentUser.uid,
+          createdAt: serverTimestamp(),
+          lastActivityAt: serverTimestamp(),
+          privacy: { inviteOnly: true },
+          settings: {
+            filesAllowed: true,
+            calls: true,
+            reactions: true,
+            threads: true,
+            polls: true,
+            tasks: true,
+            events: true
+          },
+          status: 'active'
+        };
+
+        const docRef = await addDoc(collection(db, 'groupChats'), roomData);
+        log('create-output', `✅ Room created! ID: ${docRef.id}`, 'success');
+        log('create-output', `\nTest URL: /messages/${docRef.id}`, 'info');
+        
+        // Add a welcome message
+        await addDoc(collection(db, 'groupChats', docRef.id, 'messages'), {
+          senderId: 'system',
+          type: 'system',
+          text: `Welcome to ${roomName}! This is a test room created at ${new Date().toLocaleString()}`,
+          createdAt: Date.now(),
+          createdAtServer: serverTimestamp(),
+          readBy: [],
+          reactions: {}
+        });
+        
+        log('create-output', '✅ Welcome message added', 'success');
+      } catch (error) {
+        log('create-output', `❌ Error: ${error.message}`, 'error');
+        console.error(error);
+      }
+    };
+
+    window.addTestMessages = async function() {
+      clearLog('messages-output');
+      
+      if (!currentUser) {
+        log('messages-output', '❌ Please login first', 'error');
+        return;
+      }
+
+      const roomId = document.getElementById('targetRoomId').value;
+      const count = parseInt(document.getElementById('messageCount').value) || 5;
+
+      if (!roomId) {
+        log('messages-output', '❌ Please enter a room ID', 'error');
+        return;
+      }
+
+      try {
+        log('messages-output', `Adding ${count} test messages to room ${roomId}...`, 'info');
+        
+        const testMessages = [
+          "Hello! This is a test message.",
+          "Testing the chat functionality.",
+          "Can you see this message?",
+          "Messages should appear in real-time.",
+          "This is working great! 🎉",
+          "Let's test reactions too! 👍",
+          "Another test message here.",
+          "Chat system is looking good!",
+          "Final test message.",
+          "Everything seems to be working! ✅"
+        ];
+
+        for (let i = 0; i < Math.min(count, testMessages.length); i++) {
+          await addDoc(collection(db, 'groupChats', roomId, 'messages'), {
+            senderId: currentUser.uid,
+            type: 'text',
+            text: testMessages[i],
+            createdAt: Date.now() + (i * 1000),
+            createdAtServer: serverTimestamp(),
+            readBy: [currentUser.uid],
+            reactions: {}
+          });
+          log('messages-output', `✅ Message ${i + 1}/${count} added`, 'success');
+        }
+        
+        log('messages-output', '\n✅ All messages added successfully!', 'success');
+      } catch (error) {
+        log('messages-output', `❌ Error: ${error.message}`, 'error');
+        console.error(error);
+      }
+    };
+
+    window.inspectRoom = async function() {
+      clearLog('inspect-output');
+      
+      const roomId = document.getElementById('inspectRoomId').value;
+      if (!roomId) {
+        log('inspect-output', '❌ Please enter a room ID', 'error');
+        return;
+      }
+
+      try {
+        log('inspect-output', `Inspecting room: ${roomId}...`, 'info');
+        
+        const docSnap = await getDoc(doc(db, 'groupChats', roomId));
+        
+        if (!docSnap.exists()) {
+          log('inspect-output', '❌ Room not found', 'error');
+          return;
+        }
+
+        const data = docSnap.data();
+        log('inspect-output', '\n📋 Room Details:', 'success');
+        log('inspect-output', JSON.stringify(data, null, 2), 'info');
+        
+        // Check membership
+        if (currentUser && data.members?.includes(currentUser.uid)) {
+          log('inspect-output', '\n✅ You are a member of this room', 'success');
+        } else if (currentUser) {
+          log('inspect-output', '\n⚠️ You are NOT a member of this room', 'error');
+        }
+      } catch (error) {
+        log('inspect-output', `❌ Error: ${error.message}`, 'error');
+      }
+    };
+
+    window.listRoomMessages = async function() {
+      clearLog('inspect-output');
+      
+      const roomId = document.getElementById('inspectRoomId').value;
+      if (!roomId) {
+        log('inspect-output', '❌ Please enter a room ID', 'error');
+        return;
+      }
+
+      try {
+        log('inspect-output', `Loading messages from room: ${roomId}...`, 'info');
+        
+        const q = query(
+          collection(db, 'groupChats', roomId, 'messages'),
+          orderBy('createdAt', 'asc')
+        );
+        
+        const snapshot = await getDocs(q);
+        
+        if (snapshot.empty) {
+          log('inspect-output', '\n📭 No messages in this room', 'info');
+          return;
+        }
+
+        log('inspect-output', `\nFound ${snapshot.size} messages:\n`, 'success');
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const time = data.createdAt ? new Date(data.createdAt).toLocaleTimeString() : 'Unknown';
+          log('inspect-output', `[${time}] ${data.senderId}: ${data.text}`, 'info');
+        });
+      } catch (error) {
+        log('inspect-output', `❌ Error: ${error.message}`, 'error');
+        console.error(error);
+      }
+    };
+
+    window.deleteTestRoom = async function() {
+      clearLog('cleanup-output');
+      
+      const roomId = document.getElementById('inspectRoomId').value;
+      if (!roomId) {
+        log('cleanup-output', '❌ Please enter a room ID', 'error');
+        return;
+      }
+
+      if (!confirm(`Are you sure you want to delete room ${roomId}?`)) {
+        return;
+      }
+
+      try {
+        log('cleanup-output', `Deleting room: ${roomId}...`, 'info');
+        
+        // Delete all messages first
+        const messagesSnapshot = await getDocs(collection(db, 'groupChats', roomId, 'messages'));
+        log('cleanup-output', `Deleting ${messagesSnapshot.size} messages...`, 'info');
+        
+        for (const messageDoc of messagesSnapshot.docs) {
+          await deleteDoc(messageDoc.ref);
+        }
+        
+        // Delete the room
+        await deleteDoc(doc(db, 'groupChats', roomId));
+        
+        log('cleanup-output', '✅ Room deleted successfully!', 'success');
+      } catch (error) {
+        log('cleanup-output', `❌ Error: ${error.message}`, 'error');
+      }
+    };
+
+    window.clearAllTestRooms = async function() {
+      clearLog('cleanup-output');
+      
+      if (!confirm('⚠️ This will delete ALL chat rooms with "Test" in the name. Are you sure?')) {
+        return;
+      }
+
+      try {
+        log('cleanup-output', 'Loading all rooms...', 'info');
+        const snapshot = await getDocs(collection(db, 'groupChats'));
+        
+        let deleted = 0;
+        for (const roomDoc of snapshot.docs) {
+          const data = roomDoc.data();
+          if (data.name?.includes('Test') || data.name?.includes('test')) {
+            log('cleanup-output', `Deleting: ${data.name}...`, 'info');
+            
+            // Delete messages
+            const messagesSnapshot = await getDocs(collection(db, 'groupChats', roomDoc.id, 'messages'));
+            for (const messageDoc of messagesSnapshot.docs) {
+              await deleteDoc(messageDoc.ref);
+            }
+            
+            // Delete room
+            await deleteDoc(roomDoc.ref);
+            deleted++;
+          }
+        }
+        
+        log('cleanup-output', `\n✅ Deleted ${deleted} test rooms`, 'success');
+      } catch (error) {
+        log('cleanup-output', `❌ Error: ${error.message}`, 'error');
+      }
+    };
+  </script>
+</body>
+</html>
+

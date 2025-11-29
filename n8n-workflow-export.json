@@ -1,0 +1,277 @@
+{
+  "name": "Cryptorafts Blog Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cryptorafts-publish",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "cryptorafts-publish"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.sourceId }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "id": "check-sourceid",
+      "name": "Check SourceId",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "collection": "blog_posts",
+        "filter": {
+          "conditions": [
+            {
+              "fieldName": "metadata.sourceId",
+              "condition": "equal",
+              "fieldValue": "={{ $json.sourceId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "check-duplicate",
+      "name": "Check Duplicate",
+      "type": "n8n-nodes-base.firestore",
+      "typeVersion": 1,
+      "position": [650, 200],
+      "credentials": {
+        "googleFirestoreOAuth2Api": {
+          "id": "firebase-credentials",
+          "name": "Firebase Credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.content.length }}",
+              "operation": "larger",
+              "value2": 500
+            },
+            {
+              "value1": "={{ $json.title.length }}",
+              "operation": "larger",
+              "value2": 10
+            }
+          ]
+        }
+      },
+      "id": "validate-content",
+      "name": "Validate Content",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.cryptorafts.com/api/blog/n8n-webhook",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": []
+        },
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "save-to-site",
+      "name": "Save to Site",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "resource": "post",
+        "profileIds": "={{ $env.BUFFER_PROFILE_IDS }}",
+        "text": "={{ $json.social.linkedin || $json.social.x || $json.title }}",
+        "media": {
+          "link": "={{ $json.canonical_url }}"
+        },
+        "additionalFields": {
+          "now": true
+        }
+      },
+      "id": "buffer-post",
+      "name": "Post to Buffer",
+      "type": "n8n-nodes-base.buffer",
+      "typeVersion": 1,
+      "position": [1250, 300],
+      "credentials": {
+        "bufferApi": {
+          "id": "buffer-credentials",
+          "name": "Buffer API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "text": "✅ New Blog Post\n\nTitle: {{ $json.title }}\nStatus: {{ $json.publish ? 'Published' : 'Draft' }}\nLink: {{ $json.canonical_url }}",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "telegram-notify",
+      "name": "Telegram Notification",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [1450, 300],
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram-credentials",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": true, \"postId\": $json.postId, \"status\": $json.status } }}",
+        "options": {}
+      },
+      "id": "respond-webhook",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1650, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": false, \"duplicate\": true, \"sourceId\": $json.sourceId } }}",
+        "options": {}
+      },
+      "id": "respond-duplicate",
+      "name": "Respond Duplicate",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [850, 200]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Check SourceId",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check SourceId": {
+      "main": [
+        [
+          {
+            "node": "Check Duplicate",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Validate Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Duplicate": {
+      "main": [
+        [
+          {
+            "node": "Respond Duplicate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Content": {
+      "main": [
+        [
+          {
+            "node": "Save to Site",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to Site": {
+      "main": [
+        [
+          {
+            "node": "Post to Buffer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post to Buffer": {
+      "main": [
+        [
+          {
+            "node": "Telegram Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Notification": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2025-01-01T00:00:00.000Z",
+  "versionId": "1"
+}
+

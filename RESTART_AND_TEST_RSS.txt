@@ -1,0 +1,66 @@
+# ============================================
+# RESTART AND TEST RSS FEED - QUICK COMMANDS
+# ============================================
+
+# Run these commands on your VPS:
+
+cd /var/www/cryptorafts
+
+# Step 1: Restart PM2
+pm2 restart cryptorafts
+
+# Step 2: Wait for app to start
+sleep 5
+
+# Step 3: Check PM2 status
+pm2 status cryptorafts
+
+# Step 4: Test API endpoint directly
+curl -I http://localhost:3000/api/blog/rss
+
+# Expected: HTTP 200 OK, Content-Type: application/rss+xml
+
+# Step 5: Test feed.xml (via rewrite)
+curl -I http://localhost:3000/feed.xml
+
+# Expected: HTTP 200 OK, Content-Type: application/rss+xml
+
+# Step 6: Test RSS feed content
+curl http://localhost:3000/feed.xml | head -30
+
+# Should show XML content starting with:
+# <?xml version="1.0" encoding="UTF-8"?>
+# <rss version="2.0"...
+
+# Step 7: Test from external
+curl -I https://www.cryptorafts.com/feed.xml
+
+# ============================================
+# EXPECTED RESULTS
+# ============================================
+
+# ✅ HTTP 200 OK
+# ✅ Content-Type: application/rss+xml; charset=utf-8
+# ✅ XML content starting with <?xml version="1.0" encoding="UTF-8"?>
+# ✅ Contains <rss version="2.0">
+# ✅ Contains <channel> and <item> tags
+
+# ============================================
+# IF STILL NOT WORKING
+# ============================================
+
+# Check PM2 logs:
+pm2 logs cryptorafts --lines 50
+
+# Check if Next.js picked up the config:
+pm2 logs cryptorafts | grep -i "rewrite\|config"
+
+# Verify next.config.js exists:
+cat next.config.js | grep -A 5 "rewrites"
+
+# Restart PM2 completely:
+pm2 delete cryptorafts
+pm2 start ecosystem.config.js
+
+# ============================================
+

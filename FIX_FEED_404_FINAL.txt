@@ -1,0 +1,153 @@
+# ============================================
+# FIX FEED.XML 404 FINAL
+# ============================================
+
+# The route works locally but not externally
+# This means the route file exists but needs rebuild
+
+cd /var/www/cryptorafts
+
+# ============================================
+# Step 1: Verify route file exists
+# ============================================
+
+echo "Checking if route file exists..."
+ls -la src/app/feed.xml/route.ts
+
+# Should show the file exists
+
+# ============================================
+# Step 2: Verify API route exists
+# ============================================
+
+echo ""
+echo "Checking if API route exists..."
+ls -la src/app/api/blog/rss/route.ts
+
+# Should show the file exists
+
+# ============================================
+# Step 3: Test API route directly
+# ============================================
+
+echo ""
+echo "Testing API route..."
+curl -I http://localhost:3000/api/blog/rss
+
+# Should return: HTTP 200 OK, Content-Type: application/rss+xml
+
+# ============================================
+# Step 4: Test feed.xml route directly
+# ============================================
+
+echo ""
+echo "Testing feed.xml route..."
+curl -I http://localhost:3000/feed.xml
+
+# Should return: HTTP 200 OK, Content-Type: application/rss+xml
+
+# ============================================
+# Step 5: Check if route is in .next build
+# ============================================
+
+echo ""
+echo "Checking if route is in build..."
+ls -la .next/server/app/feed.xml/ 2>/dev/null || echo "Route not in build - needs rebuild"
+
+# ============================================
+# Step 6: Rebuild Next.js (CRITICAL!)
+# ============================================
+
+echo ""
+echo "Rebuilding Next.js..."
+npm run build
+
+# This will rebuild with the route file included
+# Takes 2-3 minutes
+
+# ============================================
+# Step 7: Restart PM2
+# ============================================
+
+echo ""
+echo "Restarting PM2..."
+pm2 restart cryptorafts
+
+# Wait for app to start
+sleep 10
+
+# ============================================
+# Step 8: Test again
+# ============================================
+
+echo ""
+echo "Testing feed.xml after rebuild..."
+curl -I http://localhost:3000/feed.xml
+
+# Should return: HTTP 200 OK, Content-Type: application/rss+xml
+
+# ============================================
+# Step 9: Clear Nginx cache
+# ============================================
+
+echo ""
+echo "Clearing Nginx cache..."
+sudo rm -rf /var/cache/nginx/*
+sudo systemctl reload nginx
+
+# ============================================
+# Step 10: Test external
+# ============================================
+
+echo ""
+echo "Testing external feed..."
+curl -I https://www.cryptorafts.com/feed.xml
+
+# Should return: HTTP 200 OK, Content-Type: application/rss+xml
+
+# ============================================
+# Step 11: Check route content
+# ============================================
+
+echo ""
+echo "Checking feed content..."
+curl http://localhost:3000/feed.xml | head -30
+
+# Should show XML starting with:
+# <?xml version="1.0" encoding="UTF-8"?>
+# <rss version="2.0"...
+
+# ============================================
+# If Still Getting 404
+# ============================================
+
+# Check 1: Verify route file content
+cat src/app/feed.xml/route.ts | head -20
+
+# Check 2: Check PM2 logs
+pm2 logs cryptorafts --lines 50 | grep -i "feed\|rss\|error"
+
+# Check 3: Check if route handler is exported correctly
+grep -i "export.*GET" src/app/feed.xml/route.ts
+
+# Check 4: Delete .next and rebuild completely
+rm -rf .next
+npm run build
+pm2 restart cryptorafts
+sleep 10
+curl -I http://localhost:3000/feed.xml
+
+# ============================================
+# Success Check
+# ============================================
+
+# ✓ Route file exists
+# ✓ API route works (HTTP 200)
+# ✓ Build includes route
+# ✓ feed.xml route works locally (HTTP 200)
+# ✓ External feed works (HTTP 200)
+
+# If all these pass, the feed is working!
+
+# ============================================
+

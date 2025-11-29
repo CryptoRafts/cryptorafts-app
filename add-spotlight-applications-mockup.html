@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add CryptoRafts Spotlight Mockup Data</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 100%);
+      color: white;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 20px;
+    }
+    h1 {
+      font-size: 36px;
+      margin-bottom: 10px;
+      background: linear-gradient(90deg, #06b6d4, #3b82f6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    button {
+      background: linear-gradient(90deg, #06b6d4, #3b82f6);
+      color: white;
+      border: none;
+      padding: 16px 32px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      width: 100%;
+      margin-top: 20px;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(6, 182, 212, 0.3);
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .status {
+      margin: 10px 0;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    .success { background: rgba(34, 197, 94, 0.2); border: 1px solid #22c55e; }
+    .error { background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; }
+    .info { background: rgba(59, 130, 246, 0.2); border: 1px solid #3b82f6; }
+    .spotlight-preview {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 16px;
+      margin-top: 20px;
+    }
+    .spotlight-card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-top: 8px;
+    }
+    .badge-premium { background: linear-gradient(90deg, #f59e0b, #ef4444); }
+    .badge-featured { background: linear-gradient(90deg, #8b5cf6, #ec4899); }
+    .badge-trending { background: linear-gradient(90deg, #06b6d4, #3b82f6); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>🌟 CryptoRafts Spotlight Mockup</h1>
+      <p style="color: rgba(255,255,255,0.7); margin-bottom: 20px;">
+        Add 6 premium spotlight applications to showcase on your homepage
+      </p>
+
+      <div id="status"></div>
+
+      <button id="addMockData" onclick="addSpotlightMockup()">
+        Add 6 Premium Spotlight Projects
+      </button>
+
+      <div class="spotlight-preview">
+        <div class="spotlight-card">
+          <h3 style="color: #06b6d4; font-size: 18px; margin: 0 0 8px 0;">🚀 DeFi Revolution</h3>
+          <p style="color: rgba(255,255,255,0.6); font-size: 13px; margin: 0;">
+            Next-gen decentralized exchange with AI-powered trading
+          </p>
+          <span class="badge badge-premium">Premium</span>
+        </div>
+
+        <div class="spotlight-card">
+          <h3 style="color: #8b5cf6; font-size: 18px; margin: 0 0 8px 0;">💎 NFT Marketplace Pro</h3>
+          <p style="color: rgba(255,255,255,0.6); font-size: 13px; margin: 0;">
+            Enterprise-grade NFT platform for creators and collectors
+          </p>
+          <span class="badge badge-featured">Featured</span>
+        </div>
+
+        <div class="spotlight-card">
+          <h3 style="color: #10b981; font-size: 18px; margin: 0 0 8px 0;">🌐 Web3 Gaming Hub</h3>
+          <p style="color: rgba(255,255,255,0.6); font-size: 13px; margin: 0;">
+            Play-to-earn gaming ecosystem with NFT rewards
+          </p>
+          <span class="badge badge-trending">Trending</span>
+        </div>
+
+        <div class="spotlight-card">
+          <h3 style="color: #f59e0b; font-size: 18px; margin: 0 0 8px 0;">⚡ Lightning Protocol</h3>
+          <p style="color: rgba(255,255,255,0.6); font-size: 13px; margin: 0;">
+            Ultra-fast Layer 2 scaling solution for Ethereum
+          </p>
+          <span class="badge badge-premium">Premium</span>
+        </div>
+
+        <div class="spotlight-card">
+          <h3 style="color: #ec4899; font-size: 18px; margin: 0 0 8px 0;">🎨 Creator DAO</h3>
+          <p style="color: rgba(255,255,255,0.6); font-size: 13px; margin: 0;">
+            Community-driven platform for digital creators
+          </p>
+          <span class="badge badge-featured">Featured</span>
+        </div>
+
+        <div class="spotlight-card">
+          <h3 style="color: #06b6d4; font-size: 18px; margin: 0 0 8px 0;">🔐 Secure Wallet</h3>
+          <p style="color: rgba(255,255,255,0.6); font-size: 13px; margin: 0;">
+            Multi-chain wallet with military-grade security
+          </p>
+          <span class="badge badge-trending">Trending</span>
+        </div>
+      </div>
+
+      <div class="info status" style="margin-top: 20px;">
+        💡 <strong>After adding:</strong>
+        <ul style="margin: 10px 0; padding-left: 20px;">
+          <li>Go to your homepage (localhost:3000)</li>
+          <li>Scroll to the "Premium Spotlight" section</li>
+          <li>See 6 featured projects rotating</li>
+          <li>Each project shows logo, description, tier badge</li>
+          <li>No more Firebase index errors!</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+    import { getFirestore, collection, addDoc, Timestamp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyD4u9bSdXm9xJO-WqgmVMY-zJQwQ8sF3p8",
+      authDomain: "cryptorafts-b9067.firebaseapp.com",
+      projectId: "cryptorafts-b9067",
+      storageBucket: "cryptorafts-b9067.firebasestorage.app",
+      messagingSenderId: "909155646246",
+      appId: "1:909155646246:web:85f9a68b9c4e3d8f8c8e3e"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Get current date and dates for spotlight duration
+    const now = new Date();
+    const thirtyDaysFromNow = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000));
+
+    const SPOTLIGHT_MOCKUP = [
+      {
+        projectId: 'defi-revolution-001',
+        projectName: 'DeFi Revolution',
+        companyName: 'DeFi Labs Inc.',
+        description: 'Next-generation decentralized exchange with AI-powered trading algorithms and cross-chain liquidity pools. Built for the future of finance.',
+        tier: 'premium',
+        status: 'active',
+        startDate: Timestamp.fromDate(now),
+        endDate: Timestamp.fromDate(thirtyDaysFromNow),
+        logoUrl: 'https://via.placeholder.com/200/06b6d4/ffffff?text=DeFi',
+        websiteUrl: 'https://defi-revolution.example.com',
+        category: 'DeFi',
+        tags: ['DeFi', 'Trading', 'AI', 'Cross-chain'],
+        fundingGoal: 5000000,
+        fundingRaised: 3200000,
+        investorCount: 247,
+        spotlightViews: 12450,
+        clickThroughRate: 8.5,
+        createdAt: Timestamp.fromDate(now),
+        updatedAt: Timestamp.fromDate(now)
+      },
+      {
+        projectId: 'nft-marketplace-002',
+        projectName: 'NFT Marketplace Pro',
+        companyName: 'Digital Arts Corp',
+        description: 'Enterprise-grade NFT marketplace for professional creators and collectors. Features include royalty management, fractional ownership, and verified creators.',
+        tier: 'featured',
+        status: 'active',
+        startDate: Timestamp.fromDate(now),
+        endDate: Timestamp.fromDate(thirtyDaysFromNow),
+        logoUrl: 'https://via.placeholder.com/200/8b5cf6/ffffff?text=NFT',
+        websiteUrl: 'https://nft-marketplace-pro.example.com',
+        category: 'NFT',
+        tags: ['NFT', 'Marketplace', 'Art', 'Creators'],
+        fundingGoal: 3000000,
+        fundingRaised: 2800000,
+        investorCount: 189,
+        spotlightViews: 9870,
+        clickThroughRate: 7.2,
+        createdAt: Timestamp.fromDate(now),
+        updatedAt: Timestamp.fromDate(now)
+      },
+      {
+        projectId: 'web3-gaming-003',
+        projectName: 'Web3 Gaming Hub',
+        companyName: 'GameChain Studios',
+        description: 'Revolutionary play-to-earn gaming ecosystem with NFT rewards, in-game marketplaces, and true asset ownership. Join the future of gaming.',
+        tier: 'trending',
+        status: 'active',
+        startDate: Timestamp.fromDate(now),
+        endDate: Timestamp.fromDate(thirtyDaysFromNow),
+        logoUrl: 'https://via.placeholder.com/200/10b981/ffffff?text=Gaming',
+        websiteUrl: 'https://web3-gaming.example.com',
+        category: 'Gaming',
+        tags: ['Gaming', 'P2E', 'NFT', 'Metaverse'],
+        fundingGoal: 8000000,
+        fundingRaised: 5600000,
+        investorCount: 512,
+        spotlightViews: 18920,
+        clickThroughRate: 9.8,
+        createdAt: Timestamp.fromDate(now),
+        updatedAt: Timestamp.fromDate(now)
+      },
+      {
+        projectId: 'lightning-protocol-004',
+        projectName: 'Lightning Protocol',
+        companyName: 'Velocity Networks',
+        description: 'Ultra-fast Layer 2 scaling solution for Ethereum with instant transactions, minimal gas fees, and seamless integration with existing dApps.',
+        tier: 'premium',
+        status: 'active',
+        startDate: Timestamp.fromDate(now),
+        endDate: Timestamp.fromDate(thirtyDaysFromNow),
+        logoUrl: 'https://via.placeholder.com/200/f59e0b/ffffff?text=Lightning',
+        websiteUrl: 'https://lightning-protocol.example.com',
+        category: 'Infrastructure',
+        tags: ['Layer 2', 'Scaling', 'Ethereum', 'Fast'],
+        fundingGoal: 12000000,
+        fundingRaised: 9500000,
+        investorCount: 324,
+        spotlightViews: 15670,
+        clickThroughRate: 8.9,
+        createdAt: Timestamp.fromDate(now),
+        updatedAt: Timestamp.fromDate(now)
+      },
+      {
+        projectId: 'creator-dao-005',
+        projectName: 'Creator DAO',
+        companyName: 'Community First Labs',
+        description: 'Community-driven platform empowering digital creators with DAO governance, fair revenue sharing, and decentralized content distribution.',
+        tier: 'featured',
+        status: 'active',
+        startDate: Timestamp.fromDate(now),
+        endDate: Timestamp.fromDate(thirtyDaysFromNow),
+        logoUrl: 'https://via.placeholder.com/200/ec4899/ffffff?text=DAO',
+        websiteUrl: 'https://creator-dao.example.com',
+        category: 'Social',
+        tags: ['DAO', 'Creators', 'Community', 'Governance'],
+        fundingGoal: 4000000,
+        fundingRaised: 3400000,
+        investorCount: 445,
+        spotlightViews: 11230,
+        clickThroughRate: 7.8,
+        createdAt: Timestamp.fromDate(now),
+        updatedAt: Timestamp.fromDate(now)
+      },
+      {
+        projectId: 'secure-wallet-006',
+        projectName: 'Secure Wallet',
+        companyName: 'CryptoGuard Solutions',
+        description: 'Military-grade multi-chain wallet with hardware security, biometric authentication, and insurance protection for your digital assets.',
+        tier: 'trending',
+        status: 'active',
+        startDate: Timestamp.fromDate(now),
+        endDate: Timestamp.fromDate(thirtyDaysFromNow),
+        logoUrl: 'https://via.placeholder.com/200/06b6d4/ffffff?text=Wallet',
+        websiteUrl: 'https://secure-wallet.example.com',
+        category: 'Security',
+        tags: ['Wallet', 'Security', 'Multi-chain', 'Insurance'],
+        fundingGoal: 6000000,
+        fundingRaised: 4200000,
+        investorCount: 678,
+        spotlightViews: 14890,
+        clickThroughRate: 8.3,
+        createdAt: Timestamp.fromDate(now),
+        updatedAt: Timestamp.fromDate(now)
+      }
+    ];
+
+    window.addSpotlightMockup = async function() {
+      const statusDiv = document.getElementById('status');
+      const button = document.getElementById('addMockData');
+      
+      statusDiv.innerHTML = '<div class="info status">⏳ Adding 6 premium spotlight projects...</div>';
+      button.disabled = true;
+
+      try {
+        let addedCount = 0;
+        const errors = [];
+
+        for (const spotlight of SPOTLIGHT_MOCKUP) {
+          try {
+            console.log(`➕ Adding ${spotlight.projectName}...`);
+            
+            await addDoc(collection(db, 'spotlightApplications'), spotlight);
+            
+            addedCount++;
+            console.log(`   ✅ Added ${spotlight.projectName}`);
+          } catch (err) {
+            console.error(`   ❌ Failed to add ${spotlight.projectName}:`, err);
+            errors.push({ name: spotlight.projectName, error: err.message });
+          }
+        }
+
+        if (addedCount === SPOTLIGHT_MOCKUP.length) {
+          statusDiv.innerHTML = `
+            <div class="success status">
+              <strong>🎉 SUCCESS!</strong><br>
+              Added ${addedCount} premium spotlight projects!<br><br>
+              <strong>📊 Spotlight Summary:</strong><br>
+              • 2 Premium tier projects 💎<br>
+              • 2 Featured tier projects ⭐<br>
+              • 2 Trending tier projects 🔥<br><br>
+              <strong>✅ Go to <a href="/" style="color: #06b6d4;">your homepage</a> to see them!</strong><br><br>
+              <strong>🔧 Next Step:</strong><br>
+              Deploy the Firestore indexes by running:<br>
+              <code style="background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; display: inline-block; margin-top: 8px;">
+                firebase deploy --only firestore:indexes
+              </code>
+            </div>
+          `;
+        } else {
+          statusDiv.innerHTML = `
+            <div class="info status">
+              <strong>⚠️ Partial Success</strong><br>
+              Added ${addedCount} of ${SPOTLIGHT_MOCKUP.length} projects<br>
+              ${errors.length} failed<br><br>
+              <strong>Errors:</strong><br>
+              <pre>${JSON.stringify(errors, null, 2)}</pre>
+            </div>
+          `;
+        }
+      } catch (error) {
+        console.error('❌ Error:', error);
+        statusDiv.innerHTML = `
+          <div class="error status">
+            <strong>❌ Error adding spotlight mockup:</strong><br>
+            ${error.message}<br><br>
+            Check console for details (F12)
+          </div>
+        `;
+      } finally {
+        button.disabled = false;
+        button.textContent = 'Add More Spotlight Projects (Run Again)';
+      }
+    };
+
+    console.log('✅ Page loaded! Click the button to add CryptoRafts spotlight mockup.');
+  </script>
+</body>
+</html>
+
+

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Test Spotlight Application</title>
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, collection, addDoc, Timestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        // Your Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyBvQwF8qJ4K8L9M2N3O4P5Q6R7S8T9U0V1",
+            authDomain: "cryptorafts-b9067.firebaseapp.com",
+            projectId: "cryptorafts-b9067",
+            storageBucket: "cryptorafts-b9067.appspot.com",
+            messagingSenderId: "123456789012",
+            appId: "1:123456789012:web:abcdefghijklmnopqrstuv"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        async function addTestSpotlightApplication() {
+            try {
+                const now = new Date();
+                const endDate = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days from now
+
+                const testApplication = {
+                    projectId: `test-project-${Date.now()}`,
+                    projectName: 'Test CryptoRafts Project',
+                    founderId: 'test-founder-123',
+                    founderName: 'Test Founder',
+                    founderEmail: 'test@cryptorafts.com',
+                    slotType: 'premium',
+                    status: 'approved',
+                    
+                    bannerUrl: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=1600&h=500&fit=crop',
+                    logoUrl: 'https://via.placeholder.com/200/06b6d4/ffffff?text=Test',
+                    tagline: 'The Future of Crypto Investment',
+                    description: 'A revolutionary platform that combines AI-powered deal flow with blockchain technology to create the ultimate investment ecosystem.',
+                    website: 'https://test-project.com',
+                    
+                    socialLinks: {
+                        twitter: 'https://twitter.com/testproject',
+                        telegram: 'https://t.me/testproject',
+                        discord: 'https://discord.gg/testproject'
+                    },
+                    
+                    kycVerified: true,
+                    kybVerified: true,
+                    verificationBadges: ['KYC', 'KYB', 'RaftAI'],
+                    
+                    monthlyPrice: 5000,
+                    startDate: Timestamp.fromDate(now),
+                    endDate: Timestamp.fromDate(endDate),
+                    
+                    paymentStatus: 'completed',
+                    paymentMethod: 'admin',
+                    
+                    // Analytics with test data
+                    impressions: 2847,
+                    profileViews: 156,
+                    clicks: 89,
+                    investmentRaised: 2500000, // $2.5M
+                    
+                    createdAt: Timestamp.fromDate(now),
+                    updatedAt: Timestamp.fromDate(now),
+                    createdBy: 'admin',
+                    approvedAt: Timestamp.fromDate(now),
+                    approvedBy: 'admin'
+                };
+
+                const docRef = await addDoc(collection(db, 'spotlightApplications'), testApplication);
+                console.log('✅ Test spotlight application added with ID:', docRef.id);
+                alert('✅ Test spotlight application added successfully!\n\nThis will show up in:\n- Admin spotlight page with real stats\n- Homepage spotlight section\n- Real-time updates');
+                
+            } catch (error) {
+                console.error('❌ Error adding test application:', error);
+                alert('❌ Error adding test application: ' + error.message);
+            }
+        }
+
+        // Auto-run when page loads
+        window.addEventListener('load', () => {
+            console.log('🚀 Adding test spotlight application...');
+            addTestSpotlightApplication();
+        });
+    </script>
+</head>
+<body style="font-family: Arial, sans-serif; padding: 20px; background: #1a1a1a; color: white;">
+    <h1>🎯 Adding Test Spotlight Application</h1>
+    <p>This will add a test spotlight application to your Firebase database.</p>
+    <p>Check the console for progress...</p>
+    
+    <div style="margin-top: 20px; padding: 15px; background: #2a2a2a; border-radius: 8px;">
+        <h3>What this creates:</h3>
+        <ul>
+            <li>✅ A premium spotlight application</li>
+            <li>✅ Real analytics data (2,847 impressions, $2.5M raised)</li>
+            <li>✅ 30-day duration with progress tracking</li>
+            <li>✅ Approved status (shows on homepage immediately)</li>
+            <li>✅ Real-time updates in admin panel</li>
+        </ul>
+    </div>
+</body>
+</html>

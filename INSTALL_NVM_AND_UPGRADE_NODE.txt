@@ -1,0 +1,70 @@
+⚠️ NVM NOT INSTALLED - INSTALL IT FIRST
+========================================
+
+You're logged in as root and NVM is not installed. Let's fix this:
+
+
+OPTION 1: Install NVM and Node.js 20 (for root)
+------------------------------------------------
+Run these commands:
+
+1. Install NVM:
+   curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+
+2. Load NVM:
+   export NVM_DIR="$HOME/.nvm"
+   [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+   [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+
+3. Install Node.js 20:
+   nvm install 20
+   nvm use 20
+   nvm alias default 20
+
+4. Verify:
+   node --version
+   Should show: v20.x.x
+
+
+OPTION 2: Switch to user account and install NVM there
+--------------------------------------------------------
+If the app runs under user account:
+
+1. Switch to user:
+   su - u386122906
+
+2. Install NVM:
+   curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+
+3. Load NVM:
+   export NVM_DIR="$HOME/.nvm"
+   [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+   [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+
+4. Install Node.js 20:
+   nvm install 20
+   nvm use 20
+   nvm alias default 20
+
+5. Verify:
+   node --version
+   Should show: v20.x.x
+
+
+OPTION 3: Install Node.js 20 using NodeSource (System-wide)
+------------------------------------------------------------
+If you prefer system-wide installation:
+
+1. Install Node.js 20:
+   curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+   apt-get install -y nodejs
+
+2. Verify:
+   node --version
+   Should show: v20.x.x
+
+
+RECOMMENDED: Use Option 1 (Install NVM for root)
+-------------------------------------------------
+Then continue with the app rebuild steps.
+

@@ -1,0 +1,132 @@
+# ============================================
+# CRYPTORAFTS - COMPLETE DEPLOYMENT FROM POWERSHELL
+# ============================================
+# COPY THIS ENTIRE FILE AND PASTE INTO POWERSHELL
+# IT WILL DO EVERYTHING FROM START TO FINISH
+# ============================================
+
+# Configuration
+$vpsIP = "72.61.98.99"
+$vpsUser = "root"
+$appDir = "/var/www/cryptorafts"
+$scriptFile = "RUN_THIS_IN_SSH_NOW.sh"
+
+Write-Host ""
+Write-Host "CRYPTORAFTS - COMPLETE DEPLOYMENT" -ForegroundColor Cyan
+Write-Host "=================================" -ForegroundColor Cyan
+Write-Host ""
+
+# Step 1: Check if deployment script exists
+Write-Host "Step 1: Checking deployment files..." -ForegroundColor Yellow
+if (-not (Test-Path $scriptFile)) {
+    Write-Host "ERROR: $scriptFile not found in current directory!" -ForegroundColor Red
+    Write-Host "Current directory: $PWD" -ForegroundColor Yellow
+    Write-Host "Please make sure RUN_THIS_IN_SSH_NOW.sh is in: $PWD" -ForegroundColor Yellow
+    exit 1
+}
+Write-Host "SUCCESS: $scriptFile found" -ForegroundColor Green
+Write-Host ""
+
+# Step 2: Read the deployment script
+Write-Host "Step 2: Reading deployment script..." -ForegroundColor Yellow
+$scriptContent = Get-Content $scriptFile -Raw
+$scriptSize = $scriptContent.Length
+Write-Host "SUCCESS: Script loaded ($scriptSize characters)" -ForegroundColor Green
+Write-Host ""
+
+# Step 3: Check SSH connection
+Write-Host "Step 3: Checking SSH availability..." -ForegroundColor Yellow
+$sshPath = Get-Command ssh -ErrorAction SilentlyContinue
+if (-not $sshPath) {
+    Write-Host "ERROR: SSH not found!" -ForegroundColor Red
+    Write-Host ""
+    Write-Host "To install OpenSSH (Run PowerShell as Administrator):" -ForegroundColor Yellow
+    Write-Host "  Add-WindowsCapability -Online -Name OpenSSH.Client~~~~0.0.1.0" -ForegroundColor Cyan
+    Write-Host ""
+    exit 1
+}
+Write-Host "SUCCESS: SSH found at $($sshPath.Source)" -ForegroundColor Green
+Write-Host ""
+
+# Step 4: Test SSH connection
+Write-Host "Step 4: Testing SSH connection to $vpsUser@$vpsIP..." -ForegroundColor Yellow
+$testResult = ssh -o ConnectTimeout=5 -o BatchMode=yes "$vpsUser@$vpsIP" "echo 'SSH connection successful'" 2>&1
+if ($LASTEXITCODE -ne 0 -and $testResult -notmatch "successful") {
+    Write-Host "WARNING: SSH connection test failed. You may need to enter password." -ForegroundColor Yellow
+    Write-Host "Continuing with deployment (you'll be prompted for password if needed)..." -ForegroundColor Yellow
+}
+Write-Host ""
+
+# Step 5: Create deployment command
+Write-Host "Step 5: Preparing deployment command..." -ForegroundColor Yellow
+$deployCmd = @"
+cd $appDir 2>/dev/null || mkdir -p $appDir && cd $appDir && cat > $scriptFile << 'DEPLOYEOF'
+$scriptContent
+DEPLOYEOF
+chmod +x $scriptFile && bash $scriptFile
+"@
+
+Write-Host "SUCCESS: Deployment command ready" -ForegroundColor Green
+Write-Host ""
+
+# Step 6: Execute deployment
+Write-Host "Step 6: Deploying to VPS..." -ForegroundColor Yellow
+Write-Host "Connecting to: $vpsUser@$vpsIP" -ForegroundColor Cyan
+Write-Host "Target directory: $appDir" -ForegroundColor Cyan
+Write-Host "This will take 5-10 minutes. Please wait..." -ForegroundColor Yellow
+Write-Host ""
+
+# Execute deployment via SSH
+$deployCmd | ssh "$vpsUser@$vpsIP" bash
+
+# Step 7: Check results
+Write-Host ""
+Write-Host "Step 7: Deployment execution completed" -ForegroundColor Yellow
+
+if ($LASTEXITCODE -eq 0) {
+    Write-Host ""
+    Write-Host "SUCCESS: DEPLOYMENT COMPLETE!" -ForegroundColor Green
+    Write-Host "=================================" -ForegroundColor Green
+    Write-Host ""
+    Write-Host "Your app is now LIVE at:" -ForegroundColor Cyan
+    Write-Host "  https://www.cryptorafts.com" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "Verifying deployment..." -ForegroundColor Yellow
+    
+    # Test if app is responding
+    Start-Sleep -Seconds 5
+    try {
+        $response = Invoke-WebRequest -Uri "https://www.cryptorafts.com" -TimeoutSec 10 -UseBasicParsing -ErrorAction SilentlyContinue
+        if ($response.StatusCode -eq 200) {
+            Write-Host "SUCCESS: App is responding (HTTP $($response.StatusCode))" -ForegroundColor Green
+        } else {
+            Write-Host "WARNING: App responded with HTTP $($response.StatusCode)" -ForegroundColor Yellow
+        }
+    } catch {
+        Write-Host "WARNING: Could not verify app response (may need a few minutes to start)" -ForegroundColor Yellow
+    }
+    
+    Write-Host ""
+    Write-Host "DEPLOYMENT SUMMARY:" -ForegroundColor Cyan
+    Write-Host "  - Deployment script executed successfully" -ForegroundColor Green
+    Write-Host "  - Check SSH output above for details" -ForegroundColor White
+    Write-Host "  - App should be live at https://www.cryptorafts.com" -ForegroundColor Green
+    Write-Host ""
+} else {
+    Write-Host ""
+    Write-Host "WARNING: Deployment completed with exit code: $LASTEXITCODE" -ForegroundColor Yellow
+    Write-Host "Please check the SSH output above for any errors." -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "To check PM2 status manually:" -ForegroundColor Cyan
+    Write-Host "  ssh $vpsUser@$vpsIP `"pm2 status`"" -ForegroundColor White
+    Write-Host ""
+    Write-Host "To view PM2 logs:" -ForegroundColor Cyan
+    Write-Host "  ssh $vpsUser@$vpsIP `"cd $appDir && pm2 logs cryptorafts --lines 50`"" -ForegroundColor White
+    Write-Host ""
+}
+
+Write-Host "=================================" -ForegroundColor Cyan
+Write-Host "DEPLOYMENT PROCESS COMPLETE" -ForegroundColor Green
+Write-Host "=================================" -ForegroundColor Cyan
+Write-Host ""
+

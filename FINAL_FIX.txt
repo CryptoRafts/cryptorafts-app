@@ -1,0 +1,166 @@
+═══════════════════════════════════════════════════════
+🔧 FINAL FIX - Files Still Not Moved!
+═══════════════════════════════════════════════════════
+
+❌ ERROR: package.json not found in /var/www/cryptorafts
+Files are STILL in DEPLOY_TO_VPS folder!
+
+═══════════════════════════════════════════════════════
+📋 STEP 1: Check What's in Directory
+═══════════════════════════════════════════════════════
+
+Run this first to see what's there:
+
+cd /var/www/cryptorafts
+ls -la
+
+If you see DEPLOY_TO_VPS folder, continue to Step 2.
+If you don't see package.json OR DEPLOY_TO_VPS, files weren't uploaded!
+
+═══════════════════════════════════════════════════════
+📋 STEP 2: Move Files from DEPLOY_TO_VPS
+═══════════════════════════════════════════════════════
+
+If DEPLOY_TO_VPS exists, run:
+
+cd /var/www/cryptorafts
+ls -la DEPLOY_TO_VPS/package.json
+mv DEPLOY_TO_VPS/* .
+mv DEPLOY_TO_VPS/.* . 2>/dev/null || true
+rm -rf DEPLOY_TO_VPS
+ls -la package.json
+
+You should see package.json after this!
+
+═══════════════════════════════════════════════════════
+📋 STEP 3: Verify Files Moved
+═══════════════════════════════════════════════════════
+
+Run:
+
+cd /var/www/cryptorafts
+ls -la package.json
+ls -la src/app/page.tsx
+ls -la next.config.js
+
+All three should exist!
+
+═══════════════════════════════════════════════════════
+📋 STEP 4: Install Dependencies
+═══════════════════════════════════════════════════════
+
+After files are moved, run:
+
+cd /var/www/cryptorafts
+export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && nvm use 20
+pm2 stop all && pm2 delete all
+rm -rf node_modules package-lock.json
+npm install --legacy-peer-deps
+
+⚠️  Wait 5-10 minutes for npm install to complete!
+
+═══════════════════════════════════════════════════════
+📋 STEP 5: Verify npm install Worked
+═══════════════════════════════════════════════════════
+
+After npm install completes, verify:
+
+ls -la node_modules/next/package.json
+
+You should see the file! If not, npm install failed.
+
+═══════════════════════════════════════════════════════
+📋 STEP 6: Build and Deploy
+═══════════════════════════════════════════════════════
+
+After npm install succeeds:
+
+rm -rf .next out
+NODE_ENV=production npm run build
+NODE_PATH=$(which node) && cat > ecosystem.config.js << EOF
+module.exports = {
+  apps: [
+    {
+      name: 'cryptorafts',
+      script: './server.js',
+      instances: 1,
+      exec_mode: 'fork',
+      interpreter: '$NODE_PATH',
+      env: { NODE_ENV: 'production', PORT: 3000 },
+      error_file: './logs/pm2-error.log',
+      out_file: './logs/pm2-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '1G',
+      min_uptime: '10s',
+      max_restarts: 10,
+      restart_delay: 4000,
+    },
+  ],
+};
+EOF
+mkdir -p logs && pm2 start ecosystem.config.js && pm2 save && pm2 status
+
+═══════════════════════════════════════════════════════
+📋 COMPLETE COMMAND (After Files Are Moved)
+═══════════════════════════════════════════════════════
+
+cd /var/www/cryptorafts && ls -la package.json && ls -la src/app/page.tsx && export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && nvm use 20 && pm2 stop all && pm2 delete all && rm -rf node_modules package-lock.json && echo "Installing dependencies (5-10 minutes)..." && npm install --legacy-peer-deps && ls -la node_modules/next/package.json && echo "✅ Dependencies installed!" && rm -rf .next out && NODE_ENV=production npm run build && echo "✅ Build completed" && cat > server.js << 'EOFSERVER'
+const { createServer } = require('http');
+const { parse } = require('url');
+const next = require('next');
+const dev = process.env.NODE_ENV !== 'production';
+const hostname = process.env.HOSTNAME || 'localhost';
+const port = parseInt(process.env.PORT || '3000', 10);
+const app = next({ dev, hostname, port });
+const handle = app.getRequestHandler();
+app.prepare().then(() => {
+  createServer(async (req, res) => {
+    try {
+      const parsedUrl = parse(req.url, true);
+      await handle(req, res, parsedUrl);
+    } catch (err) {
+      console.error('Error occurred handling', req.url, err);
+      res.statusCode = 500;
+      res.end('internal server error');
+    }
+  })
+    .once('error', (err) => {
+      console.error(err);
+      process.exit(1);
+    })
+    .listen(port, () => {
+      console.log(`> Ready on http://${hostname}:${port}`);
+    });
+});
+EOFSERVER
+NODE_PATH=$(which node) && cat > ecosystem.config.js << EOF
+module.exports = {
+  apps: [
+    {
+      name: 'cryptorafts',
+      script: './server.js',
+      instances: 1,
+      exec_mode: 'fork',
+      interpreter: '$NODE_PATH',
+      env: { NODE_ENV: 'production', PORT: 3000 },
+      error_file: './logs/pm2-error.log',
+      out_file: './logs/pm2-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '1G',
+      min_uptime: '10s',
+      max_restarts: 10,
+      restart_delay: 4000,
+    },
+  ],
+};
+EOF
+mkdir -p logs && pm2 start ecosystem.config.js && pm2 save && pm2 status && sleep 15 && pm2 logs cryptorafts --lines 30 --nostream && echo "" && echo "✅ DEPLOYMENT COMPLETE! Visit: https://www.cryptorafts.com"
+
+═══════════════════════════════════════════════════════
+

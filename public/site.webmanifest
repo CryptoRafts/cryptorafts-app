@@ -1,0 +1,49 @@
+{
+  "name": "CryptoRafts - Web3 Funding Platform",
+  "short_name": "CryptoRafts",
+  "description": "AI-verified deal flow on chain. Connect founders with VCs, agencies, exchanges, and IDO platforms.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0e1a",
+  "theme_color": "#06b6d4",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "categories": ["finance", "business", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Explore Projects",
+      "short_name": "Explore",
+      "description": "Browse verified crypto projects",
+      "url": "/explore",
+      "icons": [{ "src": "/icon-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Features",
+      "short_name": "Features",
+      "description": "View platform features",
+      "url": "/features",
+      "icons": [{ "src": "/icon-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Sign Up",
+      "short_name": "Sign Up",
+      "description": "Create an account",
+      "url": "/signup",
+      "icons": [{ "src": "/icon-96x96.png", "sizes": "96x96" }]
+    }
+  ]
+}
+

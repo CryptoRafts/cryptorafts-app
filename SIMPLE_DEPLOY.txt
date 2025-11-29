@@ -1,0 +1,1 @@
+﻿cd /var/www/cryptorafts; bash RUN_THIS_IN_SSH_NOW.sh

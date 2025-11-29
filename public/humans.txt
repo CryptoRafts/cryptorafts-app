@@ -1,0 +1,14 @@
+/* TEAM */
+Platform: CryptoRafts
+Website: https://cryptorafts-starter-3ctfn0ush-anas-s-projects-8d19f880.vercel.app
+Location: Global
+
+/* SITE */
+Last update: 2025/10/20
+Standards: HTML5, CSS3, JavaScript (ES6+), TypeScript, React, Next.js
+Components: React, Next.js 14, TypeScript, Tailwind CSS, Firebase
+Software: Next.js, Vercel, Firebase, AI Services
+
+/* THANKS */
+To the Web3 community for inspiration and support
+

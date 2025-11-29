@@ -1,0 +1,2 @@
+cd /var/www/cryptorafts 2>/dev/null || mkdir -p /var/www/cryptorafts && cd /var/www/cryptorafts && if [ -f "RUN_THIS_IN_SSH_NOW.sh" ]; then bash RUN_THIS_IN_SSH_NOW.sh; else echo "ERROR: RUN_THIS_IN_SSH_NOW.sh not found! Please upload it first."; exit 1; fi
+

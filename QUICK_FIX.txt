@@ -1,0 +1,29 @@
+============================================
+QUICK FIX - Copy & Paste Commands
+============================================
+
+Password: Shamsi2627@@
+
+Run these ONE AT A TIME in PowerShell:
+
+1. scp src/components/SpotlightDisplay.tsx root@72.61.98.99:/var/www/cryptorafts/src/components/SpotlightDisplay.tsx
+
+2. scp src/components/PerfectHeader.tsx root@72.61.98.99:/var/www/cryptorafts/src/components/PerfectHeader.tsx
+
+3. scp src/providers/SimpleAuthProvider.tsx root@72.61.98.99:/var/www/cryptorafts/src/providers/SimpleAuthProvider.tsx
+
+4. scp src/app/page.tsx root@72.61.98.99:/var/www/cryptorafts/src/app/page.tsx
+
+5. scp src/app/globals.css root@72.61.98.99:/var/www/cryptorafts/src/app/globals.css
+
+6. scp FIX_COMPLETE_APP.sh root@72.61.98.99:/root/FIX_COMPLETE_APP.sh
+
+7. ssh root@72.61.98.99
+
+8. chmod +x /root/FIX_COMPLETE_APP.sh && /root/FIX_COMPLETE_APP.sh
+
+9. Open: https://www.cryptorafts.com
+
+10. Press Ctrl+Shift+R (hard refresh)
+
+============================================

@@ -1,0 +1,124 @@
+# ============================================
+# FIX INTERMITTENT LOADING ISSUES
+# ============================================
+# Issues Found:
+# 1. analytics.js: ERR_ADDRESS_INVALID (browser extension - harmless)
+# 2. favicon.ico: 404 (not being served correctly)
+# 3. Intermittent loading (some time showing, some time not)
+
+# ============================================
+# SOLUTION 1: Fix Favicon (On VPS)
+# ============================================
+cd /var/www/cryptorafts
+
+# Verify favicon exists
+ls -la public/favicon.ico
+ls -la public/tablogo.ico
+
+# If missing, copy from Windows:
+# scp public/favicon.ico root@72.61.98.99:/var/www/cryptorafts/public/
+# scp public/tablogo.ico root@72.61.98.99:/var/www/cryptorafts/public/
+
+# Restart app
+pm2 restart cryptorafts
+
+# ============================================
+# SOLUTION 2: Clear Next.js Cache
+# ============================================
+cd /var/www/cryptorafts
+
+# Clear cache
+rm -rf .next/cache
+
+# Restart app
+pm2 restart cryptorafts
+
+# ============================================
+# SOLUTION 3: Check Static File Serving
+# ============================================
+# Test static files:
+curl http://localhost:3000/favicon.ico
+curl http://localhost:3000/tablogo.ico
+
+# Should return 200 OK, not 404
+
+# ============================================
+# SOLUTION 4: Update Nginx Config (If Needed)
+# ============================================
+# Ensure Nginx is serving static files correctly:
+# Add to Nginx config:
+# location ~* \.(ico|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot)$ {
+#     proxy_pass http://localhost:3000;
+#     proxy_cache_valid 200 60m;
+#     expires 1y;
+#     add_header Cache-Control "public, immutable";
+# }
+
+# Reload Nginx:
+# sudo systemctl reload nginx
+
+# ============================================
+# SOLUTION 5: Rebuild and Redeploy
+# ============================================
+# On Windows:
+# npm run build
+# scp -r .next root@72.61.98.99:/var/www/cryptorafts/
+# scp -r public root@72.61.98.99:/var/www/cryptorafts/
+
+# On VPS:
+# cd /var/www/cryptorafts
+# pm2 restart cryptorafts
+
+# ============================================
+# SOLUTION 6: About analytics.js Error
+# ============================================
+# The "analytics.js: ERR_ADDRESS_INVALID" error is likely from:
+# - Browser extension (ad blocker, privacy extension)
+# - Browser trying to load analytics from extension
+# This is HARMLESS and can be ignored
+# It doesn't affect your app functionality
+
+# ============================================
+# SOLUTION 7: Fix Intermittent Loading
+# ============================================
+# Intermittent loading can be caused by:
+# 1. Network issues
+# 2. Browser cache
+# 3. Next.js hydration issues
+# 4. Static file serving issues
+
+# Fix:
+# 1. Clear browser cache (Ctrl+Shift+R)
+# 2. Try incognito mode
+# 3. Check browser console for errors
+# 4. Verify static files are being served
+# 5. Check network tab for failed requests
+
+# ============================================
+# QUICK FIX COMMANDS
+# ============================================
+cd /var/www/cryptorafts
+
+# 1. Clear cache
+rm -rf .next/cache
+
+# 2. Restart app
+pm2 restart cryptorafts
+
+# 3. Test static files
+curl -I http://localhost:3000/favicon.ico
+curl -I http://localhost:3000/tablogo.ico
+
+# 4. Check logs
+pm2 logs cryptorafts --lines 50
+
+# ============================================
+# EXPECTED RESULTS
+# ============================================
+# After fixes:
+# ✅ favicon.ico: 200 OK (not 404)
+# ✅ tablogo.ico: 200 OK (not 404)
+# ✅ Static files loading correctly
+# ✅ No more intermittent loading issues
+# ⚠️ analytics.js error: Can be ignored (browser extension)
+

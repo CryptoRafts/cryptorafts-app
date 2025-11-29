@@ -1,0 +1,20 @@
+cd /var/www/cryptorafts && echo "🔍 Verifying deployment..." && echo "" && echo "📊 PM2 Status:" && pm2 status && echo "" && echo "📋 Recent PM2 Logs:" && pm2 logs cryptorafts --lines 10 --nostream && echo "" && echo "🌐 Testing local server..." && curl -I http://localhost:3000 2>&1 | head -5 && echo "" && echo "🔧 Configuring Nginx..." && NGINX_CONF="/etc/nginx/sites-available/cryptorafts" && cat > ${NGINX_CONF} << 'NGINXEOF'
+server {
+    listen 80;
+    server_name cryptorafts.com www.cryptorafts.com;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+NGINXEOF
+ln -sf ${NGINX_CONF} /etc/nginx/sites-enabled/cryptorafts && rm -f /etc/nginx/sites-enabled/default && nginx -t && systemctl restart nginx && echo "✅ Nginx configured and restarted" && echo "" && echo "🔒 Setting up SSL..." && certbot --nginx -d cryptorafts.com -d www.cryptorafts.com --non-interactive --agree-tos --email admin@cryptorafts.com --redirect || echo "⚠️  SSL setup failed (DNS may not be configured)" && echo "" && echo "✅ VERIFICATION COMPLETE!" && echo "🌐 Visit: http://cryptorafts.com" && echo "🌐 Visit: https://cryptorafts.com (after DNS configured)"
+

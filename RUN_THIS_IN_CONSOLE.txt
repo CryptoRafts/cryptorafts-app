@@ -1,0 +1,23 @@
+🚨 COPY THIS COMMAND AND RUN IT IN YOUR BROWSER CONSOLE 🚨
+
+=================================================================
+
+Step 1: Press F12 (open console)
+
+Step 2: Copy-paste this ENTIRE command:
+
+localStorage.clear(); sessionStorage.clear(); window.location.href = 'https://cryptorafts-starter-3obq9h310-anas-s-projects-8d19f880.vercel.app/admin/dashboard';
+
+Step 3: Press ENTER
+
+Step 4: When page loads, press Ctrl + Shift + R
+
+=================================================================
+
+THIS WILL:
+✅ Clear all cached data
+✅ Force navigate to NEW URL
+✅ Fresh load with ZERO errors
+
+DO IT NOW!
+

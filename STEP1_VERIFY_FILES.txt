@@ -1,0 +1,2 @@
+cd /var/www/cryptorafts && ls -la package.json src/app/page.tsx next.config.js 2>/dev/null && echo "✅ FILES FOUND! Ready for deployment!" || echo "❌ FILES NOT FOUND! Upload via File Manager first!"
+

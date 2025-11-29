@@ -1,0 +1,139 @@
+✅ NODE.JS 20 INSTALLED - NOW REBUILD APP
+=========================================
+
+Great! Node.js v20.19.5 is installed. Now rebuild the app:
+
+
+STEP 1: Find and navigate to app directory
+------------------------------------------
+Check where the app is located:
+
+ls -la /root/cryptorafts
+ls -la /home/*/cryptorafts
+find /home -name "cryptorafts" -type d 2>/dev/null
+find /root -name "cryptorafts" -type d 2>/dev/null
+
+Once found, navigate:
+cd /path/to/cryptorafts
+
+OR if app is in /root/cryptorafts:
+cd ~/cryptorafts
+
+
+STEP 2: Verify Node.js 20 is active
+-----------------------------------
+Make sure Node.js 20 is active:
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+nvm use 20
+node --version
+
+Should show: v20.19.5
+
+
+STEP 3: Clean and rebuild app
+------------------------------
+rm -rf .next out node_modules/.cache
+npm install --legacy-peer-deps
+NODE_ENV=production npm run build
+
+Wait 5-10 minutes for build to complete!
+
+
+STEP 4: Create/Update server.js
+-------------------------------
+cat > server.js << 'EOF'
+const { createServer } = require('http');
+const { parse } = require('url');
+const next = require('next');
+const dev = process.env.NODE_ENV !== 'production';
+const hostname = process.env.HOSTNAME || 'localhost';
+const port = parseInt(process.env.PORT || '3000', 10);
+const app = next({ dev, hostname, port });
+const handle = app.getRequestHandler();
+app.prepare().then(() => {
+  createServer(async (req, res) => {
+    try {
+      const parsedUrl = parse(req.url, true);
+      await handle(req, res, parsedUrl);
+    } catch (err) {
+      console.error('Error occurred handling', req.url, err);
+      res.statusCode = 500;
+      res.end('internal server error');
+    }
+  })
+    .once('error', (err) => {
+      console.error(err);
+      process.exit(1);
+    })
+    .listen(port, () => {
+      console.log(`> Ready on http://${hostname}:${port}`);
+    });
+});
+EOF
+
+
+STEP 5: Update PM2 config to use Node.js 20
+--------------------------------------------
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+nvm use 20
+NODE_PATH=$(which node)
+echo "Node.js path: $NODE_PATH"
+
+cat > ecosystem.config.js << EOF
+module.exports = {
+  apps: [
+    {
+      name: 'cryptorafts',
+      script: './server.js',
+      instances: 1,
+      exec_mode: 'fork',
+      interpreter: '$NODE_PATH',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3000,
+      },
+      error_file: './logs/pm2-error.log',
+      out_file: './logs/pm2-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '1G',
+      min_uptime: '10s',
+      max_restarts: 10,
+      restart_delay: 4000,
+    },
+  ],
+};
+EOF
+
+
+STEP 6: Start PM2 with Node.js 20
+---------------------------------
+mkdir -p logs
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+nvm use 20
+pm2 stop cryptorafts || true
+pm2 delete cryptorafts || true
+pm2 start ecosystem.config.js
+pm2 save
+
+
+STEP 7: Check status
+--------------------
+pm2 status
+pm2 logs cryptorafts --lines 30
+
+
+STEP 8: Verify app is responding
+---------------------------------
+curl http://localhost:3000
+
+Should show HTML response (not 404 or error)
+
+
+THEN VISIT: https://www.cryptorafts.com
+

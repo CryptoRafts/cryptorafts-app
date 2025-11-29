@@ -1,0 +1,7 @@
+# ============================================
+# COPY-PASTE THIS INTO POWERSHELL
+# ============================================
+
+cd C:\Users\dell\cryptorafts-starter
+.\FIX_BROWSER_AND_DEPLOY.ps1
+

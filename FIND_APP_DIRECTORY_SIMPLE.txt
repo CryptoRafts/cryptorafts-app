@@ -1,0 +1,58 @@
+✅ FIND APP DIRECTORY - SIMPLE STEPS
+=====================================
+
+The app directory is not in /root/cryptorafts. Let's find it!
+
+
+STEP 1: Search for app files
+-----------------------------
+Run these commands to find the app:
+
+find / -name "package.json" -type f 2>/dev/null | grep cryptorafts
+find / -name "package.json" -type f 2>/dev/null | head -20
+find /home -name "cryptorafts" -type d 2>/dev/null
+find /var/www -name "cryptorafts" -type d 2>/dev/null
+find /opt -name "cryptorafts" -type d 2>/dev/null
+
+
+STEP 2: Check common locations
+-------------------------------
+Check these common locations:
+
+ls -la /var/www/
+ls -la /home/
+ls -la /opt/
+ls -la /usr/local/
+
+
+STEP 3: Check where PM2 processes are running
+----------------------------------------------
+If PM2 is running, check where the process is:
+
+pm2 list
+pm2 info cryptorafts
+ps aux | grep node
+ps aux | grep cryptorafts
+
+
+STEP 4: Once found, navigate there
+-----------------------------------
+cd /path/to/cryptorafts
+
+Example: If found in /var/www/cryptorafts:
+cd /var/www/cryptorafts
+
+
+STEP 5: Verify it's the right directory
+---------------------------------------
+Check if these files exist:
+
+ls -la package.json
+ls -la src/app/page.tsx
+ls -la next.config.js
+
+If all exist, this is the right directory!
+
+
+THEN CONTINUE WITH REBUILD STEPS!
+

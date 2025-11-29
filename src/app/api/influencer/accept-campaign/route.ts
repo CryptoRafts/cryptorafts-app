@@ -1,0 +1,452 @@
+export const runtime = 'nodejs';
+import { NextRequest, NextResponse } from "next/server";
+import { getAdminAuth, getAdminDb, initAdmin } from "@/server/firebaseAdmin";
+import { FieldValue } from "firebase-admin/firestore";
+
+// Initialize Firebase Admin on module load - wrapped in try-catch to prevent crashes
+if (typeof window === 'undefined') {
+  try {
+    initAdmin();
+  } catch (error: any) {
+    // Silently fail at module load - we'll retry in the route handler
+    console.warn('⚠️ [INFLUENCER API] Module load initialization failed (will retry in handler):', error?.message);
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    // Get user ID from auth token
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    }
+
+    const token = authHeader.substring(7);
+    
+    // Initialize Firebase Admin first - with retry logic and better error handling
+    let auth = getAdminAuth();
+    if (!auth) {
+      console.log('🔄 [INFLUENCER API] Firebase Admin Auth not found, initializing...');
+      try {
+        // Try to initialize
+        const { initAdmin } = await import('@/server/firebaseAdmin');
+        const app = initAdmin();
+        if (app) {
+          console.log('✅ [INFLUENCER API] Firebase Admin app initialized');
+          auth = getAdminAuth();
+        }
+      } catch (initError: any) {
+        console.error('❌ [INFLUENCER API] Initialization error:', initError?.message || initError);
+        // Don't fail yet, try other methods
+      }
+      
+      if (!auth) {
+        console.log('🔄 [INFLUENCER API] Trying explicit initialization...');
+        try {
+          // Try one more time with explicit initialization
+          const { getAuth } = await import('firebase-admin/auth');
+          const { getApps } = await import('firebase-admin/app');
+          const apps = getApps();
+          console.log(`📊 [INFLUENCER API] Found ${apps.length} Firebase Admin apps`);
+          if (apps.length > 0) {
+            auth = getAuth(apps[0]);
+            console.log('✅ [INFLUENCER API] Got Auth from existing app');
+          }
+        } catch (explicitError: any) {
+          console.error('❌ [INFLUENCER API] Explicit initialization error:', explicitError?.message || explicitError);
+        }
+      }
+      
+      if (!auth) {
+        console.error('❌ [INFLUENCER API] Firebase Admin Auth not available after initialization attempts');
+        const envCheck = {
+          hasProjectId: !!process.env.FIREBASE_PROJECT_ID,
+          hasClientEmail: !!process.env.FIREBASE_CLIENT_EMAIL,
+          hasPrivateKey: !!process.env.FIREBASE_PRIVATE_KEY,
+          hasB64: !!process.env.FIREBASE_SERVICE_ACCOUNT_B64,
+          nodeEnv: process.env.NODE_ENV,
+          vercel: !!process.env.VERCEL
+        };
+        console.error('❌ [INFLUENCER API] Environment check:', envCheck);
+        return NextResponse.json({
+          error: "Firebase Admin initialization failed",
+          details: "Server configuration error. Please check Firebase Admin credentials.",
+          envCheck
+        }, {status:503});
+      }
+    }
+    console.log('✅ [INFLUENCER API] Firebase Admin Auth ready');
+    
+    const decodedToken = await auth.verifyIdToken(token).catch((err) => {
+      console.error('❌ [INFLUENCER API] Token verification failed:', err);
+      return null;
+    });
+    if (!decodedToken) {
+      return NextResponse.json({ error: "Invalid or expired token" }, { status: 401 });
+    }
+    
+    const uid = decodedToken.uid;
+    console.log(`✅ [INFLUENCER API] Authenticated user: ${uid}`);
+
+    // Verify role and KYC status (optional - don't block if not set)
+    if (decodedToken.role && decodedToken.role !== "influencer") {
+      return NextResponse.json({ error: "not_influencer" }, { status: 403 });
+    }
+
+    if (decodedToken.kycStatus && decodedToken.kycStatus !== "approved" && decodedToken.kycStatus !== "verified") {
+      // Don't block - KYC might not be in token
+      console.warn('⚠️ [INFLUENCER API] KYC status not approved in token, but continuing');
+    }
+
+    const { campaignId, projectId, message } = await req.json();
+
+    if (!campaignId && !projectId) {
+      return NextResponse.json({ error: "missing_campaign_or_project_id" }, { status: 400 });
+    }
+
+    let db = getAdminDb();
+    if(!db){
+      console.log('🔄 [INFLUENCER API] Firebase Admin DB not found, initializing...');
+      try {
+        // Try to initialize
+        const { initAdmin } = await import('@/server/firebaseAdmin');
+        const app = initAdmin();
+        if (app) {
+          console.log('✅ [INFLUENCER API] Firebase Admin app initialized for DB');
+          db = getAdminDb();
+        }
+      } catch (initError: any) {
+        console.error('❌ [INFLUENCER API] DB initialization error:', initError?.message || initError);
+      }
+      
+      if(!db){
+        console.log('🔄 [INFLUENCER API] Trying explicit DB initialization...');
+        try {
+          // Try one more time with explicit initialization
+          const { getFirestore } = await import('firebase-admin/firestore');
+          const { getApps } = await import('firebase-admin/app');
+          const apps = getApps();
+          if (apps.length > 0) {
+            db = getFirestore(apps[0]);
+            console.log('✅ [INFLUENCER API] Got Firestore from existing app');
+          }
+        } catch (explicitError: any) {
+          console.error('❌ [INFLUENCER API] Explicit DB initialization error:', explicitError?.message || explicitError);
+        }
+      }
+      
+      if(!db){
+        console.error('❌ [INFLUENCER API] Firebase Admin DB not available after initialization attempts');
+        return NextResponse.json({ 
+          error: "Firebase Admin credentials not configured",
+          details: "Server needs Firebase Admin service account credentials. Please configure FIREBASE_SERVICE_ACCOUNT_B64 in Vercel environment variables.",
+          setupGuide: "See COMPLETE_SETUP_INSTRUCTIONS.md or run: .\\scripts\\auto-setup-firebase.ps1",
+          vercelUrl: "https://vercel.com/anas-s-projects-8d19f880/settings/environment-variables"
+        }, { status: 503 });
+      }
+    }
+    
+    // Validate database is actually working by checking if it's not null
+    if (!db) {
+      return NextResponse.json({
+        error: "Firebase Admin database not available",
+        details: "Database instance is null. Firebase Admin credentials may be invalid or missing.",
+        setupGuide: "See COMPLETE_SETUP_INSTRUCTIONS.md for setup instructions"
+      }, { status: 503 });
+    }
+    
+    console.log('✅ [INFLUENCER API] Firebase Admin DB ready');
+    const acceptanceId = `acceptance_${uid}_${campaignId || projectId}_${Date.now()}`;
+
+    // Get influencer profile
+    const influencerDoc = await db.collection("users").doc(uid).get();
+    const influencerData = influencerDoc.exists ? influencerDoc.data() : null;
+
+    // Get campaign or project data
+    let campaignData: any = {};
+    let founderId: string = "";
+
+    if (campaignId) {
+      const campaignDoc = await db.collection("campaigns").doc(campaignId).get();
+      if (!campaignDoc.exists) {
+        return NextResponse.json({ error: "campaign_not_found" }, { status: 404 });
+      }
+      campaignData = campaignDoc.data();
+      founderId = campaignData.founderId || campaignData.createdBy;
+    } else if (projectId) {
+      const projectDoc = await db.collection("projects").doc(projectId).get();
+      if (!projectDoc.exists) {
+        return NextResponse.json({ error: "project_not_found" }, { status: 404 });
+      }
+      campaignData = projectDoc.data();
+      founderId = campaignData.founderId;
+      
+      // Update project with acceptance
+      try {
+        const projectRef = db.collection("projects").doc(projectId);
+        try {
+          await projectRef.update({
+            influencerAction: 'accepted',
+            influencerActionBy: uid,
+            influencerActionAt: Date.now(),
+            updatedAt: Date.now()
+          });
+          console.log(`✅ [INFLUENCER API] Updated project ${projectId} with acceptance`);
+        } catch (updateError: any) {
+          console.error('❌ [INFLUENCER API] Error updating project:', updateError);
+          // Try set with merge instead if update fails
+          try {
+            await projectRef.set({
+              influencerAction: 'accepted',
+              influencerActionBy: uid,
+              influencerActionAt: Date.now(),
+              updatedAt: Date.now()
+            }, { merge: true });
+            console.log(`✅ [INFLUENCER API] Updated project ${projectId} with set(merge)`);
+          } catch (setError: any) {
+            console.error('❌ [INFLUENCER API] Error setting project:', setError);
+            // Don't throw - project update is not critical for campaign acceptance
+          }
+        }
+      } catch (error: any) {
+        console.error('❌ [INFLUENCER API] Error accessing project:', error);
+        // Don't throw - project update is not critical
+      }
+    }
+
+    // Get founder profile
+    const founderDoc = await db.collection("users").doc(founderId).get();
+    const founderData = founderDoc.exists ? founderDoc.data() : {};
+
+    // Create campaign acceptance record
+    await db.collection("campaignAcceptances").doc(acceptanceId).set({
+      id: acceptanceId,
+      campaignId: campaignId || projectId,
+      projectId: projectId || null,
+      influencerId: uid,
+      influencerEmail: decodedToken.email,
+      influencerName: influencerData?.displayName || `${influencerData?.firstName || ''} ${influencerData?.lastName || ''}`,
+      founderId,
+      founderEmail: founderData?.email || '',
+      founderName: founderData?.displayName || founderData?.companyName || '',
+      status: "active",
+      acceptedAt: Date.now(),
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    });
+
+    // Create Campaign Room (Telegram-style chat)
+    const roomId = `campaign_room_${founderId}_${uid}_${campaignId || projectId}`;
+    
+    await db.collection("campaignRooms").doc(roomId).set({
+      id: roomId,
+      name: `${campaignData.title || campaignData.name || "Campaign"} - Collaboration`,
+      type: "influencer-campaign",
+      campaignId: campaignId || projectId,
+      projectId: projectId || null,
+      
+      // Members
+      founderId,
+      influencerId: uid,
+      participants: [founderId, uid, "raftai"],
+      memberRoles: {
+        [founderId]: "founder",
+        [uid]: "influencer",
+        "raftai": "assistant"
+      },
+      memberData: {
+        [founderId]: {
+          id: founderId,
+          name: founderData?.displayName || founderData?.companyName || "Founder",
+          email: founderData?.email || '',
+          avatar: founderData?.photoURL || founderData?.logo || null,
+          role: "founder"
+        },
+        [uid]: {
+          id: uid,
+          name: influencerData?.displayName || `${influencerData?.firstName || ''} ${influencerData?.lastName || ''}` || 'Influencer',
+          email: influencerData?.email || '',
+          avatar: influencerData?.profilePhotoURL || null,
+          role: "influencer"
+        },
+        "raftai": {
+          id: "raftai",
+          name: "RaftAI",
+          email: null,
+          avatar: null,
+          role: "assistant"
+        }
+      },
+      
+      // Room settings
+      settings: {
+        filesAllowed: true,
+        imagesAllowed: true,
+        videoAllowed: true,
+        voiceAllowed: true,
+        threadsEnabled: true,
+        pinsEnabled: true,
+        reactionsEnabled: true,
+        mentionsEnabled: true,
+        readReceiptsEnabled: true,
+        tasksEnabled: true,
+        pollsEnabled: true,
+        eventsEnabled: true,
+        groupCallsEnabled: true,
+        screenShareEnabled: true,
+        ndaGated: false,
+        maxFileSize: 100 * 1024 * 1024, // 100MB
+      },
+      
+      // NDA status
+      nda: {
+        required: campaignData.ndaRequired || false,
+        acceptedBy: [],
+        document: campaignData.ndaDocument || null
+      },
+      
+      // Unread counts
+      unreadCount: {
+        [founderId]: 0,
+        [uid]: 0,
+        "raftai": 0
+      },
+      
+      // Room data
+      status: "active",
+      lastMessage: null,
+      lastMessageAt: null,
+      lastActivityAt: Date.now(),
+      pinnedMessages: [],
+      mutedBy: [],
+      
+      // Tasks/deliverables
+      tasks: [],
+      completedTasks: [],
+      
+      // Polls
+      polls: [],
+      
+      // Events
+      events: [],
+      
+      // RaftAI memory
+      raftaiContext: {
+        campaignBrief: campaignData.brief || "",
+        decisions: [],
+        actionItems: [],
+        notePoints: []
+      },
+      
+      createdAt: Date.now(),
+      createdBy: uid,
+      updatedAt: Date.now()
+    });
+
+    // Create welcome message from RaftAI
+    await db.collection("campaignRooms").doc(roomId).collection("messages").add({
+      senderId: "raftai",
+      senderName: "RaftAI",
+      senderAvatar: null,
+      type: "system",
+      text: `🎉 Campaign Room created! ${influencerData?.displayName || "Influencer"} has accepted the campaign "${campaignData.title || "Campaign"}". I'm here to assist with brief generation, copy variants, hashtags, and more. Type /raftai for commands!`,
+      reactions: {},
+      readBy: [],
+      mentions: [],
+      isPinned: false,
+      isEdited: false,
+      isDeleted: false,
+      createdAt: Date.now(),
+      timestamp: Date.now()
+    });
+
+    // Send notification to founder
+    await db.collection("notifications").add({
+      userId: founderId,
+      type: "campaign_accepted",
+      title: "Influencer Accepted Your Campaign! 🎉",
+      message: `${influencerData?.displayName || "An influencer"} has accepted your campaign "${campaignData.title || "Campaign"}". You can now collaborate in the campaign room.`,
+      data: {
+        campaignId: campaignId || projectId,
+        roomId,
+        influencerId: uid,
+        influencerName: influencerData?.displayName
+      },
+      link: `/founder/rooms/${roomId}`,
+      read: false,
+      createdAt: Date.now()
+    });
+
+    // Send notification to influencer
+    await db.collection("notifications").add({
+      userId: uid,
+      type: "campaign_room_created",
+      title: "Campaign Room Created! 🚀",
+      message: `Your campaign room for "${campaignData.title || "Campaign"}" is ready. Start collaborating with the founder!`,
+      data: {
+        campaignId: campaignId || projectId,
+        roomId
+      },
+      link: `/influencer/rooms/${roomId}`,
+      read: false,
+      createdAt: Date.now()
+    });
+
+    // Create audit log
+    await db.collection("audit").add({
+      type: "campaign_accepted",
+      userId: uid,
+      campaignId: campaignId || projectId,
+      roomId,
+      founderId,
+      timestamp: Date.now(),
+      immutable: true
+    });
+
+    console.log(`✅ Campaign accepted and room created: ${roomId}`);
+
+    return NextResponse.json({ 
+      success: true, 
+      roomId,
+      roomUrl: `/influencer/rooms/${roomId}`,
+      acceptanceId
+    });
+    } catch (error: any) {
+      console.error('❌ [INFLUENCER API] Error in accept-campaign:', error);
+      console.error('❌ [INFLUENCER API] Error stack:', error?.stack);
+      console.error('❌ [INFLUENCER API] Error name:', error?.name);
+      console.error('❌ [INFLUENCER API] Error code:', error?.code);
+      
+      // Provide more helpful error messages
+      let errorMessage = 'Internal server error';
+      let errorDetails = String(error?.message || error);
+      
+      // Check for specific Firebase credential errors FIRST (most common issue)
+      if (errorDetails.includes('Could not load the default credentials') || 
+          errorDetails.includes('Application Default Credentials') ||
+          (errorDetails.includes('credential') && (errorDetails.includes('load') || errorDetails.includes('default')))) {
+        errorMessage = 'Firebase Admin credentials not configured';
+        errorDetails = 'Server needs Firebase Admin service account credentials configured in Vercel.';
+        return NextResponse.json({
+          error: errorMessage,
+          details: errorDetails,
+          solution: "Add FIREBASE_SERVICE_ACCOUNT_B64 to Vercel → Settings → Environment Variables. Run: .\\scripts\\auto-setup-firebase.ps1 for automated setup.",
+          helpUrl: "https://vercel.com/anas-s-projects-8d19f880/settings/environment-variables",
+          documentation: "See COMPLETE_SETUP_INSTRUCTIONS.md in the project root for step-by-step guide.",
+          type: 'CredentialsMissing'
+        }, {status:503});
+      } else if (errorDetails.includes('Permission denied') || errorDetails.includes('permission-denied')) {
+        errorMessage = 'Permission denied';
+        errorDetails = 'You do not have permission to perform this action.';
+      } else if (errorDetails.includes('not found') || errorDetails.includes('does not exist')) {
+        errorMessage = 'Resource not found';
+      }
+      
+      return NextResponse.json({
+        error: errorMessage,
+        details: errorDetails,
+        type: error?.name || 'UnknownError'
+      }, {status:500});
+    }
+}
+

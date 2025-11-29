@@ -1,0 +1,97 @@
+================================================================================
+COPY-PASTE DEPLOYMENT COMMANDS
+================================================================================
+
+IF YOU'RE ALREADY ON VPS (root@www:/var/www/cryptorafts#):
+================================================================================
+
+Just copy-paste this entire block:
+
+cd /var/www/cryptorafts && chmod +x *.sh && ./NGINX_CONFIG_CHECK.sh && ./FINAL_DEPLOYMENT_COMPLETE.sh && curl -s http://127.0.0.1:3000/ | grep "WELCOME TO CRYPTORAFTS" && echo "✅ DEPLOYMENT SUCCESSFUL!" || echo "⚠️ Check PM2 logs: pm2 logs cryptorafts"
+
+
+================================================================================
+IF UPLOADING FROM WINDOWS POWERSHELL:
+================================================================================
+
+Step 1: Set your VPS IP (replace YOUR_VPS_IP with actual IP):
+-------------------------------------------------------------
+$VPS_IP = "YOUR_VPS_IP"
+$VPS_USER = "root"
+
+
+Step 2: Navigate to project:
+----------------------------
+cd C:\Users\dell\cryptorafts-starter
+
+
+Step 3: Upload files:
+---------------------
+scp src\app\page.tsx ${VPS_USER}@${VPS_IP}:/var/www/cryptorafts/src/app/page.tsx
+scp src\app\HomePageClient.tsx ${VPS_USER}@${VPS_IP}:/var/www/cryptorafts/src/app/HomePageClient.tsx
+scp FINAL_DEPLOYMENT_COMPLETE.sh ${VPS_USER}@${VPS_IP}:/var/www/cryptorafts/
+scp NGINX_CONFIG_CHECK.sh ${VPS_USER}@${VPS_IP}:/var/www/cryptorafts/
+
+
+Step 4: SSH and deploy:
+------------------------
+ssh ${VPS_USER}@${VPS_IP} "cd /var/www/cryptorafts && chmod +x *.sh && ./FINAL_DEPLOYMENT_COMPLETE.sh"
+
+
+================================================================================
+QUICK ONE-LINER (If already on VPS):
+================================================================================
+
+cd /var/www/cryptorafts && chmod +x *.sh && ./FINAL_DEPLOYMENT_COMPLETE.sh
+
+
+================================================================================
+MANUAL DEPLOYMENT (If files already uploaded):
+================================================================================
+
+cd /var/www/cryptorafts
+chmod +x *.sh
+./NGINX_CONFIG_CHECK.sh
+./FINAL_DEPLOYMENT_COMPLETE.sh
+curl -s http://127.0.0.1:3000/ | grep "WELCOME TO CRYPTORAFTS"
+
+
+================================================================================
+VERIFY DEPLOYMENT:
+================================================================================
+
+curl -s http://127.0.0.1:3000/ | grep "WELCOME TO CRYPTORAFTS"
+
+If you see "WELCOME TO CRYPTORAFTS" in output, deployment is successful!
+
+
+================================================================================
+TROUBLESHOOTING:
+================================================================================
+
+Check PM2 logs:
+pm2 logs cryptorafts --lines 50
+
+Check PM2 status:
+pm2 status cryptorafts
+
+Restart PM2:
+pm2 restart cryptorafts
+
+Check server response:
+curl -I http://127.0.0.1:3000/
+
+Check Nginx:
+sudo systemctl status nginx
+sudo nginx -t
+sudo systemctl restart nginx
+
+
+================================================================================
+
+
+
+
+
+
+

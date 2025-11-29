@@ -1,0 +1,491 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // ===========================================
+    // HELPER FUNCTIONS
+    // ===========================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.role == 'admin';
+    }
+    
+    function isVC() {
+      return isAuthenticated() && request.auth.token.role == 'vc';
+    }
+    
+    function isFounder() {
+      return isAuthenticated() && request.auth.token.role == 'founder';
+    }
+    
+    function isExchange() {
+      return isAuthenticated() && request.auth.token.role == 'exchange';
+    }
+    
+    function isAgency() {
+      return isAuthenticated() && request.auth.token.role == 'agency';
+    }
+    
+    function isInfluencer() {
+      return isAuthenticated() && request.auth.token.role == 'influencer';
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function isOrgMember(orgId) {
+      return isAuthenticated() && (
+        isAdmin() ||
+        exists(/databases/(default)/documents/organizations/$(orgId)) &&
+        request.auth.uid in get(/databases/(default)/documents/organizations/$(orgId)).data.members
+      );
+    }
+    
+    function isProjectMember(projectId) {
+      return isAuthenticated() && (
+        isAdmin() ||
+        (isFounder() && 
+         exists(/databases/(default)/documents/projects/$(projectId)) &&
+         get(/databases/(default)/documents/projects/$(projectId)).data.founderId == request.auth.uid) ||
+        (isVC() && 
+         exists(/databases/(default)/documents/projects/$(projectId)) &&
+         request.auth.uid in get(/databases/(default)/documents/projects/$(projectId)).data.vcIds)
+      );
+    }
+    
+    function isRoomMember(roomId) {
+      return isAuthenticated() && (
+        isAdmin() ||
+        exists(/databases/(default)/documents/groupChats/$(roomId)) &&
+        request.auth.uid in get(/databases/(default)/documents/groupChats/$(roomId)).data.members
+      );
+    }
+    
+    function isValidImageType() {
+      return resource.contentType.matches('image/.*');
+    }
+    
+    function isValidDocumentType() {
+      return resource.contentType.matches('application/pdf') ||
+             resource.contentType.matches('application/msword') ||
+             resource.contentType.matches('application/vnd.openxmlformats-officedocument.wordprocessingml.document') ||
+             resource.contentType.matches('text/.*');
+    }
+    
+    function isValidVideoType() {
+      return resource.contentType.matches('video/.*');
+    }
+    
+    function isValidAudioType() {
+      return resource.contentType.matches('audio/.*');
+    }
+    
+    function isValidFileSize(maxSizeBytes) {
+      return resource.size <= maxSizeBytes;
+    }
+    
+    // ===========================================
+    // ADMIN OVERRIDE - FULL ACCESS
+    // ===========================================
+    
+    // Admins have full access to everything
+    match /{allPaths=**} {
+      allow read, write: if isAdmin();
+    }
+    
+    // ===========================================
+    // USER FILES
+    // ===========================================
+    
+    // User profile photos and avatars
+    match /users/{userId}/profile/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (
+        isOwner(userId) ||
+        isAdmin()
+      );
+    }
+    
+    // User documents
+    match /users/{userId}/documents/{fileName} {
+      allow read, write: if isAuthenticated() && (
+        isOwner(userId) ||
+        isAdmin()
+      );
+    }
+    
+    // User temporary files
+    match /users/{userId}/temp/{fileName} {
+      allow read, write: if isAuthenticated() && (
+        isOwner(userId) ||
+        isAdmin()
+      );
+    }
+    
+    // ===========================================
+    // ORGANIZATION FILES
+    // ===========================================
+    
+    // Organization logos - accessible to all authenticated users
+    match /organizations/logos/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    // Organization documents - private to org members
+    match /organizations/{orgId}/documents/{fileName} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        isOrgMember(orgId)
+      );
+    }
+    
+    // Organization KYB documents - private to org members
+    match /organizations/{orgId}/kyb/{fileName} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        isOrgMember(orgId)
+      );
+    }
+    
+    // Organization assets
+    match /organizations/{orgId}/assets/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (
+        isAdmin() ||
+        isOrgMember(orgId)
+      );
+    }
+    
+    // ===========================================
+    // PROJECT FILES
+    // ===========================================
+    
+    // Project logos and images
+    match /projects/{projectId}/images/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (
+        isAdmin() ||
+        isProjectMember(projectId)
+      );
+    }
+    
+    // Project documents
+    match /projects/{projectId}/documents/{fileName} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        isProjectMember(projectId)
+      );
+    }
+    
+    // Project pitch materials
+    match /projects/{projectId}/pitches/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (
+        isAdmin() ||
+        isProjectMember(projectId)
+      );
+    }
+    
+    // Project pitch videos
+    match /projects/{projectId}/videos/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (
+        isAdmin() ||
+        isProjectMember(projectId)
+      );
+    }
+    
+    // Project pitch audio
+    match /projects/{projectId}/audio/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (
+        isAdmin() ||
+        isProjectMember(projectId)
+      );
+    }
+    
+    // Project artifacts
+    match /projects/{projectId}/artifacts/{fileName} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        isProjectMember(projectId)
+      );
+    }
+    
+    // ===========================================
+    // KYC/KYB DOCUMENTS
+    // ===========================================
+    
+    // KYC documents - private to user and admins
+    match /kyc-documents/{userId}/{fileName} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        isOwner(userId)
+      );
+    }
+    
+    // KYB documents - private to org members and admins
+    match /kyb-documents/{orgId}/{fileName} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        isOrgMember(orgId)
+      );
+    }
+    
+    // ===========================================
+    // CHAT ATTACHMENTS
+    // ===========================================
+    
+    // Chat room attachments
+    match /chat-attachments/{roomId}/{fileName} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        isRoomMember(roomId)
+      );
+    }
+    
+    // Chat room images
+    match /chat-attachments/{roomId}/images/{fileName} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        isRoomMember(roomId)
+      );
+    }
+    
+    // Chat room documents
+    match /chat-attachments/{roomId}/documents/{fileName} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        isRoomMember(roomId)
+      );
+    }
+    
+    // ===========================================
+    // PITCH DOCUMENTS
+    // ===========================================
+    
+    // Pitch documents - accessible to VCs, founders, and admins
+    match /pitch-documents/{projectId}/{fileName} {
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        isVC() ||
+        isFounder() ||
+        isExchange() ||
+        isAgency()
+      );
+      allow write: if isAuthenticated() && (
+        isAdmin() ||
+        isProjectMember(projectId)
+      );
+    }
+    
+    // ===========================================
+    // AUDIT DOCUMENTS
+    // ===========================================
+    
+    // Audit documents - admin only
+    match /audit/{fileName} {
+      allow read, write: if isAdmin();
+    }
+    
+    // Audit documents by category
+    match /audit/{category}/{fileName} {
+      allow read, write: if isAdmin();
+    }
+    
+    // ===========================================
+    // PUBLIC ASSETS
+    // ===========================================
+    
+    // Public assets - readable by all authenticated users, writable by admins
+    match /public/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    // Public images
+    match /public/images/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    // Public documents
+    match /public/documents/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    // ===========================================
+    // TEMPORARY FILES
+    // ===========================================
+    
+    // Temporary uploads - users can write their own, auto-delete after time
+    match /temp/{userId}/{fileName} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        isOwner(userId)
+      );
+    }
+    
+    // Temporary files with expiration
+    match /temp/{userId}/expiring/{fileName} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        isOwner(userId)
+      );
+    }
+    
+    // ===========================================
+    // EXCHANGE SPECIFIC FILES
+    // ===========================================
+    
+    // Exchange listing images
+    match /exchange/listings/{listingId}/images/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (
+        isAdmin() ||
+        isExchange()
+      );
+    }
+    
+    // Exchange documents
+    match /exchange/documents/{fileName} {
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        isExchange() ||
+        isVC() ||
+        isFounder()
+      );
+      allow write: if isAuthenticated() && (
+        isAdmin() ||
+        isExchange()
+      );
+    }
+    
+    // ===========================================
+    // AGENCY SPECIFIC FILES
+    // ===========================================
+    
+    // Agency project files
+    match /agency/projects/{projectId}/{fileName} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        isAgency()
+      );
+    }
+    
+    // Agency assets
+    match /agency/assets/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (
+        isAdmin() ||
+        isAgency()
+      );
+    }
+    
+    // ===========================================
+    // INFLUENCER SPECIFIC FILES
+    // ===========================================
+    
+    // Influencer campaign assets
+    match /influencer/campaigns/{campaignId}/{fileName} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        isInfluencer()
+      );
+    }
+    
+    // Influencer content
+    match /influencer/content/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (
+        isAdmin() ||
+        isInfluencer()
+      );
+    }
+    
+    // ===========================================
+    // SYSTEM FILES
+    // ===========================================
+    
+    // System configuration files - admin only
+    match /system/{fileName} {
+      allow read, write: if isAdmin();
+    }
+    
+    // System logs - admin only
+    match /system/logs/{fileName} {
+      allow read, write: if isAdmin();
+    }
+    
+    // System backups - admin only
+    match /system/backups/{fileName} {
+      allow read, write: if isAdmin();
+    }
+    
+    // ===========================================
+    // ANALYTICS FILES
+    // ===========================================
+    
+    // Analytics data - admin only
+    match /analytics/{fileName} {
+      allow read, write: if isAdmin();
+    }
+    
+    // Analytics reports
+    match /analytics/reports/{fileName} {
+      allow read, write: if isAdmin();
+    }
+    
+    // ===========================================
+    // FILE TYPE VALIDATION RULES
+    // ===========================================
+    
+    // Image files with size limits
+    match /{path=**}/images/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && 
+        isValidImageType() && 
+        isValidFileSize(10 * 1024 * 1024); // 10MB limit
+    }
+    
+    // Document files with size limits
+    match /{path=**}/documents/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && 
+        isValidDocumentType() && 
+        isValidFileSize(50 * 1024 * 1024); // 50MB limit
+    }
+    
+    // Video files with size limits
+    match /{path=**}/videos/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && 
+        isValidVideoType() && 
+        isValidFileSize(500 * 1024 * 1024); // 500MB limit
+    }
+    
+    // Audio files with size limits
+    match /{path=**}/audio/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && 
+        isValidAudioType() && 
+        isValidFileSize(100 * 1024 * 1024); // 100MB limit
+    }
+    
+    // ===========================================
+    // DEFAULT RULE - ADMIN OVERRIDE
+    // ===========================================
+    
+    // Default rule for any unmatched paths - admin only
+    match /{allPaths=**} {
+      allow read, write: if isAdmin();
+    }
+  }
+}

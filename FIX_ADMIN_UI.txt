@@ -1,0 +1,119 @@
+# ============================================
+# FIX ADMIN UI NOT WORKING
+# ============================================
+
+# The admin UI is not working, preventing blog post creation
+# This needs to be fixed so you can publish posts
+
+cd /var/www/cryptorafts
+
+# ============================================
+# Step 1: Check Admin Routes
+# ============================================
+
+echo "Checking admin routes..."
+ls -la src/app/admin/blog/
+
+# Should show:
+# - page.tsx (blog listing)
+# - new/page.tsx (create new post)
+
+# ============================================
+# Step 2: Check PM2 Logs for Errors
+# ============================================
+
+echo ""
+echo "Checking PM2 logs for admin errors..."
+pm2 logs cryptorafts --lines 50 | grep -i "admin\|error\|blog"
+
+# Look for:
+# - Route errors
+# - Authentication errors
+# - Firebase errors
+# - Database errors
+
+# ============================================
+# Step 3: Test Admin Routes
+# ============================================
+
+echo ""
+echo "Testing admin routes..."
+
+# Test admin blog listing
+curl -I https://www.cryptorafts.com/admin/blog
+
+# Test admin blog new post
+curl -I https://www.cryptorafts.com/admin/blog/new
+
+# Should return HTTP 200 OK (or redirect if not authenticated)
+
+# ============================================
+# Step 4: Check Firebase Connection
+# ============================================
+
+echo ""
+echo "Checking Firebase connection..."
+pm2 logs cryptorafts --lines 50 | grep -i "firebase\|firestore\|connection"
+
+# Look for:
+# - Connection errors
+# - Authentication errors
+# - Permission errors
+
+# ============================================
+# Step 5: Verify Admin Authentication
+# ============================================
+
+echo ""
+echo "Checking admin authentication..."
+echo "Visit: https://www.cryptorafts.com/admin/blog"
+echo ""
+echo "Check if:"
+echo "  - You can log in"
+echo "  - You have admin access"
+echo "  - The page loads without errors"
+
+# ============================================
+# Common Admin UI Issues
+# ============================================
+
+# Issue 1: Authentication not working
+# Solution: Check Firebase auth configuration
+
+# Issue 2: Route not found (404)
+# Solution: Verify admin routes exist and are deployed
+
+# Issue 3: Permission denied
+# Solution: Check admin claims in Firebase
+
+# Issue 4: Firebase connection error
+# Solution: Check Firebase configuration and CORS
+
+# Issue 5: UI not loading
+# Solution: Check browser console for errors
+
+# ============================================
+# Quick Fix: Check Admin Routes
+# ============================================
+
+echo ""
+echo "Checking if admin routes exist..."
+find src/app/admin -name "*.tsx" -o -name "*.ts" | grep blog
+
+# Should show:
+# src/app/admin/blog/page.tsx
+# src/app/admin/blog/new/page.tsx
+
+# ============================================
+# If Admin Routes Missing
+# ============================================
+
+# Upload admin routes from Windows:
+# scp -r src/app/admin root@72.61.98.99:/var/www/cryptorafts/src/app/
+
+# Then rebuild:
+# npm run build
+# pm2 restart cryptorafts
+
+# ============================================
+

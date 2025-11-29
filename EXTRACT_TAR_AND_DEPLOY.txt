@@ -1,0 +1,190 @@
+❌ FILES IN TAR ARCHIVE - EXTRACT AND DEPLOY
+===========================================
+
+Files uploaded as cryptorafts.tar.gz archive!
+Need to extract it first.
+
+
+STEP 1: Extract the tar.gz archive
+-----------------------------------
+cd /var/www/cryptorafts
+tar -xzf cryptorafts.tar.gz
+
+This will extract all files to /var/www/cryptorafts
+
+
+STEP 2: Check if files extracted to subdirectory
+-------------------------------------------------
+ls -la
+
+If you see a subdirectory (like cryptorafts/ or DEPLOY_TO_VPS/), 
+move files up one level:
+
+# If extracted to cryptorafts/ subdirectory:
+mv cryptorafts/* . 2>/dev/null || true
+mv cryptorafts/.* . 2>/dev/null || true
+rmdir cryptorafts 2>/dev/null || true
+
+# If extracted to DEPLOY_TO_VPS/ subdirectory:
+mv DEPLOY_TO_VPS/* . 2>/dev/null || true
+mv DEPLOY_TO_VPS/.* . 2>/dev/null || true
+rmdir DEPLOY_TO_VPS 2>/dev/null || true
+
+
+STEP 3: Verify files extracted correctly
+-----------------------------------------
+ls -la package.json
+ls -la src/app/page.tsx
+ls -la next.config.js
+
+All should exist now!
+
+
+STEP 4: Load Node.js 20
+-------------------------
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+nvm use 20
+node --version
+
+Should show: v20.19.5 (or similar)
+
+
+STEP 5: Install Dependencies
+-----------------------------
+cd /var/www/cryptorafts
+npm install --legacy-peer-deps
+
+This will take 2-5 minutes. Wait for it to complete!
+
+
+STEP 6: Build the App
+---------------------
+rm -rf .next out node_modules/.cache
+NODE_ENV=production npm run build
+
+This will take 5-10 minutes. Wait for it to complete!
+
+Watch for:
+- "Compiled successfully" message
+- No errors (warnings are OK)
+
+
+STEP 7: Verify Build Succeeded
+-------------------------------
+ls -la .next
+
+Should show .next directory with files inside.
+
+
+STEP 8: Verify server.js and ecosystem.config.js exist
+-------------------------------------------------------
+ls -la server.js
+ls -la ecosystem.config.js
+
+If server.js doesn't exist, create it:
+
+cat > server.js << 'EOF'
+const { createServer } = require('http');
+const { parse } = require('url');
+const next = require('next');
+
+const dev = process.env.NODE_ENV !== 'production';
+const hostname = process.env.HOSTNAME || 'localhost';
+const port = parseInt(process.env.PORT || '3000', 10);
+
+const app = next({ dev, hostname, port });
+const handle = app.getRequestHandler();
+
+app.prepare().then(() => {
+  createServer(async (req, res) => {
+    try {
+      const parsedUrl = parse(req.url, true);
+      await handle(req, res, parsedUrl);
+    } catch (err) {
+      console.error('Error occurred handling', req.url, err);
+      res.statusCode = 500;
+      res.end('internal server error');
+    }
+  })
+    .once('error', (err) => {
+      console.error(err);
+      process.exit(1);
+    })
+    .listen(port, () => {
+      console.log(`> Ready on http://${hostname}:${port}`);
+    });
+});
+EOF
+
+
+STEP 9: Update ecosystem.config.js and Start PM2
+-------------------------------------------------
+pm2 stop all
+pm2 delete all
+
+NODE_PATH=$(which node)
+cat > ecosystem.config.js << EOF
+module.exports = {
+  apps: [
+    {
+      name: 'cryptorafts',
+      script: './server.js',
+      instances: 1,
+      exec_mode: 'fork',
+      interpreter: '$NODE_PATH',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3000,
+      },
+      error_file: './logs/pm2-error.log',
+      out_file: './logs/pm2-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '1G',
+      min_uptime: '10s',
+      max_restarts: 10,
+      restart_delay: 4000,
+    },
+  ],
+};
+EOF
+
+mkdir -p logs
+pm2 start ecosystem.config.js
+pm2 save
+pm2 status
+
+
+STEP 10: Verify App is Running
+------------------------------
+pm2 logs cryptorafts --lines 20
+
+Should show:
+- "> Ready on http://localhost:3000"
+- No errors
+
+Then test:
+curl http://localhost:3000
+
+Should show HTML (not error)!
+
+
+STEP 11: Verify Website
+-------------------------
+Visit: https://www.cryptorafts.com
+
+Should show your app live!
+
+
+CRITICAL NOTES:
+===============
+1. Extract tar.gz first
+2. Check if files in subdirectory
+3. Move files up if needed
+4. Verify files exist before proceeding
+5. Build will take 5-10 minutes
+6. Be patient with each step
+

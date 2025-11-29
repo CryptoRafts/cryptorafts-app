@@ -1,0 +1,122 @@
+# ============================================
+# DIRECT MEMORY FIX - Run on VPS
+# ============================================
+# Problem: Heap Size is still 80MB (should be 2048MB)
+# Heap Usage: 95.8% - CRITICAL!
+# node_args didn't apply correctly
+
+# ============================================
+# STEP 1: Check Current Config
+# ============================================
+cd /var/www/cryptorafts
+cat ecosystem.config.js
+
+# ============================================
+# STEP 2: Fix Config File (Verify it's correct)
+# ============================================
+# Make sure the file has proper syntax
+cat > ecosystem.config.js << 'EOF'
+module.exports = {
+  apps: [{
+    name: 'cryptorafts',
+    script: './server.js',
+    instances: 1,
+    exec_mode: 'fork',
+    node_args: '--max-old-space-size=2048',
+    env: {
+      NODE_ENV: 'production',
+      PORT: 3000,
+      HOSTNAME: '0.0.0.0',
+      NODE_OPTIONS: '--max-old-space-size=2048'
+    },
+    error_file: './logs/err.log',
+    out_file: './logs/out.log',
+    log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+    merge_logs: true,
+    autorestart: true,
+    max_memory_restart: '2G',
+    min_uptime: '10s',
+    max_restarts: 10
+  }]
+};
+EOF
+
+# Verify the file
+cat ecosystem.config.js | grep -A 5 "node_args"
+
+# ============================================
+# STEP 3: Restart PM2 Daemon (Important!)
+# ============================================
+pm2 kill
+pm2 resurrect
+
+# ============================================
+# STEP 4: Restart App
+# ============================================
+cd /var/www/cryptorafts
+pm2 stop cryptorafts 2>/dev/null || true
+pm2 delete cryptorafts 2>/dev/null || true
+pm2 start ecosystem.config.js
+pm2 save
+
+# Wait for app to start
+sleep 5
+
+# ============================================
+# STEP 5: Verify Node.js Memory Settings
+# ============================================
+# Check if node_args is applied
+pm2 describe cryptorafts | grep -i "node_args\|NODE_OPTIONS"
+
+# Check process arguments
+ps aux | grep "cryptorafts" | grep -v grep
+
+# Check heap size (should be ~2048MB now)
+pm2 monit
+
+# ============================================
+# ALTERNATIVE: Direct Node.js Start (Test)
+# ============================================
+# If PM2 isn't applying node_args, test directly:
+# cd /var/www/cryptorafts
+# NODE_OPTIONS='--max-old-space-size=2048' node server.js
+
+# ============================================
+# SOLUTION IF STILL NOT WORKING:
+# ============================================
+# Create a wrapper script that sets NODE_OPTIONS
+
+cat > start-server.sh << 'EOFSCRIPT'
+#!/bin/bash
+export NODE_OPTIONS='--max-old-space-size=2048'
+exec node server.js
+EOFSCRIPT
+
+chmod +x start-server.sh
+
+# Update ecosystem.config.js to use wrapper
+cat > ecosystem.config.js << 'EOF'
+module.exports = {
+  apps: [{
+    name: 'cryptorafts',
+    script: './start-server.sh',
+    instances: 1,
+    exec_mode: 'fork',
+    env: {
+      NODE_ENV: 'production',
+      PORT: 3000,
+      HOSTNAME: '0.0.0.0',
+      NODE_OPTIONS: '--max-old-space-size=2048'
+    },
+    error_file: './logs/err.log',
+    out_file: './logs/out.log',
+    merge_logs: true,
+    autorestart: true,
+    max_memory_restart: '2G'
+  }]
+};
+EOF
+
+pm2 restart cryptorafts
+pm2 save
+

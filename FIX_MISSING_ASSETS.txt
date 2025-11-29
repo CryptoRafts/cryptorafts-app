@@ -1,0 +1,51 @@
+# ============================================
+# FIX MISSING ASSETS - COPY-PASTE INTO POWERSHELL
+# ============================================
+
+$vpsIP = "72.61.98.99"
+$vpsUser = "root"
+$appDir = "/var/www/cryptorafts"
+$publicDir = "public"
+
+Write-Host ""
+Write-Host "UPLOADING PUBLIC ASSETS TO VPS" -ForegroundColor Cyan
+Write-Host "=================================" -ForegroundColor Cyan
+Write-Host ""
+
+if (-not (Test-Path $publicDir)) {
+    Write-Host "ERROR: $publicDir folder not found!" -ForegroundColor Red
+    exit 1
+}
+
+Write-Host "Step 1: Uploading public folder..." -ForegroundColor Yellow
+Write-Host "Connecting to: $vpsUser@$vpsIP" -ForegroundColor Cyan
+Write-Host "You will be prompted for your VPS password" -ForegroundColor Yellow
+Write-Host ""
+
+ssh "$vpsUser@$vpsIP" "mkdir -p $appDir/$publicDir" 2>&1 | Out-Null
+
+scp -r "$publicDir"/* "${vpsUser}@${vpsIP}:${appDir}/$publicDir/" 2>&1
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "ERROR: Upload failed!" -ForegroundColor Red
+    exit 1
+}
+
+Write-Host ""
+Write-Host "SUCCESS: Public assets uploaded!" -ForegroundColor Green
+Write-Host ""
+
+Write-Host "Step 2: Restarting PM2..." -ForegroundColor Yellow
+ssh "$vpsUser@$vpsIP" "cd $appDir && pm2 restart cryptorafts" 2>&1
+
+Write-Host ""
+Write-Host "SUCCESS: Assets fixed!" -ForegroundColor Green
+Write-Host ""
+Write-Host "Fixed files:" -ForegroundColor Cyan
+Write-Host "  ✅ cryptorafts.logo (1).svg" -ForegroundColor Green
+Write-Host "  ✅ tablogo.ico" -ForegroundColor Green
+Write-Host "  ✅ Sequence 01.mp4" -ForegroundColor Green
+Write-Host "  ✅ homapage (1-5).png" -ForegroundColor Green
+Write-Host "  ✅ site.webmanifest" -ForegroundColor Green
+Write-Host ""
+

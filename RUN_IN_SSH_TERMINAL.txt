@@ -1,0 +1,73 @@
+✅ IMPORTANT: Run these commands IN YOUR SSH TERMINAL
+====================================================
+
+NOT in PowerShell! Only AFTER you connect via SSH!
+
+
+STEP 1: Reconnect to SSH (in PowerShell)
+----------------------------------------
+Open PowerShell and run:
+ssh -p 65002 u386122906@145.79.211.130
+
+Password: Shamsi2627@@
+
+
+STEP 2: Once connected (you'll see [u386122906@... ~]$)
+-------------------------------------------------------
+Run these commands IN YOUR SSH TERMINAL:
+
+1. Navigate to directory:
+   cd ~/cryptorafts
+
+2. Check if files exist:
+   ls -la src/app/page.tsx
+
+3. If file EXISTS, continue to Step 3
+   If file NOT FOUND, files not uploaded correctly!
+
+
+STEP 3: Run deployment command (copy and paste this ENTIRE command)
+--------------------------------------------------------------------
+export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" || curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash && export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && nvm install 18 && nvm use 18 && cd ~/cryptorafts && npm install --production && rm -rf .next out && NODE_ENV=production npm run build && cat > server.js << 'EOF'
+const { createServer } = require('http');
+const { parse } = require('url');
+const next = require('next');
+const dev = process.env.NODE_ENV !== 'production';
+const hostname = process.env.HOSTNAME || 'localhost';
+const port = parseInt(process.env.PORT || '3000', 10);
+const app = next({ dev, hostname, port });
+const handle = app.getRequestHandler();
+app.prepare().then(() => {
+  createServer(async (req, res) => {
+    try {
+      const parsedUrl = parse(req.url, true);
+      await handle(req, res, parsedUrl);
+    } catch (err) {
+      console.error('Error occurred handling', req.url, err);
+      res.statusCode = 500;
+      res.end('internal server error');
+    }
+  })
+    .once('error', (err) => {
+      console.error(err);
+      process.exit(1);
+    })
+    .listen(port, () => {
+      console.log(`> Ready on http://${hostname}:${port}`);
+    });
+});
+EOF
+npm install -g pm2 && pm2 stop cryptorafts || true && pm2 delete cryptorafts || true && pm2 start server.js --name cryptorafts && pm2 save && echo "✅ Done! Visit https://www.cryptorafts.com"
+
+
+WAIT 10-15 MINUTES...
+
+
+STEP 4: Visit website
+---------------------
+After script completes:
+- Wait 30 seconds
+- Clear browser cache: Ctrl+Shift+Delete
+- Hard refresh: Ctrl+F5
+- Visit: https://www.cryptorafts.com
+

@@ -1,0 +1,78 @@
+==========================================
+MANUAL DEPLOYMENT STEPS
+==========================================
+
+If the automated script fails, use these manual commands:
+
+STEP 1: Build locally
+----------------------
+cd C:\Users\dell\cryptorafts-starter
+npm run build
+
+
+STEP 2: Upload files one by one
+----------------------
+# Upload page.tsx
+scp src/app/page.tsx root@72.61.98.99:/var/www/cryptorafts/src/app/page.tsx
+
+# Upload globals.css
+scp src/app/globals.css root@72.61.98.99:/var/www/cryptorafts/src/app/globals.css
+
+
+STEP 3: Rebuild on VPS
+----------------------
+ssh root@72.61.98.99 "cd /var/www/cryptorafts; npm run build"
+
+
+STEP 4: Restart PM2
+----------------------
+ssh root@72.61.98.99 "cd /var/www/cryptorafts; pm2 restart cryptorafts"
+
+
+STEP 5: Verify deployment
+----------------------
+ssh root@72.61.98.99 "cd /var/www/cryptorafts; pm2 status"
+ssh root@72.61.98.99 "cd /var/www/cryptorafts; pm2 logs cryptorafts --lines 50"
+
+
+ALTERNATIVE: Upload .next folder (if needed)
+----------------------
+# This is large and may timeout, so use tar.gz compression on VPS instead
+# Or upload in smaller chunks
+
+# Option 1: Compress locally, upload, extract on VPS
+tar -czf .next.tar.gz .next
+scp .next.tar.gz root@72.61.98.99:/var/www/cryptorafts/
+ssh root@72.61.98.99 "cd /var/www/cryptorafts; tar -xzf .next.tar.gz; rm .next.tar.gz"
+
+# Option 2: Just rebuild on VPS (recommended)
+# Skip uploading .next, just rebuild on VPS after uploading source files
+
+
+TROUBLESHOOTING
+----------------------
+If connection keeps closing:
+1. Check SSH key authentication is set up
+2. Try using SSH key instead of password
+3. Increase connection timeout
+4. Check VPS firewall settings
+5. Try uploading files individually with delays between uploads
+
+If upload succeeds but files don't appear:
+1. Check file permissions on VPS
+2. Verify files are in correct location
+3. Check disk space on VPS
+4. Verify SSH user has write permissions
+
+
+
+
+
+
+
+
+
+
+
+
+

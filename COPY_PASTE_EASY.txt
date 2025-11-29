@@ -1,0 +1,68 @@
+# ============================================
+# CRYPTORAFTS - EASY COPY-PASTE DEPLOYMENT
+# ============================================
+# STEP 1: Navigate to project folder
+# ============================================
+
+cd C:\Users\dell\cryptorafts-starter
+
+# ============================================
+# STEP 2: Copy and paste everything below
+# ============================================
+
+$vpsIP = "72.61.98.99"
+$vpsUser = "root"
+$appDir = "/var/www/cryptorafts"
+$scriptFile = "RUN_THIS_IN_SSH_NOW.sh"
+
+Write-Host ""
+Write-Host "CRYPTORAFTS - COMPLETE DEPLOYMENT" -ForegroundColor Cyan
+Write-Host "=================================" -ForegroundColor Cyan
+Write-Host ""
+
+Write-Host "Step 1: Checking deployment files..." -ForegroundColor Yellow
+if (-not (Test-Path $scriptFile)) {
+    Write-Host "ERROR: $scriptFile not found!" -ForegroundColor Red
+    Write-Host "Current directory: $PWD" -ForegroundColor Yellow
+    exit 1
+}
+Write-Host "SUCCESS: $scriptFile found" -ForegroundColor Green
+Write-Host ""
+
+Write-Host "Step 2: Reading deployment script..." -ForegroundColor Yellow
+$scriptContent = Get-Content $scriptFile -Raw
+Write-Host "SUCCESS: Script loaded" -ForegroundColor Green
+Write-Host ""
+
+Write-Host "Step 3: Checking SSH..." -ForegroundColor Yellow
+$sshPath = Get-Command ssh -ErrorAction SilentlyContinue
+if (-not $sshPath) {
+    Write-Host "ERROR: SSH not found!" -ForegroundColor Red
+    Write-Host "Install OpenSSH (as Administrator): Add-WindowsCapability -Online -Name OpenSSH.Client~~~~0.0.1.0" -ForegroundColor Cyan
+    exit 1
+}
+Write-Host "SUCCESS: SSH found" -ForegroundColor Green
+Write-Host ""
+
+Write-Host "Step 4: Preparing deployment..." -ForegroundColor Yellow
+$deployCmd = "cd $appDir 2>/dev/null || mkdir -p $appDir && cd $appDir && cat > $scriptFile << 'DEPLOYEOF'`n$scriptContent`nDEPLOYEOF`nchmod +x $scriptFile && bash $scriptFile"
+
+Write-Host "SUCCESS: Ready to deploy" -ForegroundColor Green
+Write-Host ""
+
+Write-Host "Step 5: Deploying to VPS..." -ForegroundColor Yellow
+Write-Host "Connecting to: $vpsUser@$vpsIP" -ForegroundColor Cyan
+Write-Host "This will take 5-10 minutes..." -ForegroundColor Yellow
+Write-Host ""
+
+$deployCmd | ssh "$vpsUser@$vpsIP" bash
+
+Write-Host ""
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "SUCCESS: DEPLOYMENT COMPLETE!" -ForegroundColor Green
+    Write-Host "Your app is live at: https://www.cryptorafts.com" -ForegroundColor Cyan
+} else {
+    Write-Host "WARNING: Exit code $LASTEXITCODE - Check output above" -ForegroundColor Yellow
+}
+Write-Host ""
+

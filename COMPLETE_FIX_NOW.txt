@@ -1,0 +1,127 @@
+═══════════════════════════════════════════════════════
+COMPLETE FIX - Copy & Paste This ENTIRE Command
+═══════════════════════════════════════════════════════
+
+Run this in SSH terminal:
+
+cd /var/www/cryptorafts && \
+echo "🔍 Searching for files..." && \
+FOUND_PATH=$(find /var/www /home -name "package.json" -type f 2>/dev/null | grep -i cryptorafts | head -1) && \
+if [ -z "$FOUND_PATH" ]; then \
+  echo "❌ Files not found! Need to upload via File Manager."; \
+  echo ""; \
+  echo "CRITICAL: Upload these files to /var/www/cryptorafts via File Manager:"; \
+  echo "  1. src/ folder (ENTIRE folder)"; \
+  echo "  2. package.json"; \
+  echo "  3. next.config.js"; \
+  echo "  4. tsconfig.json"; \
+  exit 1; \
+else \
+  APP_DIR=$(dirname "$FOUND_PATH"); \
+  echo "✅ Found files in: $APP_DIR"; \
+  if [ "$APP_DIR" != "/var/www/cryptorafts" ]; then \
+    echo "⚠️  Copying files to /var/www/cryptorafts..."; \
+    cd "$APP_DIR"; \
+    cp -r src package.json next.config.js tsconfig.json public /var/www/cryptorafts/ 2>/dev/null || true; \
+  fi; \
+fi && \
+cd /var/www/cryptorafts && \
+chmod 755 /var/www/cryptorafts && \
+find /var/www/cryptorafts -type d -exec chmod 755 {} \; 2>/dev/null || true && \
+find /var/www/cryptorafts -type f -exec chmod 644 {} \; 2>/dev/null || true && \
+ls -la package.json src/app/page.tsx next.config.js && \
+echo "✅ Files verified!" && \
+export NVM_DIR="$HOME/.nvm" && \
+. "$NVM_DIR/nvm.sh" && \
+nvm use 20 || true && \
+NODE_PATH=$(which node) && \
+echo "✅ Node.js: $NODE_PATH ($(node --version))" && \
+pm2 stop all && \
+pm2 delete all && \
+rm -rf node_modules package-lock.json .next out && \
+echo "📦 Installing dependencies (5-10 minutes)..." && \
+npm install --legacy-peer-deps && \
+echo "✅ Dependencies installed!" && \
+NODE_ENV=production npm run build && \
+echo "✅ Build completed!" && \
+cat > server.js << 'EOFSERVER'
+const { createServer } = require('http');
+const { parse } = require('url');
+const next = require('next');
+const dev = process.env.NODE_ENV !== 'production';
+const hostname = process.env.HOSTNAME || 'localhost';
+const port = parseInt(process.env.PORT || '3000', 10);
+const app = next({ dev, hostname, port });
+const handle = app.getRequestHandler();
+app.prepare().then(() => {
+  createServer(async (req, res) => {
+    try {
+      const parsedUrl = parse(req.url, true);
+      await handle(req, res, parsedUrl);
+    } catch (err) {
+      console.error('Error occurred handling', req.url, err);
+      res.statusCode = 500;
+      res.end('internal server error');
+    }
+  })
+    .once('error', (err) => {
+      console.error(err);
+      process.exit(1);
+    })
+    .listen(port, () => {
+      console.log(`> Ready on http://${hostname}:${port}`);
+    });
+});
+EOFSERVER
+NODE_PATH=$(which node) && \
+cat > ecosystem.config.js << EOF
+module.exports = {
+  apps: [
+    {
+      name: 'cryptorafts',
+      script: './server.js',
+      instances: 1,
+      exec_mode: 'fork',
+      interpreter: '${NODE_PATH}',
+      env: { NODE_ENV: 'production', PORT: 3000 },
+      error_file: './logs/pm2-error.log',
+      out_file: './logs/pm2-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '1G',
+      min_uptime: '10s',
+      max_restarts: 10,
+      restart_delay: 4000,
+    },
+  ],
+};
+EOF
+mkdir -p logs && \
+pm2 start ecosystem.config.js && \
+pm2 save && \
+pm2 status && \
+sleep 15 && \
+pm2 logs cryptorafts --lines 30 --nostream && \
+echo "" && \
+echo "✅ DEPLOYMENT COMPLETE! Visit: https://www.cryptorafts.com"
+
+═══════════════════════════════════════════════════════
+IF FILES ARE NOT FOUND:
+═══════════════════════════════════════════════════════
+
+You MUST upload files via Hostinger File Manager:
+
+1. Go to: https://hpanel.hostinger.com/
+2. Click 'File Manager'
+3. Navigate to: /var/www/cryptorafts
+4. Upload from C:\Users\dell\cryptorafts-starter:
+   - src/ folder (drag entire folder)
+   - package.json
+   - next.config.js
+   - tsconfig.json
+   - public/ folder (if exists)
+
+5. After uploading, run the command above again
+

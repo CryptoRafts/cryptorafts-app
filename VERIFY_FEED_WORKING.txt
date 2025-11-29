@@ -1,0 +1,106 @@
+# ============================================
+# VERIFY FEED IS WORKING
+# ============================================
+
+# The build shows /feed.xml is working!
+# Build output: ├ ƒ /feed.xml (dynamic route)
+
+# Local test returned: HTTP 200 OK ✓
+# External test returned: HTTP 404 (likely cache/nginx)
+
+cd /var/www/cryptorafts
+
+# ============================================
+# Step 1: Verify feed works locally
+# ============================================
+
+echo "Testing local feed..."
+curl -I http://localhost:3000/feed.xml
+
+# Should return: HTTP 200 OK, Content-Type: application/rss+xml
+
+# ============================================
+# Step 2: Test feed content
+# ============================================
+
+echo ""
+echo "Testing feed content..."
+curl http://localhost:3000/feed.xml | head -20
+
+# Should show XML starting with:
+# <?xml version="1.0" encoding="UTF-8"?>
+# <rss version="2.0"...
+
+# ============================================
+# Step 3: Clear Nginx cache (if using cache)
+# ============================================
+
+echo ""
+echo "Clearing Nginx cache..."
+sudo rm -rf /var/cache/nginx/*
+sudo nginx -t && sudo systemctl reload nginx
+
+# ============================================
+# Step 4: Test from external again
+# ============================================
+
+echo ""
+echo "Testing external feed..."
+curl -I https://www.cryptorafts.com/feed.xml
+
+# Should return: HTTP 200 OK, Content-Type: application/rss+xml
+
+# ============================================
+# Step 5: Check Nginx configuration
+# ============================================
+
+echo ""
+echo "Checking Nginx config..."
+sudo nginx -t
+
+# ============================================
+# Step 6: Check PM2 status
+# ============================================
+
+echo ""
+echo "Checking PM2 status..."
+pm2 status
+pm2 logs cryptorafts --lines 20 | grep -i "feed\|rss\|error"
+
+# ============================================
+# If Still Getting 404 Externally
+# ============================================
+
+# Check 1: Verify route file exists
+ls -la src/app/feed.xml/route.ts
+
+# Check 2: Check if Nginx is blocking
+sudo cat /etc/nginx/sites-available/default | grep -i "feed\|xml"
+
+# Check 3: Test API endpoint directly
+curl -I http://localhost:3000/api/blog/rss
+
+# Check 4: Restart everything
+pm2 restart cryptorafts
+sudo systemctl reload nginx
+sleep 5
+curl -I https://www.cryptorafts.com/feed.xml
+
+# ============================================
+# Success Indicators
+# ============================================
+
+# ✓ Local test: HTTP 200 OK
+# ✓ Content-Type: application/rss+xml; charset=utf-8
+# ✓ XML content visible
+# ✓ Build shows: ├ ƒ /feed.xml
+
+# If all these pass, the feed is working!
+# The external 404 might be:
+# - Browser cache
+# - CDN cache
+# - Nginx cache
+# - DNS propagation delay
+
+# ============================================
+

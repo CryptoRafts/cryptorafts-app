@@ -1,0 +1,22 @@
+To create your Open Graph image (og-image.jpg):
+
+1. Recommended Size: 1200x630 pixels
+2. Format: JPG or PNG
+3. File size: Under 1MB for fast loading
+
+What to include:
+- CryptoRafts logo
+- Tagline: "Pitch. Invest. Build. Verified."
+- Background: Professional gradient or brand colors
+- Optional: Key features or icons
+
+Tools to create it:
+- Canva (free templates)
+- Figma (design from scratch)
+- Adobe Photoshop/Illustrator
+
+Once created, save as:
+public/og-image.jpg
+
+For now, you can use the existing logo file (cryptorafts.logo.png) as a temporary solution by renaming/copying it.
+

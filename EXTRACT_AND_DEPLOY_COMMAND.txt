@@ -1,0 +1,87 @@
+═══════════════════════════════════════════════════════
+🔧 EXTRACT cryptorafts.tar.gz AND DEPLOY
+═══════════════════════════════════════════════════════
+
+✅ Found: cryptorafts.tar.gz (8.2MB)
+❌ Files are inside the archive - need to extract first!
+
+═══════════════════════════════════════════════════════
+📋 COMPLETE DEPLOYMENT COMMAND
+═══════════════════════════════════════════════════════
+
+Copy and paste this ENTIRE command:
+
+cd /var/www/cryptorafts && ls -lh cryptorafts.tar.gz && echo "Extracting cryptorafts.tar.gz..." && tar -xzf cryptorafts.tar.gz && ([ -d "cryptorafts" ] && (mv cryptorafts/* . 2>/dev/null || true && rm -rf cryptorafts)) && ([ -d "DEPLOY_TO_VPS" ] && (mv DEPLOY_TO_VPS/* . 2>/dev/null || true && rm -rf DEPLOY_TO_VPS)) && ls -la package.json && ls -la src/app/page.tsx && export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && nvm use 20 && NODE_PATH=$(which node) && echo "Using Node.js: $NODE_PATH ($(node --version))" && pm2 stop all && pm2 delete all && rm -rf node_modules package-lock.json && echo "Installing dependencies (5-10 minutes)..." && npm install --legacy-peer-deps && ls -la node_modules/next/package.json && echo "✅ Dependencies installed!" && rm -rf .next out && NODE_ENV=production npm run build && echo "✅ Build completed" && cat > server.js << 'EOFSERVER'
+const { createServer } = require('http');
+const { parse } = require('url');
+const next = require('next');
+const dev = process.env.NODE_ENV !== 'production';
+const hostname = process.env.HOSTNAME || 'localhost';
+const port = parseInt(process.env.PORT || '3000', 10);
+const app = next({ dev, hostname, port });
+const handle = app.getRequestHandler();
+app.prepare().then(() => {
+  createServer(async (req, res) => {
+    try {
+      const parsedUrl = parse(req.url, true);
+      await handle(req, res, parsedUrl);
+    } catch (err) {
+      console.error('Error occurred handling', req.url, err);
+      res.statusCode = 500;
+      res.end('internal server error');
+    }
+  })
+    .once('error', (err) => {
+      console.error(err);
+      process.exit(1);
+    })
+    .listen(port, () => {
+      console.log(`> Ready on http://${hostname}:${port}`);
+    });
+});
+EOFSERVER
+NODE_PATH=$(which node) && cat > ecosystem.config.js << EOF
+module.exports = {
+  apps: [
+    {
+      name: 'cryptorafts',
+      script: './server.js',
+      instances: 1,
+      exec_mode: 'fork',
+      interpreter: '$NODE_PATH',
+      env: { NODE_ENV: 'production', PORT: 3000 },
+      error_file: './logs/pm2-error.log',
+      out_file: './logs/pm2-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '1G',
+      min_uptime: '10s',
+      max_restarts: 10,
+      restart_delay: 4000,
+    },
+  ],
+};
+EOF
+mkdir -p logs && pm2 start ecosystem.config.js && pm2 save && pm2 status && sleep 15 && pm2 logs cryptorafts --lines 30 --nostream && echo "" && echo "✅ DEPLOYMENT COMPLETE! Visit: https://www.cryptorafts.com"
+
+═══════════════════════════════════════════════════════
+📋 What This Does
+═══════════════════════════════════════════════════════
+
+1. Extracts cryptorafts.tar.gz
+2. Moves files from cryptorafts/ or DEPLOY_TO_VPS/ subdirectories if they exist
+3. Verifies package.json and src/app/page.tsx exist
+4. Loads NVM and uses Node.js 20
+5. Stops PM2
+6. Removes node_modules
+7. Runs npm install --legacy-peer-deps (5-10 minutes)
+8. Verifies next module is installed
+9. Rebuilds app
+10. Creates server.js and ecosystem.config.js
+11. Starts PM2
+12. Verifies deployment
+
+═══════════════════════════════════════════════════════
+

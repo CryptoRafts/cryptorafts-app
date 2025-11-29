@@ -1,0 +1,217 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hostinger DNS Records - Copy & Paste</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .header {
+            background: linear-gradient(135deg, #06b6d4, #3b82f6);
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .record {
+            background: #2a2a2a;
+            border: 2px solid #06b6d4;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .record h3 {
+            color: #06b6d4;
+            margin-top: 0;
+        }
+        .field {
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+        }
+        .field label {
+            min-width: 100px;
+            font-weight: bold;
+            color: #06b6d4;
+        }
+        .field input, .field textarea {
+            flex: 1;
+            padding: 8px;
+            background: #1a1a1a;
+            border: 1px solid #06b6d4;
+            border-radius: 4px;
+            color: #fff;
+            font-family: monospace;
+        }
+        .field textarea {
+            min-height: 60px;
+            resize: vertical;
+        }
+        .copy-btn {
+            background: #06b6d4;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 10px;
+            font-weight: bold;
+        }
+        .copy-btn:hover {
+            background: #0891b2;
+        }
+        .instructions {
+            background: #2a2a2a;
+            border-left: 4px solid #06b6d4;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .instructions ol {
+            margin-left: 20px;
+        }
+        .instructions li {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>ðŸ”§ Hostinger DNS Records Setup</h1>
+        <p>Copy each record and add it in Hostinger DNS Zone Editor</p>
+    </div>
+
+    <div class="instructions">
+        <h2>ðŸ“‹ Instructions:</h2>
+        <ol>
+            <li>Go to: <a href="https://hpanel.hostinger.com/domains/dns" target="_blank" style="color: #06b6d4;">Hostinger DNS Zone Editor</a></li>
+            <li>Select domain: <strong>cryptorafts.com</strong></li>
+            <li><strong>DELETE</strong> any old MX records first</li>
+            <li>Add each record below (click "Copy" button for each field)</li>
+            <li>Click "Save" after adding each record</li>
+            <li>Wait 15-30 minutes for DNS propagation</li>
+        </ol>
+    </div>
+    <div class="record">
+        <h3>Record 1 : MX - @</h3>
+        <div class="field">
+            <label>Type:</label>
+            <input type="text" value="MX" id="type1" readonly>
+            <button class="copy-btn" onclick="copyToClipboard('type1')">Copy</button>
+        </div>
+        <div class="field">
+            <label>Name:</label>
+            <input type="text" value="@" id="name1" readonly>
+            <button class="copy-btn" onclick="copyToClipboard('name1')">Copy</button>
+        </div>        <div class="field">
+            <label>Priority:</label>
+            <input type="text" value="5" id="priority1" readonly>
+            <button class="copy-btn" onclick="copyToClipboard('priority1')">Copy</button>
+        </div>        <div class="field">
+            <label>Value:</label>
+            <input value="mx1.hostinger.com" id="value1" readonly></input>
+            <button class="copy-btn" onclick="copyToClipboard('value1')">Copy</button>
+        </div>
+        <div class="field">
+            <label>TTL:</label>
+            <input type="text" value="14400" id="ttl1" readonly>
+            <button class="copy-btn" onclick="copyToClipboard('ttl1')">Copy</button>
+        </div>
+    </div>
+    <div class="record">
+        <h3>Record 2 : MX - @</h3>
+        <div class="field">
+            <label>Type:</label>
+            <input type="text" value="MX" id="type2" readonly>
+            <button class="copy-btn" onclick="copyToClipboard('type2')">Copy</button>
+        </div>
+        <div class="field">
+            <label>Name:</label>
+            <input type="text" value="@" id="name2" readonly>
+            <button class="copy-btn" onclick="copyToClipboard('name2')">Copy</button>
+        </div>        <div class="field">
+            <label>Priority:</label>
+            <input type="text" value="10" id="priority2" readonly>
+            <button class="copy-btn" onclick="copyToClipboard('priority2')">Copy</button>
+        </div>        <div class="field">
+            <label>Value:</label>
+            <input value="mx2.hostinger.com" id="value2" readonly></input>
+            <button class="copy-btn" onclick="copyToClipboard('value2')">Copy</button>
+        </div>
+        <div class="field">
+            <label>TTL:</label>
+            <input type="text" value="14400" id="ttl2" readonly>
+            <button class="copy-btn" onclick="copyToClipboard('ttl2')">Copy</button>
+        </div>
+    </div>
+    <div class="record">
+        <h3>Record 3 : TXT - @</h3>
+        <div class="field">
+            <label>Type:</label>
+            <input type="text" value="TXT" id="type3" readonly>
+            <button class="copy-btn" onclick="copyToClipboard('type3')">Copy</button>
+        </div>
+        <div class="field">
+            <label>Name:</label>
+            <input type="text" value="@" id="name3" readonly>
+            <button class="copy-btn" onclick="copyToClipboard('name3')">Copy</button>
+        </div>        <div class="field">
+            <label>Value:</label>
+            <input value="v=spf1 include:hostinger.com ~all" id="value3" readonly></input>
+            <button class="copy-btn" onclick="copyToClipboard('value3')">Copy</button>
+        </div>
+        <div class="field">
+            <label>TTL:</label>
+            <input type="text" value="14400" id="ttl3" readonly>
+            <button class="copy-btn" onclick="copyToClipboard('ttl3')">Copy</button>
+        </div>
+    </div>
+    <div class="record">
+        <h3>Record 4 : TXT - default._domainkey</h3>
+        <div class="field">
+            <label>Type:</label>
+            <input type="text" value="TXT" id="type4" readonly>
+            <button class="copy-btn" onclick="copyToClipboard('type4')">Copy</button>
+        </div>
+        <div class="field">
+            <label>Name:</label>
+            <input type="text" value="default._domainkey" id="name4" readonly>
+            <button class="copy-btn" onclick="copyToClipboard('name4')">Copy</button>
+        </div>        <div class="field">
+            <label>Value:</label>
+            <textarea value="v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtR70HDS2LO4deGoJbWzTISXiggtOOjibyWsgVmPRvaXPVCFC3onR2+G7TCmMxiysI7/0EZeIDlWAeRTLC9u0IOltZotZwbEBzlHX5tiZYA4JMMDobDnNG/P8sv5iYyUaStT7KOH2UJYUZbpoi9RjXg49lGEMIVrHh1LO5K2U5iMkVNgQTDrfhg2QUikp3ZMy31Rs3oo+PqeBDiggofE+93GdD+Nbnye9BNTOZk5GgLZzJli1WxoQcPsKtf76w2ABipaRpFcie+pLshTjcdYG0gw/i+R6uL9/ysHSi4J0ymt98RwFY9UcnLPNfaTvGxq8dZ8t3YF0ncavMOSslfS2ewIDAQAB" id="value4" readonly></textarea>
+            <button class="copy-btn" onclick="copyToClipboard('value4')">Copy</button>
+        </div>
+        <div class="field">
+            <label>TTL:</label>
+            <input type="text" value="14400" id="ttl4" readonly>
+            <button class="copy-btn" onclick="copyToClipboard('ttl4')">Copy</button>
+        </div>
+    </div>
+    <script>
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            element.select();
+            element.setSelectionRange(0, 99999); // For mobile devices
+            document.execCommand('copy');
+            
+            // Visual feedback
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = 'Copied!';
+            btn.style.background = '#10b981';
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.style.background = '#06b6d4';
+            }, 2000);
+        }
+    </script>
+</body>
+</html>

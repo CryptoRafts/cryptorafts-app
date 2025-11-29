@@ -1,0 +1,53 @@
+# ============================================
+# FIX MISSING BUILD FILES ON VPS
+# Run these commands on your VPS
+# ============================================
+
+# Connect to VPS:
+# ssh root@72.61.98.99
+
+# Step 1: Stop PM2
+cd /var/www/cryptorafts
+pm2 stop cryptorafts
+
+# Step 2: Remove old .next directory
+rm -rf .next
+
+# Step 3: Clean npm cache (optional but recommended)
+npm cache clean --force
+
+# Step 4: Rebuild everything from scratch
+npm run build
+
+# Step 5: Verify .next directory exists
+ls -la .next/
+ls -la .next/server/
+ls -la .next/server/pages/
+
+# Step 6: Restart PM2
+pm2 restart cryptorafts
+
+# Step 7: Check logs
+pm2 logs cryptorafts --lines 50
+
+# Step 8: Test the app
+curl -I http://localhost:3000
+
+# ============================================
+# ALL-IN-ONE COMMAND:
+# ============================================
+
+cd /var/www/cryptorafts && pm2 stop cryptorafts && rm -rf .next && npm cache clean --force && npm run build && pm2 restart cryptorafts && pm2 logs cryptorafts --lines 30
+
+
+
+
+
+
+
+
+
+
+
+
+

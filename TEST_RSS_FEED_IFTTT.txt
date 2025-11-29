@@ -1,0 +1,117 @@
+# ============================================
+# TEST RSS FEED FOR IFTTT
+# ============================================
+
+# Run these commands to verify RSS feed meets IFTTT requirements
+
+cd /var/www/cryptorafts
+
+# ============================================
+# Test 1: Check RSS feed is accessible
+# ============================================
+
+echo "Test 1: Checking RSS feed accessibility..."
+curl -I http://localhost:3000/feed.xml
+
+# Expected: HTTP 200 OK, Content-Type: application/rss+xml; charset=utf-8
+
+# ============================================
+# Test 2: Check RSS feed content
+# ============================================
+
+echo ""
+echo "Test 2: Checking RSS feed content..."
+curl http://localhost:3000/feed.xml | head -30
+
+# Should show:
+# <?xml version="1.0" encoding="UTF-8"?>
+# <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+#   <channel>
+#     <title>CryptoRafts Blog</title>
+#     <link>https://www.cryptorafts.com/blog</link>
+#     <item>
+#       <title>...</title>
+#       <guid isPermaLink="true">...</guid>
+#       <pubDate>...</pubDate>
+
+# ============================================
+# Test 3: Check date format (RFC 822)
+# ============================================
+
+echo ""
+echo "Test 3: Checking date format (RFC 822)..."
+curl http://localhost:3000/feed.xml | grep -i pubDate | head -3
+
+# Expected format: "Wed, 06 Nov 2025 00:00:00 GMT"
+# NOT: "Wed, 06 Nov 2025 00:00:00 UTC"
+
+# ============================================
+# Test 4: Check GUID format
+# ============================================
+
+echo ""
+echo "Test 4: Checking GUID format..."
+curl http://localhost:3000/feed.xml | grep -i guid | head -3
+
+# Expected: <guid isPermaLink="true">https://www.cryptorafts.com/blog/...</guid>
+# Each GUID should be unique
+
+# ============================================
+# Test 5: Check content:encoded namespace
+# ============================================
+
+echo ""
+echo "Test 5: Checking content:encoded namespace..."
+curl http://localhost:3000/feed.xml | grep -i "xmlns:content"
+
+# Expected: xmlns:content="http://purl.org/rss/1.0/modules/content/"
+
+# ============================================
+# Test 6: Check images in content:encoded
+# ============================================
+
+echo ""
+echo "Test 6: Checking images in content:encoded..."
+curl http://localhost:3000/feed.xml | grep -i "content:encoded" | head -1
+
+# Expected: <content:encoded><![CDATA[<img src="..." />...
+
+# ============================================
+# Test 7: Validate with W3C Feed Validator
+# ============================================
+
+echo ""
+echo "Test 7: Validate with W3C Feed Validator..."
+echo "Visit: https://validator.w3.org/feed/"
+echo "Enter: https://www.cryptorafts.com/feed.xml"
+
+# ============================================
+# Test 8: Test from external URL
+# ============================================
+
+echo ""
+echo "Test 8: Testing from external URL..."
+curl -I https://www.cryptorafts.com/feed.xml
+
+# Expected: HTTP 200 OK, Content-Type: application/rss+xml; charset=utf-8
+
+# ============================================
+# IFTTT Requirements Checklist
+# ============================================
+
+echo ""
+echo "=========================================="
+echo "IFTTT Requirements Checklist:"
+echo "=========================================="
+echo "✓ Top-level feed has title: CryptoRafts Blog"
+echo "✓ Top-level feed has unique link: https://www.cryptorafts.com/blog"
+echo "✓ Each item has GUID (preferred) or unique link"
+echo "✓ Each item has pubDate (RFC 822 format)"
+echo "✓ Images in content:encoded tag (IFTTT requirement)"
+echo "✓ Proper XML namespace declarations"
+echo "✓ Valid RSS 2.0 format"
+echo ""
+echo "If all checks pass, use this URL in IFTTT:"
+echo "https://www.cryptorafts.com/feed.xml"
+echo ""
+

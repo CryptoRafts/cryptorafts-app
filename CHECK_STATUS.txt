@@ -1,0 +1,50 @@
+# ============================================
+# MANUAL CHECK - Run these commands on VPS
+# ============================================
+
+# SSH to your VPS:
+# ssh root@72.61.98.99
+
+# Then run these commands:
+
+cd /var/www/cryptorafts
+
+# Check PM2 status
+pm2 status
+
+# Check if app is running
+pm2 logs cryptorafts --lines 20
+
+# Test local server
+curl -I http://127.0.0.1:3000
+
+# Test public URL
+curl -I https://www.cryptorafts.com
+
+# Check Nginx status
+systemctl status nginx
+
+# Restart everything if needed
+pm2 restart cryptorafts
+systemctl reload nginx
+
+# Rebuild if needed
+source ~/.nvm/nvm.sh
+nvm use 20
+npm run build
+pm2 restart cryptorafts
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

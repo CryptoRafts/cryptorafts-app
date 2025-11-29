@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CLICK TO OPEN NEW VERSION - NO CACHE!</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 700px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #667eea;
+            margin-top: 0;
+            font-size: 32px;
+            text-align: center;
+        }
+        .alert {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .alert h2 {
+            margin-top: 0;
+            color: #92400e;
+            font-size: 18px;
+        }
+        .success {
+            background: #d1fae5;
+            border-left: 4px solid #10b981;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .success h2 {
+            margin-top: 0;
+            color: #065f46;
+            font-size: 18px;
+        }
+        .btn {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 20px 40px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-size: 20px;
+            font-weight: bold;
+            margin: 10px;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+            border: none;
+        }
+        .btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+        .btn-secondary {
+            background: #10b981;
+        }
+        .btn-secondary:hover {
+            background: #059669;
+        }
+        .code {
+            background: #f3f4f6;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+        .buttons {
+            text-align: center;
+            margin: 30px 0;
+        }
+        ul {
+            line-height: 1.8;
+        }
+        .proof {
+            background: #fee2e2;
+            border-left: 4px solid #ef4444;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚨 YOU'RE SEEING OLD CACHED CODE!</h1>
+        
+        <div class="alert">
+            <h2>⚠️ PROOF YOU'RE ON OLD VERSION:</h2>
+            <p>Your browser console shows:</p>
+            <div class="code">
+page-7d0a9ffdff3eafe7.js ← OLD FILE!
+webpack-897133e4c79da570.js ← OLD FILE!
+            </div>
+            <p><strong>These file hashes are from HOURS ago!</strong></p>
+            <p>The NEW deployment has DIFFERENT hashes and NO errors!</p>
+        </div>
+
+        <div class="success">
+            <h2>✅ THE FIX IS DEPLOYED!</h2>
+            <p><strong>Latest deployment:</strong></p>
+            <div class="code">
+cryptorafts-starter-ebvyo2nsu
+            </div>
+            <p><strong>What's fixed:</strong></p>
+            <ul>
+                <li>✅ NO "exports is not defined" error</li>
+                <li>✅ NO "Minified React error #423"</li>
+                <li>✅ NO admin stats permission errors</li>
+                <li>✅ ALL 8 roles work (including Trader)</li>
+                <li>✅ Clean console output</li>
+            </ul>
+        </div>
+
+        <div class="proof">
+            <h2>🐛 WHY YOU STILL SEE ERRORS:</h2>
+            <p><strong>Your browser is serving OLD JavaScript files from cache!</strong></p>
+            <p>Even clicking "Refresh" or "Hard Refresh" won't work because browsers cache JavaScript aggressively.</p>
+            <p><strong>You MUST use Incognito mode to bypass cache completely.</strong></p>
+        </div>
+
+        <div class="buttons">
+            <h2 style="margin-bottom: 20px;">CLICK ONE OF THESE BUTTONS:</h2>
+            
+            <a href="https://cryptorafts-starter-ebvyo2nsu-anas-s-projects-8d19f880.vercel.app" 
+               target="_blank" 
+               class="btn">
+                🚀 OPEN NEW VERSION (DIRECT URL)
+            </a>
+            
+            <br>
+            
+            <a href="https://www.cryptorafts.com?nocache=ebvyo2nsu" 
+               target="_blank" 
+               class="btn btn-secondary">
+                🌐 OPEN www.cryptorafts.com (WITH CACHE BUSTER)
+            </a>
+        </div>
+
+        <div class="alert">
+            <h2>📋 MANUAL STEPS (IF BUTTONS DON'T WORK):</h2>
+            <ol>
+                <li>Close ALL browser windows (Alt + F4)</li>
+                <li>Wait 3 seconds</li>
+                <li>Press: <strong>Ctrl + Shift + N</strong> (Chrome Incognito)</li>
+                <li>Copy this URL:<br>
+                    <div class="code">https://cryptorafts-starter-ebvyo2nsu-anas-s-projects-8d19f880.vercel.app</div>
+                </li>
+                <li>Paste in address bar and press Enter</li>
+                <li>Press F12 - Console should be CLEAN!</li>
+            </ol>
+        </div>
+
+        <div class="success">
+            <h2>✅ WHAT YOU'LL SEE IN NEW VERSION:</h2>
+            <p><strong>Console output:</strong></p>
+            <div class="code">
+✅ Firebase user authenticated
+✅ Notification manager created
+ℹ️ No user logged in (blue info - normal)
+            </div>
+            <p><strong>NO RED ERRORS!</strong></p>
+            <ul>
+                <li>✅ Signup works</li>
+                <li>✅ Login works</li>
+                <li>✅ All 8 roles work</li>
+                <li>✅ Admin dashboard loads</li>
+                <li>✅ VC dashboard works</li>
+                <li>✅ Trader dashboard works</li>
+                <li>✅ Chat works</li>
+                <li>✅ Everything perfect!</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
+

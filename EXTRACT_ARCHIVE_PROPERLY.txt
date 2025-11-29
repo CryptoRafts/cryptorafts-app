@@ -1,0 +1,73 @@
+✅ EXTRACT ARCHIVE PROPERLY - FILES ARE INSIDE
+===============================================
+
+The archive extraction didn't work. Let's check what's inside and extract properly!
+
+
+STEP 1: Check what's inside the archive
+---------------------------------------
+cd /var/www
+tar -tzf cryptorafts.tar.gz | head -20
+
+This shows the structure inside the archive.
+
+
+STEP 2: Extract archive to a temporary location first
+-----------------------------------------------------
+cd /var/www
+mkdir -p /tmp/extract_temp
+tar -xzf cryptorafts.tar.gz -C /tmp/extract_temp
+ls -la /tmp/extract_temp
+
+Check the structure - files might be in a subdirectory!
+
+
+STEP 3: Find where the actual files are
+---------------------------------------
+ls -la /tmp/extract_temp
+ls -la /tmp/extract_temp/cryptorafts
+find /tmp/extract_temp -name "package.json" -type f
+
+
+STEP 4: Copy files to correct location
+---------------------------------------
+Once you find where package.json is, copy everything:
+
+# If files are in /tmp/extract_temp/cryptorafts:
+cp -r /tmp/extract_temp/cryptorafts/* /var/www/cryptorafts/
+
+# OR if files are directly in /tmp/extract_temp:
+cp -r /tmp/extract_temp/* /var/www/cryptorafts/
+
+# OR extract directly:
+cd /var/www
+rm -rf cryptorafts/*
+tar -xzf cryptorafts.tar.gz -C cryptorafts
+# If archive has subdirectory, move files up:
+cd cryptorafts
+mv cryptorafts/* . 2>/dev/null || true
+rmdir cryptorafts 2>/dev/null || true
+
+
+STEP 5: Verify files exist now
+------------------------------
+cd /var/www/cryptorafts
+ls -la package.json
+ls -la src/app/page.tsx
+ls -la next.config.js
+
+If all exist, continue!
+
+
+STEP 6: Continue with rebuild steps
+------------------------------------
+Now continue with:
+- Load Node.js 20
+- Install dependencies
+- Build app
+- Update PM2 config
+- Start PM2
+
+
+THEN VISIT: https://www.cryptorafts.com
+

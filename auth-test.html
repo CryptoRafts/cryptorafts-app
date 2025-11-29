@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authentication Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: white;
+        }
+        .test-section {
+            background: #2a2a2a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid #444;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background: #065f46;
+            color: #d1fae5;
+        }
+        .error {
+            background: #7f1d1d;
+            color: #fecaca;
+        }
+        .info {
+            background: #1e3a8a;
+            color: #dbeafe;
+        }
+        .warning {
+            background: #92400e;
+            color: #fef3c7;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔐 Authentication Test</h1>
+    
+    <div class="test-section">
+        <h2>1. Clear All Data</h2>
+        <p>Clear all stored data to test from scratch</p>
+        <button onclick="clearAllData()">Clear All Data</button>
+        <div id="clear-status" class="status info" style="display: none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Test Authentication Flow</h2>
+        <p>Test the complete authentication flow</p>
+        <button onclick="testSignUp()">Test Sign Up</button>
+        <button onclick="testLogin()">Test Login</button>
+        <button onclick="testRoleSelection()">Test Role Selection</button>
+        <div id="auth-status" class="status info" style="display: none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Check Current State</h2>
+        <p>Check current authentication and role state</p>
+        <button onclick="checkCurrentState()">Check Current State</button>
+        <div id="state-status" class="status info" style="display: none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Quick Links</h2>
+        <p>Quick access to important pages</p>
+        <button onclick="openPage('/')">Home Page</button>
+        <button onclick="openPage('/signup')">Sign Up</button>
+        <button onclick="openPage('/login')">Login</button>
+        <button onclick="openPage('/role')">Role Selection</button>
+        <div id="links-status" class="status info" style="display: none;"></div>
+    </div>
+
+    <script>
+        function clearAllData() {
+            try {
+                localStorage.clear();
+                sessionStorage.clear();
+                showStatus('clear-status', '✅ All data cleared successfully! Ready for fresh test.', 'success');
+            } catch (error) {
+                showStatus('clear-status', '❌ Error clearing data: ' + error.message, 'error');
+            }
+        }
+
+        function testSignUp() {
+            try {
+                window.open('/signup', '_blank');
+                showStatus('auth-status', '✅ Opened Sign Up page. Create a new account with real Firebase.', 'success');
+            } catch (error) {
+                showStatus('auth-status', '❌ Error opening Sign Up: ' + error.message, 'error');
+            }
+        }
+
+        function testLogin() {
+            try {
+                window.open('/login', '_blank');
+                showStatus('auth-status', '✅ Opened Login page. Sign in with your Firebase account.', 'success');
+            } catch (error) {
+                showStatus('auth-status', '❌ Error opening Login: ' + error.message, 'error');
+            }
+        }
+
+        function testRoleSelection() {
+            try {
+                window.open('/role', '_blank');
+                showStatus('auth-status', '✅ Opened Role Selection page. Choose your role after authentication.', 'success');
+            } catch (error) {
+                showStatus('auth-status', '❌ Error opening Role Selection: ' + error.message, 'error');
+            }
+        }
+
+        function checkCurrentState() {
+            try {
+                const userRole = localStorage.getItem('userRole');
+                const userClaims = localStorage.getItem('userClaims');
+                const demoUser = localStorage.getItem('demoUser');
+                
+                let status = '<h3>Current Authentication State:</h3>';
+                status += `<p><strong>User Role:</strong> ${userRole || 'None'}</p>`;
+                status += `<p><strong>User Claims:</strong> ${userClaims ? 'Present' : 'None'}</p>`;
+                status += `<p><strong>Demo User:</strong> ${demoUser ? 'Present (Should be None)' : 'None ✅'}</p>`;
+                
+                if (userClaims) {
+                    try {
+                        const claims = JSON.parse(userClaims);
+                        status += '<h4>Claims Details:</h4>';
+                        status += '<pre style="background: #444; padding: 10px; border-radius: 5px; overflow-x: auto;">' + 
+                                 JSON.stringify(claims, null, 2) + '</pre>';
+                    } catch (e) {
+                        status += '<p>Error parsing claims JSON</p>';
+                    }
+                }
+                
+                // Check if user should be authenticated
+                if (userRole && !demoUser) {
+                    status += '<p class="warning">⚠️ You have a role but may not be authenticated with Firebase. Try logging in.</p>';
+                } else if (!userRole && !demoUser) {
+                    status += '<p class="success">✅ Clean state. Ready to sign up or log in.</p>';
+                } else if (demoUser) {
+                    status += '<p class="error">❌ Demo user detected. Clear data and use real authentication.</p>';
+                }
+                
+                document.getElementById('state-status').innerHTML = status;
+                document.getElementById('state-status').className = 'status info';
+                document.getElementById('state-status').style.display = 'block';
+            } catch (error) {
+                showStatus('state-status', '❌ Error checking state: ' + error.message, 'error');
+            }
+        }
+
+        function openPage(path) {
+            try {
+                window.open(path, '_blank');
+                showStatus('links-status', `✅ Opened: ${path}`, 'success');
+            } catch (error) {
+                showStatus('links-status', '❌ Error opening page: ' + error.message, 'error');
+            }
+        }
+
+        function showStatus(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `status ${type}`;
+            element.style.display = 'block';
+        }
+
+        // Auto-check state on page load
+        window.onload = function() {
+            checkCurrentState();
+        };
+    </script>
+</body>
+</html>

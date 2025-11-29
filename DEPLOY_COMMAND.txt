@@ -1,0 +1,57 @@
+============================================
+DEPLOYMENT COMMAND FOR VPS
+============================================
+
+BASIC DEPLOYMENT (Replace with your VPS details):
+--------------------------------------------------
+.\DEPLOY_NOW.ps1 -VpsHost "your-vps-ip-or-domain" -VpsUser "root" -VpsPath "/var/www/cryptorafts"
+
+
+EXAMPLE WITH IP ADDRESS:
+-------------------------
+.\DEPLOY_NOW.ps1 -VpsHost "192.168.1.100" -VpsUser "root" -VpsPath "/var/www/cryptorafts"
+
+
+EXAMPLE WITH DOMAIN:
+--------------------
+.\DEPLOY_NOW.ps1 -VpsHost "vps.example.com" -VpsUser "root" -VpsPath "/var/www/cryptorafts"
+
+
+WITH SSH KEY:
+-------------
+.\DEPLOY_NOW.ps1 -VpsHost "192.168.1.100" -VpsUser "root" -VpsPath "/var/www/cryptorafts" -SshKey "C:\path\to\your\key.pem"
+
+
+WITH CUSTOM PORT:
+-----------------
+.\DEPLOY_NOW.ps1 -VpsHost "192.168.1.100" -VpsUser "root" -VpsPath "/var/www/cryptorafts" -Port 2222
+
+
+INTERACTIVE MODE (Will prompt for details):
+--------------------------------------------
+.\DEPLOY_NOW.ps1
+
+
+============================================
+QUICK START:
+============================================
+
+1. Open PowerShell in the project directory:
+   cd C:\Users\dell\cryptorafts-starter
+
+2. Run the deployment command:
+   .\DEPLOY_NOW.ps1 -VpsHost "YOUR_VPS_IP" -VpsUser "root" -VpsPath "/var/www/cryptorafts"
+
+3. The script will:
+   - Build your application
+   - Create deployment package
+   - Create archive file
+   - Provide upload instructions
+
+4. Upload the archive to your VPS using SCP or the script's auto-upload feature
+
+5. SSH into your VPS and run the deployment script
+
+============================================
+
+

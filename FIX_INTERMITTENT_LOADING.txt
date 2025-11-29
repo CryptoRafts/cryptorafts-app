@@ -1,0 +1,67 @@
+# ============================================
+# FIX INTERMITTENT LOADING ISSUES
+# ============================================
+# Issues:
+# 1. analytics.js: ERR_ADDRESS_INVALID (likely browser extension)
+# 2. favicon.ico: 404 (not being served correctly)
+# 3. Some resource 404
+# 4. Intermittent loading (some time showing, some time not)
+
+# ============================================
+# SOLUTION 1: Fix Favicon 404
+# ============================================
+# On VPS, ensure favicon is in public folder:
+# cd /var/www/cryptorafts
+# ls -la public/favicon.ico
+# ls -la public/tablogo.ico
+
+# ============================================
+# SOLUTION 2: Check Static File Serving
+# ============================================
+# Verify Next.js is serving static files correctly
+# Check server.js or Next.js server configuration
+
+# ============================================
+# SOLUTION 3: Add Error Handling
+# ============================================
+# Add error handling for missing resources
+# Add retry logic for failed requests
+# Add proper error boundaries
+
+# ============================================
+# SOLUTION 4: Check Nginx Configuration
+# ============================================
+# Ensure Nginx is serving static files correctly:
+# location /_next/static {
+#     proxy_pass http://localhost:3000;
+#     proxy_cache_valid 200 60m;
+# }
+
+# ============================================
+# SOLUTION 5: Restart and Clear Cache
+# ============================================
+# On VPS:
+cd /var/www/cryptorafts
+pm2 restart cryptorafts
+systemctl reload nginx
+
+# Clear Next.js cache:
+rm -rf .next/cache
+pm2 restart cryptorafts
+
+# ============================================
+# SOLUTION 6: Check Browser Console
+# ============================================
+# The analytics.js error is likely from:
+# - Browser extension
+# - Ad blocker
+# - Privacy extension
+# This is harmless and can be ignored
+
+# ============================================
+# SOLUTION 7: Verify Build
+# ============================================
+# Ensure build includes all static files:
+# npm run build
+# Check .next/static folder exists
+

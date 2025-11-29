@@ -1,0 +1,47 @@
+DNS RECORDS FOR CRYPTORAFTS.COM
+================================
+
+VPS IP ADDRESS: 72.61.98.99
+
+REQUIRED DNS RECORDS:
+---------------------
+
+1. A Record (Root Domain):
+   Type: A
+   Name: @ (or leave blank)
+   Value: 72.61.98.99
+   TTL: 3600
+
+2. A Record (www subdomain):
+   Type: A
+   Name: www
+   Value: 72.61.98.99
+   TTL: 3600
+
+TOTAL RECORDS NEEDED: 2
+
+INSTRUCTIONS:
+-------------
+1. Login to Hostinger hPanel: https://hpanel.hostinger.com
+2. Go to: Domains → cryptorafts.com → DNS / Name Servers
+3. Click: Manage DNS Records
+4. DELETE ALL existing records
+5. ADD the 2 records above
+6. SAVE changes
+7. Wait 5-60 minutes for DNS propagation
+8. Verify with: nslookup www.cryptorafts.com
+
+VERIFICATION:
+-------------
+After setup, run:
+  nslookup www.cryptorafts.com
+  nslookup cryptorafts.com
+
+Both should return: 72.61.98.99
+
+ONLINE DNS CHECKERS:
+--------------------
+- https://www.whatsmydns.net/#A/www.cryptorafts.com
+- https://dnschecker.org/#A/www.cryptorafts.com
+- https://mxtoolbox.com/DNSLookup.aspx
+

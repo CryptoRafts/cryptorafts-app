@@ -1,0 +1,131 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // ==================== HELPER FUNCTIONS ====================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function currentUser() {
+      return request.auth.uid;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+             firestore.get(/databases/(default)/documents/users/$(currentUser())).data.role == 'admin';
+    }
+    
+    function isOwner(uid) {
+      return isAuthenticated() && currentUser() == uid;
+    }
+    
+    // File size limit (100MB)
+    function isValidSize() {
+      return request.resource.size < 100 * 1024 * 1024;
+    }
+    
+    // ==================== USER ISOLATED STORAGE ====================
+    
+    // User's personal files - strict UID isolation
+    match /users/{userId}/files/{allPaths=**} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isOwner(userId) && isValidSize();
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+    
+    // User's profile images
+    match /users/{userId}/profile/{imageId} {
+      allow read: if isAuthenticated(); // Profile images can be viewed by authenticated users
+      allow write: if isOwner(userId) && isValidSize();
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+    
+    // User's documents (KYC/KYB)
+    match /users/{userId}/documents/{documentId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isOwner(userId) && isValidSize();
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+    
+    // User's avatars
+    match /users/{userId}/avatar/{imageId} {
+      allow read: if isAuthenticated(); // Avatars visible to all authenticated users
+      allow write: if isOwner(userId) && isValidSize();
+      allow delete: if isOwner(userId);
+    }
+    
+    // ==================== PROJECT FILES - OWNER ACCESS ====================
+    
+    // Project files - only project owner (founderId)
+    match /projects/{projectId}/files/{allPaths=**} {
+      allow read: if isAuthenticated(); // Projects can be viewed
+      allow write: if isAuthenticated() && 
+                     firestore.get(/databases/(default)/documents/projects/$(projectId)).data.founderId == currentUser() &&
+                     isValidSize();
+      allow delete: if isAuthenticated() && 
+                      (firestore.get(/databases/(default)/documents/projects/$(projectId)).data.founderId == currentUser() ||
+                       isAdmin());
+    }
+    
+    // Project images (pitch decks, logos)
+    match /projects/{projectId}/images/{imageId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && 
+                     firestore.get(/databases/(default)/documents/projects/$(projectId)).data.founderId == currentUser() &&
+                     isValidSize();
+      allow delete: if isAuthenticated() && 
+                      (firestore.get(/databases/(default)/documents/projects/$(projectId)).data.founderId == currentUser() ||
+                       isAdmin());
+    }
+    
+    // ==================== CHAT FILES - PARTICIPANT ACCESS ====================
+    
+    // Chat room files - only participants
+    match /chats/{chatId}/files/{fileId} {
+      allow read: if isAuthenticated() && 
+                    currentUser() in firestore.get(/databases/(default)/documents/chat_rooms/$(chatId)).data.participants;
+      allow write: if isAuthenticated() && 
+                     currentUser() in firestore.get(/databases/(default)/documents/chat_rooms/$(chatId)).data.participants &&
+                     isValidSize();
+      allow delete: if isAuthenticated() && 
+                      (currentUser() in firestore.get(/databases/(default)/documents/chat_rooms/$(chatId)).data.participants ||
+                       isAdmin());
+    }
+    
+    // ==================== DEAL FILES - PARTICIPANT ACCESS ====================
+    
+    // Deal room files - only participants
+    match /deals/{dealId}/files/{fileId} {
+      allow read: if isAuthenticated() && 
+                    currentUser() in firestore.get(/databases/(default)/documents/deals/$(dealId)).data.participants;
+      allow write: if isAuthenticated() && 
+                     currentUser() in firestore.get(/databases/(default)/documents/deals/$(dealId)).data.participants &&
+                     isValidSize();
+      allow delete: if isAuthenticated() && 
+                      (currentUser() in firestore.get(/databases/(default)/documents/deals/$(dealId)).data.participants ||
+                       isAdmin());
+    }
+    
+    // ==================== ADMIN-ONLY STORAGE ====================
+    
+    match /admin/{allPaths=**} {
+      allow read, write: if isAdmin();
+    }
+    
+    // ==================== PUBLIC STORAGE (READ-ONLY) ====================
+    
+    match /public/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // ==================== DENY ALL OTHER ACCESS ====================
+    
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
+

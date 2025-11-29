@@ -1,0 +1,28 @@
+================================================================================
+SIMPLE DEPLOYMENT - COPY-PASTE THIS ENTIRE BLOCK
+================================================================================
+
+Since you're already on VPS (root@www:/var/www/cryptorafts#), just copy-paste:
+
+cd /var/www/cryptorafts && pm2 stop cryptorafts && rm -rf .next/cache .next && npm run build && pm2 restart cryptorafts && sleep 5 && curl -s http://127.0.0.1:3000/ | grep "WELCOME TO CRYPTORAFTS" && echo "✅ DEPLOYMENT SUCCESSFUL!" || echo "⚠️ Check: pm2 logs cryptorafts"
+
+================================================================================
+OR STEP BY STEP:
+================================================================================
+
+cd /var/www/cryptorafts
+pm2 stop cryptorafts
+rm -rf .next/cache
+rm -rf .next
+npm run build
+pm2 restart cryptorafts
+curl -s http://127.0.0.1:3000/ | grep "WELCOME TO CRYPTORAFTS"
+
+================================================================================
+
+
+
+
+
+
+

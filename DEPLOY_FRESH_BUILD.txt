@@ -1,0 +1,72 @@
+cd /var/www/cryptorafts && echo "🚀 FRESH BUILD DEPLOYMENT" && echo "========================================" && echo "" && echo "🔧 Step 1: Stopping PM2..." && pm2 stop all && pm2 delete all && echo "✅ PM2 stopped" && echo "" && echo "🧹 Step 2: Cleaning old files..." && rm -rf node_modules package-lock.json .next out && echo "✅ Cleaned" && echo "" && echo "📦 Step 3: Extracting package if exists..." && if ls cryptorafts-deploy-*.tar.gz 1> /dev/null 2>&1; then echo "Found tar.gz package, extracting..."; tar -xzf cryptorafts-deploy-*.tar.gz && rm -f cryptorafts-deploy-*.tar.gz && echo "✅ Extracted"; elif ls cryptorafts-deploy-*.zip 1> /dev/null 2>&1; then echo "Found zip package, extracting..."; unzip -o cryptorafts-deploy-*.zip && rm -f cryptorafts-deploy-*.zip && echo "✅ Extracted"; else echo "⚠️  No package found - files should already be uploaded"; fi && echo "" && echo "🔧 Step 4: Fixing ownership..." && chown -R root:root /var/www/cryptorafts && chmod -R 755 /var/www/cryptorafts && find /var/www/cryptorafts -type f -exec chmod 644 {} \; && rm -f /var/www/package-lock.json && echo "✅ Ownership fixed" && echo "" && echo "📋 Step 5: Verifying files..." && find src -type f | wc -l && echo "files in src/" && if [ ! -f "package.json" ] || [ ! -d "src" ]; then echo "❌ ERROR: Files missing!"; echo "Upload src/ and package.json via File Manager"; exit 1; fi && echo "✅ Files verified" && echo "" && echo "📦 Step 6: Loading NVM..." && export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && nvm use 20 && NODE_PATH=$(which node) && echo "✅ Node.js: $NODE_PATH ($(node --version))" && echo "" && echo "📦 Step 7: Installing dependencies (10-15 minutes)..." && npm install --legacy-peer-deps && echo "✅ Dependencies installed" && echo "" && echo "🔨 Step 8: Building app..." && rm -rf .next out && NODE_ENV=production npm run build && echo "✅ Build completed" && echo "" && echo "📝 Step 9: Creating server.js..." && cat > server.js << 'EOFSERVER'
+const { createServer } = require('http');
+const { parse } = require('url');
+const next = require('next');
+const dev = process.env.NODE_ENV !== 'production';
+const hostname = process.env.HOSTNAME || 'localhost';
+const port = parseInt(process.env.PORT || '3000', 10);
+const app = next({ dev, hostname, port });
+const handle = app.getRequestHandler();
+app.prepare().then(() => {
+  createServer(async (req, res) => {
+    try {
+      const parsedUrl = parse(req.url, true);
+      await handle(req, res, parsedUrl);
+    } catch (err) {
+      console.error('Error occurred handling', req.url, err);
+      res.statusCode = 500;
+      res.end('internal server error');
+    }
+  })
+    .once('error', (err) => {
+      console.error(err);
+      process.exit(1);
+    })
+    .listen(port, () => {
+      console.log(`> Ready on http://${hostname}:${port}`);
+    });
+});
+EOFSERVER
+NODE_PATH=$(which node) && cat > ecosystem.config.js << EOF
+module.exports = {
+  apps: [
+    {
+      name: 'cryptorafts',
+      script: './server.js',
+      instances: 1,
+      exec_mode: 'fork',
+      interpreter: '${NODE_PATH}',
+      env: { NODE_ENV: 'production', PORT: 3000 },
+      error_file: './logs/pm2-error.log',
+      out_file: './logs/pm2-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '1G',
+      min_uptime: '10s',
+      max_restarts: 10,
+      restart_delay: 4000,
+    },
+  ],
+};
+EOF
+echo "✅ Config files created" && echo "" && echo "🚀 Step 10: Starting PM2..." && mkdir -p logs && pm2 start ecosystem.config.js && pm2 save && pm2 startup systemd -u root --hp /root || true && echo "✅ PM2 started" && echo "" && echo "🌐 Step 11: Configuring Nginx..." && NGINX_CONF="/etc/nginx/sites-available/cryptorafts" && cat > ${NGINX_CONF} << 'NGINXEOF'
+server {
+    listen 80;
+    server_name cryptorafts.com www.cryptorafts.com;
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+NGINXEOF
+ln -sf ${NGINX_CONF} /etc/nginx/sites-enabled/cryptorafts && rm -f /etc/nginx/sites-enabled/default && nginx -t && systemctl restart nginx && echo "✅ Nginx configured" && echo "" && echo "🔒 Step 12: SSL..." && certbot --nginx -d cryptorafts.com -d www.cryptorafts.com --non-interactive --agree-tos --email admin@cryptorafts.com --redirect || true && echo "✅ SSL configured" && echo "" && echo "========================================" && echo "✅ VERIFICATION" && echo "========================================" && pm2 status && echo "" && pm2 logs cryptorafts --lines 20 --nostream && echo "" && curl -I http://localhost:3000 2>&1 | head -5 && echo "" && echo "✅ DEPLOYMENT COMPLETE! Visit: https://www.cryptorafts.com"
+

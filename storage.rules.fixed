@@ -1,0 +1,105 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.role == 'admin';
+    }
+    
+    function isVC() {
+      return isAuthenticated() && request.auth.token.role == 'vc';
+    }
+    
+    function isFounder() {
+      return isAuthenticated() && request.auth.token.role == 'founder';
+    }
+    
+    function isExchange() {
+      return isAuthenticated() && request.auth.token.role == 'exchange';
+    }
+    
+    function isAgency() {
+      return isAuthenticated() && request.auth.token.role == 'agency';
+    }
+    
+    function isInfluencer() {
+      return isAuthenticated() && request.auth.token.role == 'influencer';
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // ADMIN OVERRIDE - Full access to everything
+    match /{allPaths=**} {
+      allow read, write: if isAdmin();
+    }
+    
+    // Organization logos - CRITICAL FIX for VC uploads
+    match /organizations/logos/{fileName} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    // User files
+    match /users/{userId}/{allPaths=**} {
+      allow read, write: if isAuthenticated() && (isOwner(userId) || isAdmin());
+    }
+    
+    // Profile photos
+    match /profiles/{userId}/{allPaths=**} {
+      allow read, write: if isAuthenticated() && (isOwner(userId) || isAdmin());
+    }
+    
+    // Organization documents
+    match /organizations/{orgId}/{allPaths=**} {
+      allow read, write: if isAuthenticated() && (isAdmin() || isVC());
+    }
+    
+    // Project files
+    match /projects/{projectId}/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (isAdmin() || isFounder());
+    }
+    
+    // KYC documents
+    match /kyc-documents/{userId}/{fileName} {
+      allow read, write: if isAuthenticated() && (isOwner(userId) || isAdmin());
+    }
+    
+    // KYB documents
+    match /kyb-documents/{orgId}/{fileName} {
+      allow read, write: if isAuthenticated() && (isAdmin() || isVC());
+    }
+    
+    // Chat attachments
+    match /chat-attachments/{roomId}/{fileName} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    // Pitch documents
+    match /pitch-documents/{projectId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (isAdmin() || isFounder());
+    }
+    
+    // Public assets
+    match /public/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    // Temporary files
+    match /temp/{userId}/{fileName} {
+      allow read, write: if isAuthenticated() && (isOwner(userId) || isAdmin());
+    }
+    
+    // Default rule - allow all authenticated users (fallback)
+    match /{allPaths=**} {
+      allow read, write: if isAuthenticated();
+    }
+  }
+}

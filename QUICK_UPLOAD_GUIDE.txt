@@ -1,0 +1,79 @@
+================================================================================
+QUICK UPLOAD GUIDE - ALL FILES
+================================================================================
+
+FILES TO UPLOAD (6 files total):
+================================================================================
+
+1. src/app/page.tsx
+   → /var/www/cryptorafts/src/app/page.tsx
+
+2. src/app/HomePageClient.tsx
+   → /var/www/cryptorafts/src/app/HomePageClient.tsx
+
+3. src/components/PerfectHeader.tsx
+   → /var/www/cryptorafts/src/components/PerfectHeader.tsx
+
+4. FINAL_DEPLOYMENT_COMPLETE.sh
+   → /var/www/cryptorafts/
+
+5. NGINX_CONFIG_CHECK.sh
+   → /var/www/cryptorafts/
+
+6. COMPREHENSIVE_VPS_DIAGNOSTIC.sh
+   → /var/www/cryptorafts/
+
+
+UPLOAD METHODS:
+================================================================================
+
+METHOD 1: Hostinger hPanel File Manager (Easiest)
+--------------------------------------------------
+1. Login: https://hpanel.hostinger.com/
+2. Go to: File Manager
+3. Navigate to: /var/www/cryptorafts/
+4. Upload all 6 files
+
+
+METHOD 2: PowerShell Script (Windows)
+-------------------------------------
+.\UPLOAD_ALL_FILES.ps1
+
+
+METHOD 3: Bash Script (Linux/Mac)
+----------------------------------
+chmod +x UPLOAD_ALL_FILES.sh
+./UPLOAD_ALL_FILES.sh
+
+
+METHOD 4: Manual SCP (Command Line)
+-------------------------------------
+# Windows PowerShell:
+$VPS_IP = "YOUR_VPS_IP"
+scp src\app\page.tsx root@${VPS_IP}:/var/www/cryptorafts/src/app/page.tsx
+scp src\app\HomePageClient.tsx root@${VPS_IP}:/var/www/cryptorafts/src/app/HomePageClient.tsx
+scp src\components\PerfectHeader.tsx root@${VPS_IP}:/var/www/cryptorafts/src/components/PerfectHeader.tsx
+scp FINAL_DEPLOYMENT_COMPLETE.sh root@${VPS_IP}:/var/www/cryptorafts/
+scp NGINX_CONFIG_CHECK.sh root@${VPS_IP}:/var/www/cryptorafts/
+scp COMPREHENSIVE_VPS_DIAGNOSTIC.sh root@${VPS_IP}:/var/www/cryptorafts/
+
+
+AFTER UPLOADING:
+================================================================================
+
+SSH into VPS and run:
+
+cd /var/www/cryptorafts
+chmod +x *.sh
+./FINAL_DEPLOYMENT_COMPLETE.sh
+
+
+VERIFY:
+================================================================================
+
+curl -s http://127.0.0.1:3000/ | grep "WELCOME TO CRYPTORAFTS"
+
+If you see "WELCOME TO CRYPTORAFTS", deployment is successful!
+
+
+================================================================================

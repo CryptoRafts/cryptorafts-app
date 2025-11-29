@@ -1,0 +1,75 @@
+✅ WHERE IS THE SSH TERMINAL?
+=============================
+
+The SSH terminal appears AFTER you connect via SSH in PowerShell!
+
+
+STEP-BY-STEP EXPLANATION:
+--------------------------
+
+STEP 1: Open PowerShell (Windows)
+----------------------------------
+→ Press Windows Key + X → Select "Windows PowerShell"
+→ OR search "PowerShell" in Windows search
+→ You see: PS C:\Users\dell>
+
+
+STEP 2: Connect to VPS (in PowerShell)
+---------------------------------------
+In PowerShell, type:
+ssh -p 65002 u386122906@145.79.211.130
+
+Press Enter
+
+You see:
+u386122906@145.79.211.130's password:
+
+
+STEP 3: Enter Password
+-----------------------
+Type: Shamsi2627@@
+Press Enter
+
+You see:
+Welcome back! The time now is...
+[u386122906@in-mum-web1993 ~]$  ← THIS IS YOUR SSH TERMINAL!
+
+
+IMPORTANT:
+----------
+Once you see [u386122906@in-mum-web1993 ~]$ 
+→ You are NOW in the SSH terminal!
+→ All commands run here are on the VPS (remote server)
+
+
+STEP 4: Run commands in SSH terminal
+-------------------------------------
+Now run:
+cd ~/cryptorafts
+
+Then run:
+ls -la src/app/page.tsx
+
+Then run the deployment command.
+
+
+QUICK VISUAL GUIDE:
+-------------------
+PowerShell (Windows):
+  PS C:\Users\dell> ssh -p 65002 u386122906@145.79.211.130
+  Password: [type password]
+  
+SSH Terminal (Remote Server):
+  [u386122906@in-mum-web1993 ~]$ cd ~/cryptorafts
+  [u386122906@in-mum-web1993 ~]$ ls -la src/app/page.tsx
+  [u386122906@in-mum-web1993 ~]$ [deployment command]
+
+
+SUMMARY:
+--------
+1. Open PowerShell (Windows)
+2. Run: ssh -p 65002 u386122906@145.79.211.130
+3. Enter password: Shamsi2627@@
+4. You'll see: [u386122906@... ~]$ ← THIS IS SSH TERMINAL!
+5. Now run all commands in that SSH terminal
+

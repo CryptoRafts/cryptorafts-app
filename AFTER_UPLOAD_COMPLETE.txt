@@ -1,0 +1,188 @@
+✅ UPLOAD IN PROGRESS - WAIT FOR COMPLETION
+============================================
+
+Your upload is in progress to /var/www/cryptorafts!
+- Uploading 970 files...
+- 9.49% Completed (94.29 MB / 994.07 MB)
+- Time remaining: ~10:56 minutes
+- Speed: 1.37 MB/s
+
+DO NOT close the browser or interrupt the upload!
+
+
+STEP 1: Wait for Upload to Complete
+-------------------------------------
+1. Let the upload finish completely
+2. Watch for "Upload complete" or "100%" message
+3. Wait until all 970 files are uploaded
+4. The directory should no longer be empty
+
+
+STEP 2: Verify Upload in SSH Terminal
+---------------------------------------
+After upload completes, in your SSH terminal, run:
+
+cd /var/www/cryptorafts
+ls -la
+
+You should see:
+- package.json
+- next.config.js
+- tsconfig.json
+- server.js
+- ecosystem.config.js
+- src/ directory
+- public/ directory
+
+Then verify key files:
+ls -la package.json
+ls -la src/app/page.tsx
+ls -la next.config.js
+
+All should exist now!
+
+
+STEP 3: Load Node.js 20 and Verify
+------------------------------------
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+nvm use 20
+node --version
+
+Should show: v20.19.5 (or similar)
+
+
+STEP 4: Install Dependencies
+-----------------------------
+cd /var/www/cryptorafts
+npm install --legacy-peer-deps
+
+This will take 2-5 minutes. Wait for it to complete!
+
+
+STEP 5: Build the App
+---------------------
+rm -rf .next out node_modules/.cache
+NODE_ENV=production npm run build
+
+This will take 5-10 minutes. Wait for it to complete!
+
+Watch for:
+- "Compiled successfully" message
+- No errors (warnings are OK)
+
+
+STEP 6: Verify Build Succeeded
+-------------------------------
+ls -la .next
+
+Should show .next directory with files inside.
+
+
+STEP 7: Create server.js (if not uploaded)
+-------------------------------------------
+If server.js doesn't exist, create it:
+
+cat > server.js << 'EOF'
+const { createServer } = require('http');
+const { parse } = require('url');
+const next = require('next');
+
+const dev = process.env.NODE_ENV !== 'production';
+const hostname = process.env.HOSTNAME || 'localhost';
+const port = parseInt(process.env.PORT || '3000', 10);
+
+const app = next({ dev, hostname, port });
+const handle = app.getRequestHandler();
+
+app.prepare().then(() => {
+  createServer(async (req, res) => {
+    try {
+      const parsedUrl = parse(req.url, true);
+      await handle(req, res, parsedUrl);
+    } catch (err) {
+      console.error('Error occurred handling', req.url, err);
+      res.statusCode = 500;
+      res.end('internal server error');
+    }
+  })
+    .once('error', (err) => {
+      console.error(err);
+      process.exit(1);
+    })
+    .listen(port, () => {
+      console.log(`> Ready on http://${hostname}:${port}`);
+    });
+});
+EOF
+
+
+STEP 8: Create ecosystem.config.js and Start PM2
+-------------------------------------------------
+pm2 stop all
+pm2 delete all
+
+NODE_PATH=$(which node)
+cat > ecosystem.config.js << EOF
+module.exports = {
+  apps: [
+    {
+      name: 'cryptorafts',
+      script: './server.js',
+      instances: 1,
+      exec_mode: 'fork',
+      interpreter: '$NODE_PATH',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3000,
+      },
+      error_file: './logs/pm2-error.log',
+      out_file: './logs/pm2-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '1G',
+      min_uptime: '10s',
+      max_restarts: 10,
+      restart_delay: 4000,
+    },
+  ],
+};
+EOF
+
+mkdir -p logs
+pm2 start ecosystem.config.js
+pm2 save
+pm2 status
+
+
+STEP 9: Verify App is Running
+------------------------------
+pm2 logs cryptorafts --lines 20
+
+Should show:
+- "> Ready on http://localhost:3000"
+- No errors
+
+Then test:
+curl http://localhost:3000
+
+Should show HTML (not error)!
+
+
+STEP 10: Verify Website
+-------------------------
+Visit: https://www.cryptorafts.com
+
+Should show your app live!
+
+
+CRITICAL NOTES:
+===============
+1. DO NOT interrupt the upload
+2. Wait for 100% completion
+3. Verify files exist before proceeding
+4. Build will take 5-10 minutes
+5. Be patient with each step
+

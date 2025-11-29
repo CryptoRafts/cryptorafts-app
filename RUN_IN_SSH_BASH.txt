@@ -1,0 +1,18 @@
+# ============================================
+# CRYPTORAFTS - DEPLOYMENT FOR SSH BASH
+# ============================================
+# COPY AND PASTE THIS INTO YOUR SSH TERMINAL
+# ============================================
+
+cd /var/www/cryptorafts 2>/dev/null || mkdir -p /var/www/cryptorafts && cd /var/www/cryptorafts
+
+# If RUN_THIS_IN_SSH_NOW.sh already exists, just run it
+if [ -f "RUN_THIS_IN_SSH_NOW.sh" ]; then
+    echo "Deployment script found. Running..."
+    bash RUN_THIS_IN_SSH_NOW.sh
+else
+    echo "ERROR: RUN_THIS_IN_SSH_NOW.sh not found!"
+    echo "Please upload the file first or create it manually."
+    exit 1
+fi
+

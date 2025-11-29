@@ -1,0 +1,63 @@
+✅ FILES FOUND IN WRONG LOCATION - QUICK FIX
+============================================
+
+Files are in ~/cryptorafts/DEPLOY_TO_VPS/ but need to be in ~/cryptorafts/
+
+
+IN YOUR SSH TERMINAL, RUN THESE COMMANDS:
+-----------------------------------------
+
+STEP 1: Move files from DEPLOY_TO_VPS to cryptorafts
+----------------------------------------------------
+cd ~/cryptorafts
+mv DEPLOY_TO_VPS/* .
+mv DEPLOY_TO_VPS/.* . 2>/dev/null || true
+rmdir DEPLOY_TO_VPS
+
+
+STEP 2: Verify files are now in correct location
+-------------------------------------------------
+ls -la src/app/page.tsx
+ls -la package.json
+
+Both should exist now!
+
+
+STEP 3: Run deployment command again
+--------------------------------------
+export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && nvm use 18 && cd ~/cryptorafts && npm install --production && rm -rf .next out && NODE_ENV=production npm run build && cat > server.js << 'EOF'
+const { createServer } = require('http');
+const { parse } = require('url');
+const next = require('next');
+const dev = process.env.NODE_ENV !== 'production';
+const hostname = process.env.HOSTNAME || 'localhost';
+const port = parseInt(process.env.PORT || '3000', 10);
+const app = next({ dev, hostname, port });
+const handle = app.getRequestHandler();
+app.prepare().then(() => {
+  createServer(async (req, res) => {
+    try {
+      const parsedUrl = parse(req.url, true);
+      await handle(req, res, parsedUrl);
+    } catch (err) {
+      console.error('Error occurred handling', req.url, err);
+      res.statusCode = 500;
+      res.end('internal server error');
+    }
+  })
+    .once('error', (err) => {
+      console.error(err);
+      process.exit(1);
+    })
+    .listen(port, () => {
+      console.log(`> Ready on http://${hostname}:${port}`);
+    });
+});
+EOF
+pm2 stop cryptorafts || true && pm2 delete cryptorafts || true && pm2 start server.js --name cryptorafts && pm2 save && echo "✅ Done! Visit https://www.cryptorafts.com"
+
+
+WAIT 10-15 MINUTES...
+
+Then visit: https://www.cryptorafts.com
+

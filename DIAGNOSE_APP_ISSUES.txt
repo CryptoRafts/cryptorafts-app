@@ -1,0 +1,62 @@
+# ============================================
+# DIAGNOSE APP ISSUES ON VPS
+# Run these commands to check what's wrong
+# ============================================
+
+# Connect to VPS:
+# ssh root@72.61.98.99
+
+# Step 1: Check PM2 status
+cd /var/www/cryptorafts
+pm2 status
+pm2 info cryptorafts
+
+# Step 2: Check recent logs
+pm2 logs cryptorafts --lines 100
+
+# Step 3: Check if .next directory exists and has files
+ls -la .next/
+ls -la .next/server/
+ls -la .next/server/pages/
+
+# Step 4: Check if build-manifest.json exists
+ls -la .next/build-manifest.json
+cat .next/build-manifest.json | head -20
+
+# Step 5: Test local server
+curl -I http://localhost:3000
+curl http://localhost:3000 2>&1 | head -50
+
+# Step 6: Check disk space
+df -h
+du -sh /var/www/cryptorafts
+du -sh /var/www/cryptorafts/.next
+
+# Step 7: Check Node.js version
+node --version
+npm --version
+
+# Step 8: Check if port 3000 is in use
+netstat -tulpn | grep 3000
+
+# Step 9: Check Nginx status (if using reverse proxy)
+systemctl status nginx
+nginx -t
+
+# Step 10: Check environment variables
+printenv | grep -i next
+printenv | grep -i node
+printenv | grep -i firebase
+
+
+
+
+
+
+
+
+
+
+
+
+

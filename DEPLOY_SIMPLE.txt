@@ -1,0 +1,37 @@
+============================================
+SIMPLE DEPLOYMENT GUIDE
+============================================
+
+STEP 1: Navigate to project directory
+--------------------------------------
+cd C:\Users\dell\cryptorafts-starter
+
+
+STEP 2: Upload archive to VPS
+------------------------------
+scp cryptorafts-deploy-20251105_001932.tar.gz root@72.61.98.99:/var/www/cryptorafts/
+
+
+STEP 3: SSH into VPS
+---------------------
+ssh root@72.61.98.99
+
+
+STEP 4: On VPS, deploy the archive
+-----------------------------------
+cd /var/www/cryptorafts
+tar -xzf cryptorafts-deploy-20251105_001932.tar.gz
+cd deploy-package
+npm ci --production=false
+pm2 restart cryptorafts || pm2 start npm --name cryptorafts -- start
+pm2 save
+
+
+ALTERNATIVE: One-line deployment on VPS
+----------------------------------------
+cd /var/www/cryptorafts && tar -xzf cryptorafts-deploy-20251105_001932.tar.gz && cd deploy-package && npm ci --production=false && pm2 restart cryptorafts || pm2 start npm --name cryptorafts -- start
+
+
+============================================
+
+

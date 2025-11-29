@@ -1,0 +1,49 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Allow authenticated users to upload their own files
+    match /org-logos/{userId}/{fileName} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Allow authenticated users to upload project files
+    match /project-files/{projectId}/{fileName} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Allow authenticated users to upload KYB documents
+    match /kyb-documents/{userId}/{fileName} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Allow authenticated users to upload KYC documents
+    match /kyc-documents/{userId}/{fileName} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Allow authenticated users to upload pitch documents
+    match /pitch-documents/{projectId}/{fileName} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Allow authenticated users to upload whitepapers
+    match /whitepapers/{projectId}/{fileName} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Allow authenticated users to upload tokenomics
+    match /tokenomics/{projectId}/{fileName} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Allow authenticated users to upload roadmaps
+    match /roadmaps/{projectId}/{fileName} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Fallback: allow all for authenticated users (for development)
+    match /{allPaths=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

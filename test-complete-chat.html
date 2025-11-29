@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Complete Chat System Test</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 20px;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: #e2e8f0;
+    }
+    h1 {
+      color: #60a5fa;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    .subtitle {
+      text-align: center;
+      color: #94a3b8;
+      margin-bottom: 30px;
+    }
+    .section {
+      background: #1e293b;
+      padding: 25px;
+      margin: 20px 0;
+      border-radius: 12px;
+      border: 1px solid #334155;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    }
+    h2 {
+      color: #818cf8;
+      margin-top: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    button {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      margin: 8px 5px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+    button:hover {
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+    button:active {
+      transform: translateY(0);
+    }
+    button.success {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    }
+    button.success:hover {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    }
+    button.danger {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    }
+    button.danger:hover {
+      background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    }
+    .output {
+      background: #0f172a;
+      border: 1px solid #334155;
+      padding: 15px;
+      margin-top: 15px;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      white-space: pre-wrap;
+      max-height: 400px;
+      overflow-y: auto;
+      line-height: 1.6;
+    }
+    .success { color: #34d399; }
+    .error { color: #f87171; }
+    .info { color: #60a5fa; }
+    .warning { color: #fbbf24; }
+    input, select, textarea {
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: #e2e8f0;
+      padding: 10px;
+      margin: 5px;
+      border-radius: 6px;
+      width: calc(100% - 30px);
+      font-family: inherit;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: #60a5fa;
+      box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+    .stat {
+      background: #0f172a;
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid #334155;
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 32px;
+      font-weight: bold;
+      color: #60a5fa;
+    }
+    .stat-label {
+      color: #94a3b8;
+      font-size: 14px;
+      margin-top: 5px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      margin: 2px;
+    }
+    .badge-success { background: #10b981; color: white; }
+    .badge-info { background: #3b82f6; color: white; }
+    .badge-warning { background: #f59e0b; color: white; }
+    .badge-error { background: #ef4444; color: white; }
+  </style>
+</head>
+<body>
+  <h1>🎯 Complete Chat System Test</h1>
+  <p class="subtitle">Unified chat interface for all roles - Test everything from one place</p>
+
+  <div class="section">
+    <h2>📊 System Status</h2>
+    <div class="grid">
+      <div class="stat">
+        <div class="stat-value" id="total-rooms">-</div>
+        <div class="stat-label">Total Rooms</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="total-messages">-</div>
+        <div class="stat-label">Total Messages</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="user-status">-</div>
+        <div class="stat-label">User Status</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="firebase-status">-</div>
+        <div class="stat-label">Firebase</div>
+      </div>
+    </div>
+    <button onclick="refreshStatus()">🔄 Refresh Status</button>
+    <div id="status-output" class="output"></div>
+  </div>
+
+  <div class="section">
+    <h2>➕ Create Chat Room</h2>
+    <div>
+      <input type="text" id="room-name" placeholder="Room Name (e.g., My Project - Alice / Bob)" />
+      <select id="room-type">
+        <option value="deal">Deal Room (Founder ↔ VC)</option>
+        <option value="listing">Listing Room (Founder ↔ Exchange)</option>
+        <option value="ido">IDO Room (Founder ↔ IDO)</option>
+        <option value="campaign">Campaign Room (Founder ↔ Influencer)</option>
+        <option value="proposal">Proposal Room (Founder ↔ Agency)</option>
+        <option value="team">Team Room (Internal)</option>
+        <option value="ops">Operations Room (Internal)</option>
+      </select>
+      <input type="text" id="member-ids" placeholder="Member UIDs (comma separated)" />
+    </div>
+    <button onclick="createRoom()" class="success">✨ Create Room</button>
+    <button onclick="createRoomWithMessages()">✨ Create Room + Messages</button>
+    <div id="create-output" class="output"></div>
+  </div>
+
+  <div class="section">
+    <h2>💬 Add Messages to Room</h2>
+    <div>
+      <input type="text" id="target-room-id" placeholder="Room ID" />
+      <input type="number" id="message-count" placeholder="Number of messages" value="10" min="1" max="50" />
+    </div>
+    <button onclick="addMessages()" class="success">📝 Add Test Messages</button>
+    <button onclick="addAIMessages()">🤖 Add AI Messages</button>
+    <div id="messages-output" class="output"></div>
+  </div>
+
+  <div class="section">
+    <h2>🔍 Inspect & Debug</h2>
+    <div>
+      <input type="text" id="inspect-room-id" placeholder="Room ID to inspect" />
+    </div>
+    <div class="grid">
+      <button onclick="inspectRoom()">🔍 Inspect Room</button>
+      <button onclick="listRoomMessages()">📋 List Messages</button>
+      <button onclick="checkPermissions()">🔐 Check Permissions</button>
+      <button onclick="testRealtime()">⚡ Test Real-time</button>
+    </div>
+    <div id="inspect-output" class="output"></div>
+  </div>
+
+  <div class="section">
+    <h2>👥 My Rooms</h2>
+    <button onclick="listMyRooms()">📂 Load My Rooms</button>
+    <button onclick="openInApp()" class="success">🚀 Open /messages in App</button>
+    <div id="my-rooms-output" class="output"></div>
+  </div>
+
+  <div class="section">
+    <h2>🧹 Cleanup</h2>
+    <button onclick="deleteRoom()" class="danger">🗑️ Delete Room</button>
+    <button onclick="clearTestRooms()" class="danger">🧹 Clear Test Rooms</button>
+    <button onclick="clearAllRooms()" class="danger">⚠️ Clear ALL Rooms</button>
+    <div id="cleanup-output" class="output"></div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { 
+      getFirestore, 
+      collection, 
+      doc, 
+      addDoc, 
+      getDocs, 
+      getDoc,
+      query,
+      where,
+      orderBy,
+      limit,
+      deleteDoc,
+      onSnapshot,
+      serverTimestamp 
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+    import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+
+    // Get Firebase config from your app
+    let firebaseConfig;
+    try {
+      const storedConfig = localStorage.getItem('firebaseConfig');
+      if (storedConfig) {
+        firebaseConfig = JSON.parse(storedConfig);
+      }
+    } catch (e) {
+      console.error("Error loading Firebase config:", e);
+    }
+
+    if (!firebaseConfig) {
+      // Try to get from parent window if in iframe
+      try {
+        firebaseConfig = window.opener?.firebaseConfig || window.parent?.firebaseConfig;
+      } catch (e) {}
+    }
+
+    const app = initializeApp(firebaseConfig || {});
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    let currentUser = null;
+
+    onAuthStateChanged(auth, (user) => {
+      currentUser = user;
+      updateUserStatus();
+    });
+
+    function log(elementId, message, type = 'info') {
+      const output = document.getElementById(elementId);
+      const timestamp = new Date().toLocaleTimeString();
+      const className = type;
+      output.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+      output.scrollTop = output.scrollHeight;
+    }
+
+    function clearLog(elementId) {
+      document.getElementById(elementId).innerHTML = '';
+    }
+
+    function updateUserStatus() {
+      const statusEl = document.getElementById('user-status');
+      if (currentUser) {
+        statusEl.textContent = '✓';
+        statusEl.style.color = '#10b981';
+      } else {
+        statusEl.textContent = '✗';
+        statusEl.style.color = '#ef4444';
+      }
+    }
+
+    window.refreshStatus = async function() {
+      clearLog('status-output');
+      try {
+        // Check Firebase connection
+        const testRef = collection(db, 'groupChats');
+        const snapshot = await getDocs(query(testRef, limit(1)));
+        document.getElementById('firebase-status').textContent = '✓';
+        document.getElementById('firebase-status').style.color = '#10b981';
+
+        // Count rooms
+        const roomsSnapshot = await getDocs(collection(db, 'groupChats'));
+        document.getElementById('total-rooms').textContent = roomsSnapshot.size;
+
+        // Count messages
+        let totalMessages = 0;
+        for (const roomDoc of roomsSnapshot.docs) {
+          const messagesSnapshot = await getDocs(collection(db, 'groupChats', roomDoc.id, 'messages'));
+          totalMessages += messagesSnapshot.size;
+        }
+        document.getElementById('total-messages').textContent = totalMessages;
+
+        log('status-output', '✅ Status refreshed successfully', 'success');
+        
+        if (currentUser) {
+          log('status-output', `\n👤 User: ${currentUser.email}`, 'info');
+          log('status-output', `📧 UID: ${currentUser.uid}`, 'info');
+        } else {
+          log('status-output', '\n⚠️ Not logged in - Login to your app first!', 'warning');
+        }
+
+      } catch (error) {
+        document.getElementById('firebase-status').textContent = '✗';
+        document.getElementById('firebase-status').style.color = '#ef4444';
+        log('status-output', `❌ Error: ${error.message}`, 'error');
+      }
+    };
+
+    window.createRoom = async function() {
+      clearLog('create-output');
+      
+      if (!currentUser) {
+        log('create-output', '❌ Please login first', 'error');
+        return;
+      }
+
+      const name = document.getElementById('room-name').value || 'Test Chat Room';
+      const type = document.getElementById('room-type').value;
+      const memberIdsInput = document.getElementById('member-ids').value;
+      const memberIds = memberIdsInput ? memberIdsInput.split(',').map(id => id.trim()) : [];
+      const members = [...new Set([currentUser.uid, ...memberIds])];
+
+      try {
+        log('create-output', `Creating ${type} room: "${name}"...`, 'info');
+        
+        const roomData = {
+          name,
+          type,
+          members,
+          ownerId: currentUser.uid,
+          createdAt: serverTimestamp(),
+          lastActivityAt: Date.now(),
+          status: 'active',
+          settings: {
+            filesAllowed: true,
+            calls: true,
+            reactions: true,
+            threads: true,
+            polls: true,
+            tasks: true,
+            events: true
+          },
+          privacy: {
+            inviteOnly: true
+          }
+        };
+
+        const docRef = await addDoc(collection(db, 'groupChats'), roomData);
+        log('create-output', `✅ Room created! ID: ${docRef.id}`, 'success');
+        log('create-output', `\n🔗 URL: /messages/${docRef.id}`, 'info');
+        log('create-output', `👥 Members: ${members.length}`, 'info');
+        
+        // Add welcome message
+        await addDoc(collection(db, 'groupChats', docRef.id, 'messages'), {
+          senderId: 'raftai',
+          type: 'system',
+          text: `🎉 Welcome to ${name}! Room created at ${new Date().toLocaleString()}`,
+          createdAt: Date.now(),
+          readBy: [],
+          reactions: {}
+        });
+        
+        log('create-output', '✅ Welcome message added', 'success');
+        
+      } catch (error) {
+        log('create-output', `❌ Error: ${error.message}`, 'error');
+        console.error(error);
+      }
+    };
+
+    window.createRoomWithMessages = async function() {
+      await createRoom();
+      const createOutput = document.getElementById('create-output').textContent;
+      const roomIdMatch = createOutput.match(/ID: ([a-zA-Z0-9]+)/);
+      if (roomIdMatch) {
+        document.getElementById('target-room-id').value = roomIdMatch[1];
+        await addMessages();
+      }
+    };
+
+    window.addMessages = async function() {
+      clearLog('messages-output');
+      
+      if (!currentUser) {
+        log('messages-output', '❌ Please login first', 'error');
+        return;
+      }
+
+      const roomId = document.getElementById('target-room-id').value;
+      const count = parseInt(document.getElementById('message-count').value) || 10;
+
+      if (!roomId) {
+        log('messages-output', '❌ Please enter a room ID', 'error');
+        return;
+      }
+
+      try {
+        log('messages-output', `Adding ${count} messages to room ${roomId}...`, 'info');
+        
+        const testMessages = [
+          "Hello! This is a test message.",
+          "Testing the unified chat system.",
+          "Messages should appear in /messages",
+          "This room is working perfectly! 🎉",
+          "Testing file attachments next...",
+          "Can you see this message in real-time?",
+          "The chat interface is looking great!",
+          "Let's test some more features.",
+          "Reactions should work too 👍",
+          "Everything is functioning correctly! ✅"
+        ];
+
+        for (let i = 0; i < count; i++) {
+          const messageText = testMessages[i % testMessages.length] + ` (${i + 1})`;
+          await addDoc(collection(db, 'groupChats', roomId, 'messages'), {
+            senderId: currentUser.uid,
+            type: 'text',
+            text: messageText,
+            createdAt: Date.now() + (i * 100),
+            readBy: [currentUser.uid],
+            reactions: {}
+          });
+          log('messages-output', `✅ Message ${i + 1}/${count} added`, 'success');
+        }
+        
+        log('messages-output', '\n✅ All messages added successfully!', 'success');
+        log('messages-output', `\n🔗 View at: /messages/${roomId}`, 'info');
+        
+      } catch (error) {
+        log('messages-output', `❌ Error: ${error.message}`, 'error');
+        console.error(error);
+      }
+    };
+
+    window.addAIMessages = async function() {
+      const roomId = document.getElementById('target-room-id').value;
+      if (!roomId) return;
+
+      const aiMessages = [
+        "🤖 RaftAI: Analyzing your conversation...",
+        "🤖 RaftAI: Key action items identified: 1) Schedule call 2) Review docs 3) Set milestones",
+        "🤖 RaftAI: Risk assessment complete. No major concerns detected.",
+        "🤖 RaftAI: Summary: Deal looks promising. Recommend proceeding to due diligence."
+      ];
+
+      for (const msg of aiMessages) {
+        await addDoc(collection(db, 'groupChats', roomId, 'messages'), {
+          senderId: 'raftai',
+          type: 'aiReply',
+          text: msg,
+          createdAt: Date.now(),
+          readBy: [],
+          reactions: {}
+        });
+      }
+      
+      log('messages-output', '✅ AI messages added!', 'success');
+    };
+
+    window.inspectRoom = async function() {
+      clearLog('inspect-output');
+      
+      const roomId = document.getElementById('inspect-room-id').value;
+      if (!roomId) {
+        log('inspect-output', '❌ Please enter a room ID', 'error');
+        return;
+      }
+
+      try {
+        const docSnap = await getDoc(doc(db, 'groupChats', roomId));
+        
+        if (!docSnap.exists()) {
+          log('inspect-output', '❌ Room not found', 'error');
+          return;
+        }
+
+        const data = docSnap.data();
+        log('inspect-output', '\n📋 Room Details:', 'success');
+        log('inspect-output', `Name: ${data.name}`, 'info');
+        log('inspect-output', `Type: ${data.type}`, 'info');
+        log('inspect-output', `Status: ${data.status}`, 'info');
+        log('inspect-output', `Members: ${data.members?.length || 0}`, 'info');
+        log('inspect-output', `\nMember IDs: ${data.members?.join(', ') || 'None'}`, 'info');
+        
+        if (currentUser && data.members?.includes(currentUser.uid)) {
+          log('inspect-output', '\n✅ You are a member of this room', 'success');
+        } else if (currentUser) {
+          log('inspect-output', '\n⚠️ You are NOT a member of this room', 'warning');
+        }
+        
+        log('inspect-output', `\n🔗 View at: /messages/${roomId}`, 'info');
+        
+      } catch (error) {
+        log('inspect-output', `❌ Error: ${error.message}`, 'error');
+      }
+    };
+
+    window.listRoomMessages = async function() {
+      clearLog('inspect-output');
+      
+      const roomId = document.getElementById('inspect-room-id').value;
+      if (!roomId) {
+        log('inspect-output', '❌ Please enter a room ID', 'error');
+        return;
+      }
+
+      try {
+        const q = query(
+          collection(db, 'groupChats', roomId, 'messages'),
+          orderBy('createdAt', 'asc')
+        );
+        
+        const snapshot = await getDocs(q);
+        
+        if (snapshot.empty) {
+          log('inspect-output', '\n📭 No messages in this room', 'info');
+          return;
+        }
+
+        log('inspect-output', `\nFound ${snapshot.size} messages:\n`, 'success');
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const time = data.createdAt ? new Date(data.createdAt).toLocaleTimeString() : 'Unknown';
+          const sender = data.senderId === 'raftai' ? '🤖 RaftAI' : 
+                        data.senderId === 'system' ? '⚙️ System' : 
+                        `👤 ${data.senderId.substring(0, 8)}`;
+          log('inspect-output', `[${time}] ${sender}: ${data.text}`, 'info');
+        });
+      } catch (error) {
+        log('inspect-output', `❌ Error: ${error.message}`, 'error');
+      }
+    };
+
+    window.listMyRooms = async function() {
+      clearLog('my-rooms-output');
+      
+      if (!currentUser) {
+        log('my-rooms-output', '❌ Please login first', 'error');
+        return;
+      }
+
+      try {
+        const q = query(
+          collection(db, 'groupChats'),
+          where('members', 'array-contains', currentUser.uid)
+        );
+        
+        const snapshot = await getDocs(q);
+        
+        if (snapshot.empty) {
+          log('my-rooms-output', '📭 No rooms found. Create one to get started!', 'warning');
+          return;
+        }
+
+        log('my-rooms-output', `\nFound ${snapshot.size} rooms you're a member of:\n`, 'success');
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          log('my-rooms-output', `\n📍 ${data.name}`, 'info');
+          log('my-rooms-output', `   Type: ${data.type} | Members: ${data.members?.length || 0}`, 'info');
+          log('my-rooms-output', `   ID: ${doc.id}`, 'info');
+          log('my-rooms-output', `   URL: /messages/${doc.id}`, 'info');
+        });
+        
+      } catch (error) {
+        log('my-rooms-output', `❌ Error: ${error.message}`, 'error');
+      }
+    };
+
+    window.openInApp = function() {
+      window.open('/messages', '_blank');
+    };
+
+    window.deleteRoom = async function() {
+      clearLog('cleanup-output');
+      
+      const roomId = document.getElementById('inspect-room-id').value;
+      if (!roomId) {
+        log('cleanup-output', '❌ Please enter a room ID', 'error');
+        return;
+      }
+
+      if (!confirm(`⚠️ Delete room ${roomId}?`)) return;
+
+      try {
+        const messagesSnapshot = await getDocs(collection(db, 'groupChats', roomId, 'messages'));
+        for (const messageDoc of messagesSnapshot.docs) {
+          await deleteDoc(messageDoc.ref);
+        }
+        
+        await deleteDoc(doc(db, 'groupChats', roomId));
+        
+        log('cleanup-output', '✅ Room deleted successfully!', 'success');
+      } catch (error) {
+        log('cleanup-output', `❌ Error: ${error.message}`, 'error');
+      }
+    };
+
+    window.clearTestRooms = async function() {
+      if (!confirm('⚠️ Delete all rooms with "Test" in the name?')) return;
+      
+      clearLog('cleanup-output');
+      
+      try {
+        const snapshot = await getDocs(collection(db, 'groupChats'));
+        let deleted = 0;
+        
+        for (const roomDoc of snapshot.docs) {
+          const data = roomDoc.data();
+          if (data.name?.toLowerCase().includes('test')) {
+            const messagesSnapshot = await getDocs(collection(db, 'groupChats', roomDoc.id, 'messages'));
+            for (const msgDoc of messagesSnapshot.docs) {
+              await deleteDoc(msgDoc.ref);
+            }
+            await deleteDoc(roomDoc.ref);
+            deleted++;
+            log('cleanup-output', `✅ Deleted: ${data.name}`, 'success');
+          }
+        }
+        
+        log('cleanup-output', `\n✅ Deleted ${deleted} test rooms`, 'success');
+      } catch (error) {
+        log('cleanup-output', `❌ Error: ${error.message}`, 'error');
+      }
+    };
+
+    // Auto-load status on page load
+    setTimeout(refreshStatus, 500);
+  </script>
+</body>
+</html>
+

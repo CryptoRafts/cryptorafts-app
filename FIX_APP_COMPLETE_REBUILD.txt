@@ -1,0 +1,63 @@
+# ============================================
+# COMPLETE REBUILD - FIX ALL ISSUES
+# Run this on VPS to completely rebuild the app
+# ============================================
+
+cd /var/www/cryptorafts
+
+# Step 1: Stop PM2
+pm2 stop cryptorafts
+
+# Step 2: Remove all build artifacts
+rm -rf .next
+rm -rf node_modules/.cache
+rm -rf .npm
+
+# Step 3: Clean npm cache
+npm cache clean --force
+
+# Step 4: Reinstall dependencies (if needed)
+# npm install --legacy-peer-deps
+
+# Step 5: Rebuild with verbose output
+npm run build 2>&1 | tee build.log
+
+# Step 6: Verify critical files exist
+echo "Checking build files..."
+[ -f .next/build-manifest.json ] && echo "✓ build-manifest.json exists" || echo "✗ build-manifest.json MISSING"
+[ -f .next/server/pages/500.html ] && echo "✓ 500.html exists" || echo "✗ 500.html MISSING"
+[ -d .next/server/app ] && echo "✓ server/app directory exists" || echo "✗ server/app directory MISSING"
+
+# Step 7: Restart PM2
+pm2 restart cryptorafts
+
+# Step 8: Wait a few seconds for startup
+sleep 5
+
+# Step 9: Check PM2 status
+pm2 status
+
+# Step 10: Check logs for errors
+pm2 logs cryptorafts --lines 50 --err
+
+# Step 11: Test the app
+curl -I http://localhost:3000
+
+echo ""
+echo "=========================================="
+echo "Rebuild complete!"
+echo "Check the output above for any errors"
+echo "=========================================="
+
+
+
+
+
+
+
+
+
+
+
+
+

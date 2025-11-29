@@ -1,0 +1,74 @@
+# ============================================
+# CHECK WHY APP RESTARTED - Run on VPS
+# ============================================
+# Restart count: 1 - Need to check why
+
+# ============================================
+# CHECK 1: Check Error Logs
+# ============================================
+cd /var/www/cryptorafts
+
+# Check recent errors
+pm2 logs cryptorafts --err --lines 50 --nostream
+
+# Check error log file
+tail -50 logs/err.log
+
+# ============================================
+# CHECK 2: Check PM2 Logs
+# ============================================
+pm2 logs cryptorafts --lines 50 --nostream
+
+# Check output log
+tail -50 logs/out.log
+
+# ============================================
+# CHECK 3: Check Restart Details
+# ============================================
+pm2 describe cryptorafts | grep -E "restart|uptime|created"
+
+# Check restart history
+pm2 info cryptorafts | grep -i restart
+
+# ============================================
+# CHECK 4: Check Memory Usage
+# ============================================
+# Check if memory exceeded limit
+pm2 monit
+
+# Check system memory
+free -h
+
+# ============================================
+# CHECK 5: Verify Configuration
+# ============================================
+# Make sure config is still correct
+cat ecosystem.config.js | grep -E "max_memory_restart|NODE_OPTIONS"
+
+# Check wrapper script
+cat start-server.sh
+
+# ============================================
+# COMMON RESTART REASONS:
+# ============================================
+# 1. Memory exceeded max_memory_restart (2G)
+# 2. Application error/crash
+# 3. System resource issue
+# 4. PM2 auto-restart (normal if app crashed)
+# 5. Manual restart (if you restarted it)
+
+# ============================================
+# IF RESTART WAS DUE TO MEMORY:
+# ============================================
+# Check if memory usage is normal now
+# If it keeps restarting, we may need to:
+# - Increase max_memory_restart
+# - Optimize the application
+# - Check for memory leaks
+
+# ============================================
+# IF RESTART WAS DUE TO ERROR:
+# ============================================
+# Check error logs for the specific error
+# Fix the underlying issue
+

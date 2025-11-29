@@ -1,0 +1,29 @@
+﻿# ============================================
+# VPS DEPLOYMENT INSTRUCTIONS
+# ============================================
+
+## OPTION 1: Using SCP (Recommended)
+1. Edit UPLOAD_TO_VPS.ps1 with your VPS details
+2. Run: .\UPLOAD_TO_VPS.ps1
+
+## OPTION 2: Using SFTP (FileZilla/WinSCP)
+1. Upload entire 'deploy-package' folder to VPS
+2. SSH into VPS
+3. Run commands from DEPLOY_SSH_COMMANDS.txt
+
+## OPTION 3: Manual SSH Commands
+1. SSH into your VPS
+2. Navigate to your app directory
+3. Run these commands:
+
+cd /path/to/your/app
+pm2 stop cryptorafts || true
+pm2 delete cryptorafts || true
+rm -rf .next src app server.js ecosystem.config.js next.config.js
+# Upload files from deploy-package folder
+npm install --production
+pm2 start ecosystem.config.js
+pm2 save
+pm2 logs cryptorafts
+
+Your app will run on: http://your-vps-ip:3000

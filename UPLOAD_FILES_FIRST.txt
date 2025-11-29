@@ -1,0 +1,124 @@
+═══════════════════════════════════════════════════════
+⚠️  CRITICAL: FILES NOT FOUND - UPLOAD FILES FIRST!
+═══════════════════════════════════════════════════════
+
+❌ ERROR: package.json not found in /var/www/cryptorafts
+❌ ERROR: Cannot find module 'next'
+
+The deployment failed because files were not uploaded!
+
+
+📋 STEP 1: UPLOAD FILES VIA HOSTINGER FILE MANAGER
+═══════════════════════════════════════════════════════
+
+1. Go to: https://hpanel.hostinger.com/
+2. Click "File Manager" (or "Files")
+3. Navigate to: /var/www/cryptorafts
+   - Type /var/www/cryptorafts in the PATH BAR at the top
+   - Press Enter
+4. Upload ALL files from your local DEPLOY_TO_VPS folder:
+   - src/ folder (entire folder - drag and drop)
+   - package.json
+   - next.config.js
+   - tsconfig.json
+   - public/ folder (if exists)
+5. Wait for ALL files to finish uploading
+6. Verify files are uploaded:
+   - Check that package.json exists
+   - Check that src/app/page.tsx exists
+
+
+📋 STEP 2: AFTER FILES UPLOADED, RUN FIX SCRIPT
+═══════════════════════════════════════════════════════
+
+In your SSH terminal, run:
+
+cd /var/www/cryptorafts
+bash FIX_DEPLOYMENT_NOW.sh
+
+OR copy and paste this command:
+
+cd /var/www/cryptorafts && bash <(curl -s https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh) && export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && nvm install 20 && nvm use 20 && npm install --legacy-peer-deps && rm -rf .next out && NODE_ENV=production npm run build && cat > server.js << 'EOFSERVER'
+const { createServer } = require('http');
+const { parse } = require('url');
+const next = require('next');
+const dev = process.env.NODE_ENV !== 'production';
+const hostname = process.env.HOSTNAME || 'localhost';
+const port = parseInt(process.env.PORT || '3000', 10);
+const app = next({ dev, hostname, port });
+const handle = app.getRequestHandler();
+app.prepare().then(() => {
+  createServer(async (req, res) => {
+    try {
+      const parsedUrl = parse(req.url, true);
+      await handle(req, res, parsedUrl);
+    } catch (err) {
+      console.error('Error occurred handling', req.url, err);
+      res.statusCode = 500;
+      res.end('internal server error');
+    }
+  })
+    .once('error', (err) => {
+      console.error(err);
+      process.exit(1);
+    })
+    .listen(port, () => {
+      console.log(`> Ready on http://${hostname}:${port}`);
+    });
+});
+EOFSERVER
+NODE_PATH=$(which node) && cat > ecosystem.config.js << EOF
+module.exports = {
+  apps: [
+    {
+      name: 'cryptorafts',
+      script: './server.js',
+      instances: 1,
+      exec_mode: 'fork',
+      interpreter: '$NODE_PATH',
+      env: { NODE_ENV: 'production', PORT: 3000 },
+      error_file: './logs/pm2-error.log',
+      out_file: './logs/pm2-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '1G',
+      min_uptime: '10s',
+      max_restarts: 10,
+      restart_delay: 4000,
+    },
+  ],
+};
+EOF
+mkdir -p logs && pm2 stop all 2>/dev/null || true && pm2 delete all 2>/dev/null || true && pm2 start ecosystem.config.js && pm2 save && pm2 status && pm2 logs cryptorafts --lines 20 --nostream && echo "✅ DEPLOYMENT COMPLETE! Visit: https://www.cryptorafts.com"
+
+
+📋 STEP 3: VERIFY DEPLOYMENT
+═══════════════════════════════════════════════════════
+
+After deployment completes, verify:
+
+pm2 status
+pm2 logs cryptorafts --lines 50
+curl http://localhost:3000
+
+
+📋 STEP 4: VISIT YOUR SITE
+═══════════════════════════════════════════════════════
+
+Visit: https://www.cryptorafts.com
+
+
+═══════════════════════════════════════════════════════
+🎯 SUMMARY
+═══════════════════════════════════════════════════════
+
+1. Upload files via Hostinger File Manager to /var/www/cryptorafts
+2. Wait for upload to complete
+3. Run deployment command in SSH
+4. Wait 10-15 minutes for deployment
+5. Visit https://www.cryptorafts.com
+
+═══════════════════════════════════════════════════════
+

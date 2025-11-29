@@ -1,0 +1,74 @@
+# ============================================
+# VERIFY EXTERNAL ACCESS - App IS Working!
+# ============================================
+# The curl output shows HTML is being served
+# App is working on localhost:3000
+# Now verify external access
+
+# ============================================
+# CHECK 1: Test External Access
+# ============================================
+# From your local machine, test:
+curl http://72.61.98.99:3000
+
+# Or test via browser:
+# http://72.61.98.99:3000
+
+# ============================================
+# CHECK 2: Check Nginx Reverse Proxy
+# ============================================
+# If using https://www.cryptorafts.com, check Nginx config
+cat /etc/nginx/sites-available/cryptorafts
+# OR
+cat /etc/nginx/sites-enabled/cryptorafts
+
+# Should have:
+# location / {
+#     proxy_pass http://localhost:3000;
+#     proxy_http_version 1.1;
+#     proxy_set_header Upgrade $http_upgrade;
+#     proxy_set_header Connection 'upgrade';
+#     proxy_set_header Host $host;
+#     proxy_cache_bypass $http_upgrade;
+# }
+
+# ============================================
+# CHECK 3: Test Nginx Proxy
+# ============================================
+# Test if Nginx is proxying to app
+curl http://localhost
+# Should return same HTML as port 3000
+
+# ============================================
+# CHECK 4: Check Browser Cache
+# ============================================
+# If app works in curl but not browser:
+# 1. Hard refresh: Ctrl+Shift+R (Windows) or Cmd+Shift+R (Mac)
+# 2. Clear browser cache
+# 3. Try incognito/private mode
+# 4. Check browser console for errors (F12)
+
+# ============================================
+# CHECK 5: Verify SSL/HTTPS (if using HTTPS)
+# ============================================
+# Test HTTPS:
+curl https://www.cryptorafts.com
+
+# Check SSL certificate:
+openssl s_client -connect www.cryptorafts.com:443
+
+# ============================================
+# SUMMARY
+# ============================================
+# ✅ App is working (curl shows HTML)
+# ✅ Nginx is running
+# ✅ Firewall allows port 3000
+# ✅ PM2 shows app online
+#
+# If not working in browser:
+# 1. Check Nginx reverse proxy config
+# 2. Clear browser cache
+# 3. Check browser console for errors
+# 4. Test in incognito mode
+# ============================================
+

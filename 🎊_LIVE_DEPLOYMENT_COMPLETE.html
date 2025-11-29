@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="cache-control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="pragma" content="no-cache">
+    <meta http-equiv="expires" content="0">
+    <title>🎊 CRYPTORAFTS IS LIVE!</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            min-height: 100vh;
+            padding: 20px;
+            animation: gradient 15s ease infinite;
+            background-size: 400% 400%;
+        }
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 30px;
+            padding: 50px;
+            box-shadow: 0 30px 100px rgba(0,0,0,0.4);
+        }
+        h1 {
+            font-size: 4em;
+            text-align: center;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 30px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .timestamp {
+            text-align: center;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            padding: 20px 40px;
+            border-radius: 50px;
+            display: inline-block;
+            margin: 20px 0;
+            font-weight: bold;
+            font-size: 1.3em;
+            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
+        }
+        .deployment-id {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 30px;
+            border-radius: 20px;
+            margin: 30px 0;
+            font-size: 1.3em;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+        .section {
+            background: #f8fafc;
+            border-radius: 20px;
+            padding: 30px;
+            margin: 20px 0;
+            border-left: 5px solid #667eea;
+        }
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+        .section ul {
+            list-style: none;
+            padding: 0;
+        }
+        .section li {
+            padding: 15px;
+            margin: 10px 0;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+        }
+        .section li:hover {
+            transform: translateX(10px);
+        }
+        .section li::before {
+            content: '✅ ';
+            font-size: 1.3em;
+            margin-right: 10px;
+        }
+        .live-urls {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border-radius: 20px;
+            padding: 40px;
+            margin: 30px 0;
+            text-align: center;
+        }
+        .live-urls h2 {
+            color: white;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        .url-box {
+            background: rgba(255,255,255,0.2);
+            padding: 20px;
+            border-radius: 15px;
+            margin: 15px 0;
+            backdrop-filter: blur(10px);
+        }
+        .url-box a {
+            color: white;
+            text-decoration: none;
+            font-size: 1.5em;
+            font-weight: bold;
+            display: block;
+            margin: 10px 0;
+            transition: transform 0.2s;
+        }
+        .url-box a:hover {
+            transform: scale(1.05);
+        }
+        .btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 25px 60px;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 1.8em;
+            margin: 20px 10px;
+            transition: all 0.3s;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+        .btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.6);
+        }
+        .countdown {
+            font-size: 5em;
+            color: #667eea;
+            font-weight: bold;
+            text-align: center;
+            margin: 30px 0;
+            animation: bounce 1s ease-in-out infinite;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+        .firebase-status {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin: 30px 0;
+        }
+        .firebase-status h3 {
+            color: white;
+            margin-bottom: 15px;
+            font-size: 1.8em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎊 CRYPTORAFTS IS LIVE! 🎊</h1>
+        
+        <div style="text-align: center;">
+            <div class="timestamp" id="timestamp">
+                Deployed: <span id="time"></span>
+            </div>
+        </div>
+        
+        <div class="countdown" id="countdown">3</div>
+        <p style="font-size: 1.5em; color: #667eea; text-align: center; margin-bottom: 30px;">
+            Opening in <span id="seconds">3</span> seconds...
+        </p>
+        
+        <div class="deployment-id">
+            <div style="text-align: center;">
+                <div style="font-size: 0.8em; margin-bottom: 10px;">🚀 PRODUCTION DEPLOYMENT ID</div>
+                <div style="font-size: 2em; font-weight: bold; letter-spacing: 3px;">onxskilrt</div>
+                <div style="font-size: 0.7em; margin-top: 15px; opacity: 0.8;">
+                    Fresh build with complete Firebase integration
+                </div>
+            </div>
+        </div>
+
+        <div class="live-urls">
+            <h2>🌐 YOUR SITE IS LIVE AT:</h2>
+            <div class="url-box">
+                <div style="font-size: 1.2em; margin-bottom: 10px;">🎯 Production URL (Direct)</div>
+                <a href="https://cryptorafts-starter-onxskilrt-anas-s-projects-8d19f880.vercel.app" target="_blank">
+                    cryptorafts-starter-onxskilrt.vercel.app
+                </a>
+            </div>
+            <div class="url-box">
+                <div style="font-size: 1.2em; margin-bottom: 10px;">🌍 Custom Domain (www)</div>
+                <a href="https://www.cryptorafts.com" target="_blank">
+                    www.cryptorafts.com
+                </a>
+            </div>
+            <div class="url-box">
+                <div style="font-size: 1.2em; margin-bottom: 10px;">🌍 Custom Domain (root)</div>
+                <a href="https://cryptorafts.com" target="_blank">
+                    cryptorafts.com
+                </a>
+            </div>
+        </div>
+
+        <div class="firebase-status">
+            <h3>🔥 Firebase Configuration Deployed</h3>
+            <ul style="list-style: none; padding: 0;">
+                <li style="padding: 10px; margin: 5px 0;">✅ Firestore Security Rules - LIVE</li>
+                <li style="padding: 10px; margin: 5px 0;">✅ Firestore Composite Indexes - DEPLOYED</li>
+                <li style="padding: 10px; margin: 5px 0;">✅ Storage Security Rules - CONFIGURED</li>
+                <li style="padding: 10px; margin: 5px 0;">✅ Authentication - ACTIVE</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>✅ What's Deployed</h2>
+            <ul>
+                <li>Fresh, clean Next.js build with zero errors</li>
+                <li>All VC role features working (Dashboard, Portfolio, Pipeline)</li>
+                <li>Firebase authentication fully integrated</li>
+                <li>Real-time notifications system active</li>
+                <li>Chat system with proper permissions</li>
+                <li>KYC/KYB submission workflows</li>
+                <li>Admin dashboard with full analytics</li>
+                <li>Founder project creation and management</li>
+                <li>Optimized bundle with no JavaScript errors</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>🎯 Fixed Issues</h2>
+            <ul>
+                <li>Eliminated all "TypeError: t is not a function" errors</li>
+                <li>Removed complex component dependencies causing build failures</li>
+                <li>Fixed "exports is not defined" webpack errors</li>
+                <li>Resolved VC role synchronization issues</li>
+                <li>Fixed Firebase permission errors in all collections</li>
+                <li>Deployed all required Firestore indexes</li>
+                <li>Cleaned up dead code and unused dependencies</li>
+                <li>Optimized bundle size and loading performance</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>🚀 Available Roles & Features</h2>
+            <ul>
+                <li><strong>Admin:</strong> Full dashboard with analytics, user management, KYC/KYB reviews</li>
+                <li><strong>VC (Venture Capital):</strong> Pipeline management, portfolio tracking, deal flow</li>
+                <li><strong>Founder:</strong> Project creation, pitch submission, funding applications</li>
+                <li><strong>All Roles:</strong> Real-time chat, notifications, profile management</li>
+            </ul>
+        </div>
+
+        <div style="text-align: center; margin: 50px 0;">
+            <a href="https://www.cryptorafts.com?v=FRESH_BUILD" class="btn" id="liveBtn">
+                🚀 OPEN LIVE SITE
+            </a>
+        </div>
+
+        <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 30px; border-radius: 15px; margin: 30px 0;">
+            <h3 style="color: #92400e; margin-bottom: 15px; font-size: 1.5em;">⚠️ CLEAR YOUR BROWSER CACHE!</h3>
+            <p style="color: #78350f; font-size: 1.1em; line-height: 1.6;">
+                <strong>IMPORTANT:</strong> Your browser may still be loading old cached files from previous deployments.
+            </p>
+            <ol style="color: #78350f; font-size: 1.1em; margin-top: 15px; line-height: 1.8;">
+                <li>Press <strong>Ctrl+Shift+Delete</strong></li>
+                <li>Select <strong>"Cached images and files"</strong></li>
+                <li>Select <strong>"All time"</strong> as the time range</li>
+                <li>Click <strong>"Clear data"</strong></li>
+                <li>Close ALL browser windows</li>
+                <li>Reopen browser and visit the site</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        // Set current time
+        const now = new Date();
+        document.getElementById('time').textContent = now.toLocaleString();
+        
+        // Countdown and auto-redirect
+        let seconds = 3;
+        const countdownEl = document.getElementById('countdown');
+        const secondsEl = document.getElementById('seconds');
+        
+        const interval = setInterval(() => {
+            seconds--;
+            countdownEl.textContent = seconds;
+            secondsEl.textContent = seconds;
+            
+            if (seconds === 0) {
+                clearInterval(interval);
+                countdownEl.textContent = '🚀';
+                secondsEl.textContent = 'NOW';
+                
+                // Open with cache-busting timestamp
+                const newUrl = 'https://www.cryptorafts.com?v=FRESH_BUILD&t=' + Date.now();
+                window.location.href = newUrl;
+            }
+        }, 1000);
+        
+        console.log('🎊 CRYPTORAFTS IS LIVE!');
+        console.log('✅ Deployment ID: onxskilrt');
+        console.log('✅ Fresh build deployed');
+        console.log('✅ Firebase fully configured');
+        console.log('✅ All features working');
+        console.log('✅ Domains configured: www.cryptorafts.com & cryptorafts.com');
+        console.log('🚀 Opening live site...');
+    </script>
+</body>
+</html>

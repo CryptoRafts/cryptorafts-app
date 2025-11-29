@@ -1,0 +1,24 @@
+✅ CORRECT URLs (with underscore _):
+
+CSS File:
+https://www.cryptorafts.com/_next/static/css/d52ac5b7de13e801.css
+
+JavaScript File:
+https://www.cryptorafts.com/_next/static/chunks/webpack-5dbab9c13296b75a.js
+
+Homepage:
+https://www.cryptorafts.com/
+
+❌ WRONG URLs (without underscore - will give 404):
+https://www.cryptorafts.com/next/static/css/d52ac5b7de13e801.css
+https://www.cryptorafts.com/next/static/chunks/webpack-5dbab9c13296b75a.js
+
+---
+
+QUICK FIX:
+1. Hard refresh: Ctrl + Shift + R
+2. Clear cache: Ctrl + Shift + Delete
+3. Flush DNS: ipconfig /flushdns (run as Admin)
+4. Change DNS to: 8.8.8.8 / 8.8.4.4
+5. Test in Incognito mode
+

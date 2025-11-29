@@ -1,0 +1,24 @@
+﻿# Hostinger Email Account Setup
+
+## Step 1: Log in to Hostinger
+URL: https://hpanel.hostinger.com/
+
+## Step 2: Create Email Account
+1. Navigate to: Email â†’ Email Accounts
+2. Click "Create Email Account"
+3. Email: business@cryptorafts.com
+4. Password: [Use the password you entered in the script]
+5. Click "Create"
+
+## Step 3: Get DKIM Key
+1. Click on business@cryptorafts.com
+2. Find "DKIM" section
+3. Click "Show" or "Copy" to reveal DKIM key
+4. Copy the ENTIRE key (it's very long)
+5. Use this key in DNS Record 4 (see DNS_RECORDS_TO_ADD.txt)
+
+## Step 4: Verify Domain Connection
+After adding DNS records and waiting 15-30 minutes:
+1. Go to Email â†’ Email Accounts
+2. Check status - should show "Domain connected"
+3. MX, SPF, DKIM should all show "OK"

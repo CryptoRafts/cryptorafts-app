@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Force Reload - CryptoRafts</title>
+    <script>
+        // Nuclear option: Clear EVERYTHING and force reload
+        (function() {
+            console.log('🧹 FORCE RELOAD: Clearing all caches...');
+            
+            // 1. Clear localStorage
+            try {
+                localStorage.clear();
+                console.log('✅ localStorage cleared');
+            } catch (e) {
+                console.warn('⚠️ Could not clear localStorage:', e);
+            }
+            
+            // 2. Clear sessionStorage
+            try {
+                sessionStorage.clear();
+                console.log('✅ sessionStorage cleared');
+            } catch (e) {
+                console.warn('⚠️ Could not clear sessionStorage:', e);
+            }
+            
+            // 3. Unregister all service workers
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(registrations => {
+                    registrations.forEach(registration => {
+                        registration.unregister();
+                        console.log('✅ Service worker unregistered');
+                    });
+                });
+            }
+            
+            // 4. Clear all caches
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => {
+                        caches.delete(name);
+                        console.log('✅ Cache deleted:', name);
+                    });
+                });
+            }
+            
+            // 5. Delete all IndexedDB
+            if ('indexedDB' in window) {
+                indexedDB.databases().then(dbs => {
+                    dbs.forEach(db => {
+                        if (db.name) {
+                            indexedDB.deleteDatabase(db.name);
+                            console.log('✅ IndexedDB deleted:', db.name);
+                        }
+                    });
+                }).catch(e => console.warn('⚠️ Could not clear IndexedDB:', e));
+            }
+            
+            // 6. Clear all cookies
+            document.cookie.split(";").forEach(c => {
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+            });
+            console.log('✅ Cookies cleared');
+            
+            // 7. Force reload with cache bypass after 1 second
+            setTimeout(() => {
+                console.log('🔄 Force reloading with cache bypass...');
+                const timestamp = Date.now();
+                window.location.href = `/?v=${timestamp}&nocache=true&forcereload=true`;
+            }, 1000);
+        })();
+    </script>
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            background: linear-gradient(135deg, #1e3a8a 0%, #7c3aed 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-center;
+            min-height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+        .loader {
+            border: 8px solid rgba(255,255,255,0.3);
+            border-top: 8px solid white;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <h1>🧹 Clearing Cache...</h1>
+        <div class="loader"></div>
+        <p>Please wait while we clear all cached data...</p>
+        <p style="font-size: 0.9em; opacity: 0.8;">You will be automatically redirected...</p>
+    </div>
+</body>
+</html>
+

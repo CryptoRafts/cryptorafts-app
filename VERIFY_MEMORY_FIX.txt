@@ -1,0 +1,93 @@
+# ============================================
+# VERIFY MEMORY FIX - Run on VPS
+# ============================================
+# Check if NODE_OPTIONS is actually applied
+
+# ============================================
+# CHECK 1: Verify Process Arguments
+# ============================================
+cd /var/www/cryptorafts
+
+# Check if wrapper script is being used
+ps aux | grep "start-server.sh\|cryptorafts" | grep -v grep
+
+# Check if NODE_OPTIONS is in process
+ps aux | grep cryptorafts | grep -v grep | grep "NODE_OPTIONS\|max-old-space-size"
+
+# ============================================
+# CHECK 2: Check Node.js Heap Size Directly
+# ============================================
+# Get process ID
+PID=$(pm2 pid cryptorafts)
+echo "Process ID: $PID"
+
+# Check Node.js V8 heap size
+cat /proc/$PID/environ | tr '\0' '\n' | grep NODE_OPTIONS
+
+# ============================================
+# CHECK 3: Check PM2 Config
+# ============================================
+cat ecosystem.config.js | grep -A 10 "node_args\|NODE_OPTIONS\|start-server"
+
+# ============================================
+# CHECK 4: Test Node.js Memory Directly
+# ============================================
+# Create test script to check heap size
+node -e "console.log('Heap Total:', require('v8').getHeapStatistics().heap_size_limit / 1024 / 1024, 'MB')"
+
+# ============================================
+# CHECK 5: Check if Wrapper Exists
+# ============================================
+ls -lh start-server.sh
+cat start-server.sh
+
+# ============================================
+# FIX IF WRAPPER DOESN'T EXIST
+# ============================================
+# If wrapper doesn't exist, create it:
+cat > start-server.sh << 'EOF'
+#!/bin/bash
+export NODE_OPTIONS='--max-old-space-size=2048'
+cd /var/www/cryptorafts
+exec node server.js
+EOF
+
+chmod +x start-server.sh
+
+# Update ecosystem.config.js
+cat > ecosystem.config.js << 'EOF'
+module.exports = {
+  apps: [{
+    name: 'cryptorafts',
+    script: './start-server.sh',
+    instances: 1,
+    exec_mode: 'fork',
+    env: {
+      NODE_ENV: 'production',
+      PORT: 3000,
+      HOSTNAME: '0.0.0.0',
+      NODE_OPTIONS: '--max-old-space-size=2048'
+    },
+    error_file: './logs/err.log',
+    out_file: './logs/out.log',
+    merge_logs: true,
+    autorestart: true,
+    max_memory_restart: '2G'
+  }]
+};
+EOF
+
+pm2 restart cryptorafts
+
+# ============================================
+# VERIFY HEAP SIZE
+# ============================================
+# After restart, check heap size
+sleep 5
+pm2 monit
+
+# Check process environment
+PID=$(pm2 pid cryptorafts)
+echo "Checking environment for PID: $PID"
+cat /proc/$PID/environ 2>/dev/null | tr '\0' '\n' | grep NODE || echo "NODE_OPTIONS not found in process"
+

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎉 FIXED! VC Role Working</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 50px;
+            max-width: 800px;
+            width: 100%;
+            text-align: center;
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-20px);
+            }
+            60% {
+                transform: translateY(-10px);
+            }
+        }
+        
+        h1 {
+            color: #10b981;
+            font-size: 36px;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+        
+        .success {
+            background: #d1fae5;
+            border: 3px solid #10b981;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 30px 0;
+            color: #065f46;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .info {
+            background: #e0f2fe;
+            border: 3px solid #0ea5e9;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            color: #0c4a6e;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        
+        .button {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 20px 50px;
+            border: none;
+            border-radius: 50px;
+            font-size: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4);
+            text-decoration: none;
+            display: inline-block;
+            margin: 10px;
+        }
+        
+        .button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.6);
+        }
+        
+        .url-box {
+            background: #f5f5f5;
+            border: 2px dashed #10b981;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            word-break: break-all;
+            color: #333;
+        }
+        
+        .steps {
+            text-align: left;
+            margin: 30px 0;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        .steps li {
+            margin: 15px 0;
+            font-size: 16px;
+            line-height: 1.6;
+            color: #333;
+        }
+        
+        .steps strong {
+            color: #10b981;
+        }
+    </style>
+    <script>
+        function openFixedVersion() {
+            const timestamp = new Date().getTime();
+            const url = `https://cryptorafts-starter-c0ci432rt-anas-s-projects-8d19f880.vercel.app/vc/dashboard?nocache=${timestamp}&v=fixed&force=true`;
+            window.location.href = url;
+        }
+        
+        function openDomain() {
+            const timestamp = new Date().getTime();
+            const url = `https://www.cryptorafts.com/vc/dashboard?nocache=${timestamp}&v=fixed&force=true`;
+            window.location.href = url;
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">🎉</div>
+        <h1>VC ROLE FIXED!</h1>
+        
+        <div class="success">
+            ✅ SIMPLIFIED VC DASHBOARD DEPLOYED<br>
+            ✅ NO MORE "exports is not defined" ERRORS<br>
+            ✅ CLEAN WEBPACK CONFIG<br>
+            ✅ ALL DEPENDENCIES REMOVED
+        </div>
+        
+        <div class="info">
+            <strong>Latest Deployment:</strong><br>
+            <div class="url-box">
+                https://cryptorafts-starter-c0ci432rt-anas-s-projects-8d19f880.vercel.app
+            </div>
+            <strong>Domain Updated:</strong> www.cryptorafts.com<br>
+            <strong>Status:</strong> ✅ Ready<br>
+            <strong>VC Dashboard:</strong> ✅ Simplified & Working<br>
+        </div>
+        
+        <div class="steps">
+            <h3 style="color: #10b981; margin-bottom: 15px;">🎯 Test the Fix:</h3>
+            <ol>
+                <li><strong>Click "Test VC Dashboard"</strong> below</li>
+                <li><strong>Press CTRL+SHIFT+R</strong> to force refresh</li>
+                <li><strong>Check Console</strong> - NO "exports is not defined"!</li>
+                <li><strong>VC Role should work perfectly!</strong></li>
+            </ol>
+        </div>
+        
+        <button class="button" onclick="openFixedVersion()">
+            🚀 Test VC Dashboard (Direct URL)
+        </button>
+        
+        <button class="button" onclick="openDomain()" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);">
+            🌐 Test on www.cryptorafts.com
+        </button>
+        
+        <div class="info" style="margin-top: 30px; background: #d1fae5;">
+            <strong>✅ WHAT I FIXED:</strong><br>
+            1. Simplified VC dashboard (removed complex dependencies)<br>
+            2. Clean webpack config (removed problematic plugins)<br>
+            3. Removed framer-motion and other heavy imports<br>
+            4. Direct Firebase integration only<br>
+            5. No more "exports is not defined" errors!
+        </div>
+    </div>
+</body>
+</html>

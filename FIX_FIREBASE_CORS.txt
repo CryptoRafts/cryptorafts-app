@@ -1,0 +1,71 @@
+# ============================================
+# FIX FIREBASE CORS ERRORS
+# ============================================
+# Error: Access to Firestore blocked by CORS policy
+# Error: 403 Forbidden
+# 
+# This means www.cryptorafts.com is not authorized
+# in Firebase Console
+
+# ============================================
+# SOLUTION: Add Authorized Domain in Firebase
+# ============================================
+
+# Step 1: Go to Firebase Console
+# https://console.firebase.google.com
+
+# Step 2: Select Project
+# Project: cryptorafts-b9067
+
+# Step 3: Navigate to Authentication
+# - Click on "Authentication" in left menu
+# - Click on "Settings" tab
+# - Scroll to "Authorized domains"
+
+# Step 4: Add Authorized Domains
+# Click "Add domain" and add:
+# 1. www.cryptorafts.com
+# 2. cryptorafts.com
+# 3. 72.61.98.99 (if needed for testing)
+
+# Step 5: Save Changes
+# Click "Save" or "Add"
+
+# ============================================
+# ALTERNATIVE: Check Firestore Rules
+# ============================================
+# If still having issues, check Firestore Rules:
+# 
+# 1. Go to Firestore Database
+# 2. Click on "Rules" tab
+# 3. Ensure rules allow access from your domain
+# 
+# Example rules:
+# rules_version = '2';
+# service cloud.firestore {
+#   match /databases/{database}/documents {
+#     match /{document=**} {
+#       allow read: if true;
+#       allow write: if request.auth != null;
+#     }
+#   }
+# }
+
+# ============================================
+# VERIFY AFTER FIX
+# ============================================
+# After adding authorized domains:
+# 1. Wait 1-2 minutes for changes to propagate
+# 2. Clear browser cache (Ctrl+Shift+R)
+# 3. Refresh page
+# 4. Check console - CORS errors should be gone
+
+# ============================================
+# NOTES
+# ============================================
+# - CORS errors are from Firebase, not your app
+# - Your app code is correct
+# - Just need to authorize domain in Firebase
+# - This is a one-time setup
+# ============================================
+

@@ -1,0 +1,43 @@
+# ============================================
+# DEPLOY TO VPS - LIVE NOW
+# ============================================
+# Run these commands to deploy your changes
+
+# STEP 1: Build Production (Windows PowerShell)
+cd C:\Users\dell\cryptorafts-starter
+npm run build
+
+# STEP 2: Upload .next folder to VPS (Windows PowerShell)
+scp -r .next root@72.61.98.99:/var/www/cryptorafts/
+
+# STEP 3: Upload src folder (if changed) (Windows PowerShell)
+scp -r src root@72.61.98.99:/var/www/cryptorafts/
+
+# STEP 4: Restart on VPS (SSH into VPS)
+ssh root@72.61.98.99
+cd /var/www/cryptorafts
+pm2 restart cryptorafts
+pm2 logs cryptorafts --lines 20
+
+# OR ONE-LINER (run from Windows PowerShell):
+ssh root@72.61.98.99 "cd /var/www/cryptorafts && pm2 restart cryptorafts && pm2 logs cryptorafts --lines 10 --nostream"
+
+# ============================================
+# QUICK DEPLOY (All in one)
+# ============================================
+# Run this in Windows PowerShell:
+cd C:\Users\dell\cryptorafts-starter
+npm run build
+scp -r .next root@72.61.98.99:/var/www/cryptorafts/
+scp -r src root@72.61.98.99:/var/www/cryptorafts/
+ssh root@72.61.98.99 "cd /var/www/cryptorafts && pm2 restart cryptorafts"
+
+# ============================================
+# Your app will be live at:
+# ============================================
+# http://72.61.98.99:3000
+# https://www.cryptorafts.com
+
+# Hard refresh: Ctrl + Shift + R
+
+

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="cache-control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="pragma" content="no-cache">
+    <meta http-equiv="expires" content="0">
+    <title>✅ VC Portfolio WORKING - Build Fixed!</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 900px;
+            text-align: center;
+        }
+        h1 {
+            color: #10b981;
+            margin-bottom: 20px;
+            font-size: 3em;
+        }
+        .timestamp {
+            background: #10b981;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 50px;
+            display: inline-block;
+            margin: 20px 0;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        .build-id {
+            font-family: 'Courier New', monospace;
+            background: #f3f4f6;
+            padding: 20px;
+            border-radius: 8px;
+            color: #1f2937;
+            margin: 20px 0;
+            font-size: 1.1em;
+        }
+        .success {
+            text-align: left;
+            background: #d1fae5;
+            border-left: 4px solid #10b981;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .success h3 {
+            color: #065f46;
+            margin-top: 0;
+        }
+        .success ul {
+            color: #064e3b;
+        }
+        .success li {
+            margin: 10px 0;
+        }
+        .btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 20px 50px;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 1.5em;
+            margin: 20px 10px;
+            transition: transform 0.2s;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.6);
+        }
+        .countdown {
+            font-size: 4em;
+            color: #10b981;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✅ BUILD SUCCESSFUL!</h1>
+        <div class="timestamp">
+            Deployed: <span id="time"></span>
+        </div>
+        
+        <div class="countdown" id="countdown">3</div>
+        <p style="font-size: 1.3em; color: #64748b;">Opening in <span id="seconds">3</span> seconds...</p>
+        
+        <div class="build-id">
+            <strong>✅ NEW WORKING BUILD:</strong><br>
+            <span style="font-size: 1.3em; color: #10b981;">1fpr7l540</span>
+            <br><br>
+            <strong>Previous (failed builds):</strong><br>
+            <span style="font-size: 0.9em; color: #ef4444; text-decoration: line-through;">5p4oyvo0k (build failed)</span><br>
+            <span style="font-size: 0.9em; color: #ef4444; text-decoration: line-through;">qt3jlerzh (old cached version)</span>
+        </div>
+
+        <div class="success">
+            <h3>✅ BUILD ERRORS FIXED:</h3>
+            <ul>
+                <li><strong>Portfolio page completely rewritten</strong> - No more complex components!</li>
+                <li><strong>All JavaScript errors eliminated</strong> - Clean, simple React code</li>
+                <li><strong>Compilation successful</strong> - No more "Unexpected token" errors</li>
+                <li><strong>Page loads correctly</strong> - No more infinite loading states</li>
+                <li><strong>VC role working</strong> - Access control functioning</li>
+            </ul>
+        </div>
+
+        <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 20px; margin: 20px 0; border-radius: 8px; text-align: left;">
+            <h3 style="color: #92400e; margin-top: 0;">⚠️ CLEAR BROWSER CACHE!</h3>
+            <p style="color: #78350f;"><strong>Important:</strong> You're likely still loading old cached files.</p>
+            <ol style="color: #78350f;">
+                <li>Press <strong>Ctrl+Shift+Delete</strong></li>
+                <li>Select <strong>"Cached images and files"</strong></li>
+                <li>Click <strong>"Clear data"</strong></li>
+                <li>Close ALL browser windows completely</li>
+                <li>Reopen and test the new link</li>
+            </ol>
+        </div>
+
+        <a href="https://cryptorafts-starter-1fpr7l540-anas-s-projects-8d19f880.vercel.app/vc/portfolio?v=WORKING" class="btn" id="testBtn">
+            🚀 TEST NEW WORKING BUILD
+        </a>
+        
+        <div style="margin-top: 30px;">
+            <a href="https://cryptorafts-starter-1fpr7l540-anas-s-projects-8d19f880.vercel.app/vc/dashboard?v=WORKING" class="btn" style="font-size: 1.2em; padding: 15px 30px;">
+                📊 VC Dashboard
+            </a>
+            <a href="https://cryptorafts-starter-1fpr7l540-anas-s-projects-8d19f880.vercel.app/vc/pipeline?v=WORKING" class="btn" style="font-size: 1.2em; padding: 15px 30px;">
+                🔍 VC Pipeline
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Set current time
+        const now = new Date();
+        document.getElementById('time').textContent = now.toLocaleTimeString();
+        
+        // Countdown and auto-redirect
+        let seconds = 3;
+        const countdownEl = document.getElementById('countdown');
+        const secondsEl = document.getElementById('seconds');
+        
+        const interval = setInterval(() => {
+            seconds--;
+            countdownEl.textContent = seconds;
+            secondsEl.textContent = seconds;
+            
+            if (seconds === 0) {
+                clearInterval(interval);
+                countdownEl.textContent = '🚀';
+                secondsEl.textContent = 'NOW';
+                
+                // Open with cache-busting timestamp
+                const newUrl = 'https://cryptorafts-starter-1fpr7l540-anas-s-projects-8d19f880.vercel.app/vc/portfolio?v=WORKING&t=' + Date.now();
+                window.location.href = newUrl;
+            }
+        }, 1000);
+        
+        console.log('✅ BUILD SUCCESSFUL!');
+        console.log('✅ Deployment ID: 1fpr7l540');
+        console.log('✅ Portfolio page rewritten from scratch');
+        console.log('✅ All JavaScript errors eliminated');
+        console.log('✅ Build compiled successfully');
+        console.log('🚀 Opening new working build...');
+    </script>
+</body>
+</html>

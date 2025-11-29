@@ -1,0 +1,96 @@
+✅ UPLOAD TO CORRECT LOCATION - VPS NOT SHARED HOSTING
+=====================================================
+
+IMPORTANT: You have a VPS, NOT shared hosting!
+Upload to: /var/www/cryptorafts (NOT public_html)
+
+
+STEP 1: Upload via Hostinger File Manager
+------------------------------------------
+1. Go to: https://hpanel.hostinger.com/
+2. Login with your Hostinger account
+3. Go to: File Manager
+4. Navigate to: /var/www/cryptorafts (NOT public_html!)
+   - Type /var/www/cryptorafts in the path bar
+   - OR navigate: Root → var → www → cryptorafts
+5. Upload ALL files from your local DEPLOY_TO_VPS folder:
+   - src/ folder (entire folder)
+   - package.json
+   - next.config.js
+   - tsconfig.json
+   - public/ folder (if exists)
+   - .env.production (if needed)
+   - All other files
+
+
+STEP 2: After uploading, verify in terminal
+---------------------------------------------
+Connect to SSH terminal, then run:
+
+cd /var/www/cryptorafts
+ls -la package.json
+ls -la src/app/page.tsx
+ls -la next.config.js
+
+All should exist now!
+
+
+STEP 3: If files are in wrong location (public_html)
+-----------------------------------------------------
+If you accidentally uploaded to public_html, move them:
+
+# In SSH terminal:
+cd /var/www
+mv html/cryptorafts/* cryptorafts/ 2>/dev/null || true
+# OR if files are directly in public_html:
+find /var/www/html -name "package.json" -type f
+# Then copy to correct location
+
+
+STEP 4: Stop PM2 first
+-----------------------
+cd /var/www/cryptorafts
+pm2 stop all
+pm2 delete all
+
+
+STEP 5: Install dependencies and build
+---------------------------------------
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+nvm use 20
+node --version
+
+# Install dependencies
+npm install --legacy-peer-deps
+
+# Build app
+rm -rf .next out node_modules/.cache
+NODE_ENV=production npm run build
+
+Wait 5-10 minutes!
+
+
+STEP 6: Start PM2 again
+------------------------
+pm2 start ecosystem.config.js
+pm2 save
+pm2 status
+
+
+STEP 7: Verify
+--------------
+curl http://localhost:3000
+
+Should show HTML (not error)!
+
+
+THEN VISIT: https://www.cryptorafts.com
+
+
+IMPORTANT REMINDER:
+-------------------
+- Upload to: /var/www/cryptorafts
+- NOT to: /var/www/html or public_html
+- VPS location: /var/www/cryptorafts
+

@@ -1,0 +1,306 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+             request.auth.token.role == 'admin';
+    }
+    
+    function isVC() {
+      return isAuthenticated() && 
+             request.auth.token.role == 'vc';
+    }
+    
+    function isFounder() {
+      return isAuthenticated() && 
+             request.auth.token.role == 'founder';
+    }
+    
+    function isExchange() {
+      return isAuthenticated() && 
+             request.auth.token.role == 'exchange';
+    }
+    
+    function isAgency() {
+      return isAuthenticated() && 
+             request.auth.token.role == 'agency';
+    }
+    
+    // User can access their own data
+    function isOwner(userId) {
+      return isAuthenticated() && 
+             request.auth.uid == userId;
+    }
+    
+    // VC can access their organization's data
+    function isVCOrgMember(orgId) {
+      return isVC() && 
+             exists(/databases/$(database)/documents/organizations/$(orgId)) &&
+             request.auth.uid in get(/databases/$(database)/documents/organizations/$(orgId)).data.members;
+    }
+    
+    // Check if user is member of a deal room
+    function isRoomMember(roomId) {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/groupChats/$(roomId)) &&
+             request.auth.uid in get(/databases/$(database)/documents/groupChats/$(roomId)).data.members;
+    }
+
+    // ADMIN OVERRIDE - FULL ACCESS
+    match /{document=**} {
+      allow read, write: if isAdmin();
+    }
+
+    // Users collection - More permissive for development
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (
+        isOwner(userId) || 
+        isAdmin() ||
+        // Allow VC users to write to any user document for development
+        isVC()
+      );
+    }
+
+    // Organizations collection - More permissive for development
+    match /organizations/{orgId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (
+        isAdmin() ||
+        isVCOrgMember(orgId) ||
+        // Allow VC users to write to any organization for development
+        isVC()
+      );
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        isVC()
+      );
+      allow list: if isAuthenticated();
+    }
+
+    // Projects collection - More permissive for development
+    match /projects/{projectId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (
+        isAdmin() ||
+        (isFounder() && resource.data.founderId == request.auth.uid) ||
+        // Allow VC users to write to any project for development
+        isVC()
+      );
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        (isFounder() && request.auth.uid == request.resource.data.founderId) ||
+        // Allow VC users to create projects for development
+        isVC()
+      );
+      allow list: if isAuthenticated();
+    }
+
+    // VC Pipeline collection - More permissive for development
+    match /vcPipelines/{orgId}/items/{projectId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        isVCOrgMember(orgId) ||
+        // Allow any VC to access any pipeline for development
+        isVC()
+      );
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        (isVC() && request.auth.uid == request.resource.data.orgId) ||
+        // Allow any VC to create pipeline items for development
+        isVC()
+      );
+      allow list: if isAuthenticated() && (
+        isAdmin() ||
+        isVC()
+      );
+    }
+
+    // Group Chats (Deal Rooms) - More permissive for development
+    match /groupChats/{roomId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        isRoomMember(roomId) ||
+        // Allow VC users to access any chat room for development
+        isVC()
+      );
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        (isVC() && request.auth.uid in request.resource.data.members) ||
+        // Allow any VC to create chat rooms for development
+        isVC()
+      );
+      allow list: if isAuthenticated();
+      
+      // Messages subcollection - More permissive for development
+      match /messages/{messageId} {
+        allow read, write: if isAuthenticated() && (
+          isAdmin() ||
+          isRoomMember(roomId) ||
+          // Allow VC users to access any messages for development
+          isVC()
+        );
+        allow create: if isAuthenticated() && (
+          isAdmin() ||
+          (isRoomMember(roomId) && request.auth.uid == request.resource.data.authorId) ||
+          // Allow any VC to create messages for development
+          isVC()
+        );
+        allow list: if isAuthenticated() && (
+          isAdmin() ||
+          isRoomMember(roomId) ||
+          // Allow VC users to list any messages for development
+          isVC()
+        );
+      }
+    }
+
+    // VC Term Sheet Templates - More permissive for development
+    match /vcTermSheetTemplates/{templateId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        (isVC() && resource.data.orgId == request.auth.token.orgId) ||
+        // Allow any VC to access any template for development
+        isVC()
+      );
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        (isVC() && request.auth.uid == request.resource.data.orgId) ||
+        // Allow any VC to create templates for development
+        isVC()
+      );
+      allow list: if isAuthenticated() && (
+        isAdmin() ||
+        isVC()
+      );
+    }
+
+    // VC AI Sessions - More permissive for development
+    match /vcAISessions/{sessionId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        (isVC() && resource.data.context.orgId == request.auth.token.orgId) ||
+        // Allow any VC to access any AI session for development
+        isVC()
+      );
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        (isVC() && request.auth.uid == request.resource.data.context.userId) ||
+        // Allow any VC to create AI sessions for development
+        isVC()
+      );
+      allow list: if isAuthenticated() && (
+        isAdmin() ||
+        isVC()
+      );
+    }
+
+    // VC Metrics - More permissive for development
+    match /vcMetrics/{metricsId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        (isVC() && resource.data.orgId == request.auth.token.orgId) ||
+        // Allow any VC to access any metrics for development
+        isVC()
+      );
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        (isVC() && request.auth.uid == request.resource.data.orgId) ||
+        // Allow any VC to create metrics for development
+        isVC()
+      );
+      allow list: if isAuthenticated() && (
+        isAdmin() ||
+        isVC()
+      );
+    }
+
+    // Notifications - More permissive for development
+    match /notifications/{notificationId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        resource.data.userId == request.auth.uid ||
+        // Allow VC users to access any notifications for development
+        isVC()
+      );
+      allow create: if isAuthenticated();
+      allow list: if isAuthenticated();
+    }
+
+    // Audit events - More permissive for development
+    match /audit/{auditId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        // Allow VC users to read audit events for development
+        isVC()
+      );
+      allow write: if isAuthenticated();
+      allow list: if isAuthenticated() && (
+        isAdmin() ||
+        // Allow VC users to list audit events for development
+        isVC()
+      );
+    }
+
+    // Rate limits - More permissive for development
+    match /rateLimits/{limitId} {
+      allow read, write: if isAuthenticated();
+      allow list: if isAuthenticated() && (
+        isAdmin() ||
+        // Allow VC users to list rate limits for development
+        isVC()
+      );
+    }
+
+    // Pitches collection - More permissive for development
+    match /pitches/{pitchId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        exists(/databases/$(database)/documents/pitches/$(pitchId)) &&
+        get(/databases/$(database)/documents/pitches/$(pitchId)).data.founderId == request.auth.uid ||
+        // Allow VC users to read any pitch for development
+        isVC()
+      );
+      allow create: if isAuthenticated() && (
+        request.auth.uid == request.resource.data.founderId ||
+        // Allow VC users to create pitches for development
+        isVC()
+      );
+      allow update, delete: if isAuthenticated() && (
+        isAdmin() ||
+        exists(/databases/$(database)/documents/pitches/$(pitchId)) &&
+        get(/databases/$(database)/documents/pitches/$(pitchId)).data.founderId == request.auth.uid ||
+        // Allow VC users to update any pitch for development
+        isVC()
+      );
+      allow list: if isAuthenticated();
+    }
+
+    // Chat Rooms (general) - More permissive for development
+    match /chatRooms/{chatId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        request.auth.uid in resource.data.participants ||
+        // Allow VC users to access any chat room for development
+        isVC()
+      );
+      allow create: if isAuthenticated();
+      allow list: if isAuthenticated();
+    }
+
+    // Default rule for any other collections - More permissive for development
+    match /{document=**} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        // Allow VC users to access any document for development
+        isVC()
+      );
+    }
+  }
+}

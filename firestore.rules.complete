@@ -1,0 +1,574 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===========================================
+    // HELPER FUNCTIONS
+    // ===========================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+             request.auth.token.role == 'admin';
+    }
+    
+    function isVC() {
+      return isAuthenticated() && 
+             request.auth.token.role == 'vc';
+    }
+    
+    function isFounder() {
+      return isAuthenticated() && 
+             request.auth.token.role == 'founder';
+    }
+    
+    function isExchange() {
+      return isAuthenticated() && 
+             request.auth.token.role == 'exchange';
+    }
+    
+    function isAgency() {
+      return isAuthenticated() && 
+             request.auth.token.role == 'agency';
+    }
+    
+    function isInfluencer() {
+      return isAuthenticated() && 
+             request.auth.token.role == 'influencer';
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && 
+             request.auth.uid == userId;
+    }
+    
+    function isVCOrgMember(orgId) {
+      return isVC() && 
+             exists(/databases/$(database)/documents/organizations/$(orgId)) &&
+             request.auth.uid in get(/databases/$(database)/documents/organizations/$(orgId)).data.members;
+    }
+    
+    function isRoomMember(roomId) {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/groupChats/$(roomId)) &&
+             request.auth.uid in get(/databases/$(database)/documents/groupChats/$(roomId)).data.members;
+    }
+    
+    function isProjectMember(projectId) {
+      return isAuthenticated() && (
+        isAdmin() ||
+        (isFounder() && 
+         exists(/databases/$(database)/documents/projects/$(projectId)) &&
+         get(/databases/$(database)/documents/projects/$(projectId)).data.founderId == request.auth.uid) ||
+        (isVC() && 
+         exists(/databases/$(database)/documents/projects/$(projectId)) &&
+         request.auth.uid in get(/databases/$(database)/documents/projects/$(projectId)).data.vcIds)
+      );
+    }
+    
+    function isDealParticipant(dealId) {
+      return isAuthenticated() && (
+        isAdmin() ||
+        exists(/databases/$(database)/documents/deals/$(dealId)) &&
+        request.auth.uid in get(/databases/$(database)/documents/deals/$(dealId)).data.participants
+      );
+    }
+    
+    // ===========================================
+    // ADMIN OVERRIDE - FULL ACCESS
+    // ===========================================
+    
+    // Admins have full access to everything
+    match /{document=**} {
+      allow read, write: if isAdmin();
+    }
+    
+    // ===========================================
+    // USERS COLLECTION
+    // ===========================================
+    
+    match /users/{userId} {
+      // Users can read their own data, admins can read all
+      allow read: if isAuthenticated() && (
+        isOwner(userId) ||
+        isAdmin()
+      );
+      
+      // Users can write their own data, admins can write all
+      allow write: if isAuthenticated() && (
+        isOwner(userId) ||
+        isAdmin()
+      );
+      
+      // Allow creation for authenticated users
+      allow create: if isAuthenticated();
+      
+      // Subcollections
+      match /{subcollection=**} {
+        allow read, write: if isAuthenticated() && (
+          isOwner(userId) ||
+          isAdmin()
+        );
+      }
+    }
+    
+    // ===========================================
+    // ORGANIZATIONS COLLECTION
+    // ===========================================
+    
+    match /organizations/{orgId} {
+      // Read access for org members and admins
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        isVCOrgMember(orgId) ||
+        // Allow founders to read VC org data if they're in a deal together
+        (isFounder() && 
+         exists(/databases/$(database)/documents/groupChats/{roomId}) &&
+         request.auth.uid in get(/databases/$(database)/documents/groupChats/{roomId}).data.members)
+      );
+      
+      // Write access for org members and admins
+      allow write: if isAuthenticated() && (
+        isAdmin() ||
+        isVCOrgMember(orgId)
+      );
+      
+      // Create access for VCs
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        isVC()
+      );
+      
+      // List access for authenticated users
+      allow list: if isAuthenticated();
+      
+      // Subcollections
+      match /{subcollection=**} {
+        allow read, write: if isAuthenticated() && (
+          isAdmin() ||
+          isVCOrgMember(orgId)
+        );
+      }
+    }
+    
+    // ===========================================
+    // PROJECTS COLLECTION
+    // ===========================================
+    
+    match /projects/{projectId} {
+      // Read access for all authenticated users
+      allow read: if isAuthenticated();
+      
+      // Write access for project founder and admins
+      allow write: if isAuthenticated() && (
+        isAdmin() ||
+        (isFounder() && 
+         exists(/databases/$(database)/documents/projects/$(projectId)) &&
+         get(/databases/$(database)/documents/projects/$(projectId)).data.founderId == request.auth.uid)
+      );
+      
+      // Create access for founders
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        (isFounder() && request.auth.uid == request.resource.data.founderId)
+      );
+      
+      // Delete access for project founder and admins
+      allow delete: if isAuthenticated() && (
+        isAdmin() ||
+        (isFounder() && 
+         exists(/databases/$(database)/documents/projects/$(projectId)) &&
+         get(/databases/$(database)/documents/projects/$(projectId)).data.founderId == request.auth.uid)
+      );
+      
+      // List access for authenticated users
+      allow list: if isAuthenticated();
+      
+      // Subcollections
+      match /{subcollection=**} {
+        allow read, write: if isAuthenticated() && (
+          isAdmin() ||
+          isProjectMember(projectId)
+        );
+      }
+    }
+    
+    // ===========================================
+    // VC PIPELINE COLLECTION
+    // ===========================================
+    
+    match /vcPipelines/{orgId}/items/{projectId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        isVCOrgMember(orgId)
+      );
+      
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        (isVC() && isVCOrgMember(orgId))
+      );
+      
+      allow list: if isAuthenticated() && (
+        isAdmin() ||
+        isVC()
+      );
+    }
+    
+    // ===========================================
+    // DEALS COLLECTION
+    // ===========================================
+    
+    match /deals/{dealId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        isDealParticipant(dealId)
+      );
+      
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        isVC() ||
+        isFounder()
+      );
+      
+      allow list: if isAuthenticated();
+      
+      // Subcollections
+      match /{subcollection=**} {
+        allow read, write: if isAuthenticated() && (
+          isAdmin() ||
+          isDealParticipant(dealId)
+        );
+      }
+    }
+    
+    // ===========================================
+    // GROUP CHATS (DEAL ROOMS)
+    // ===========================================
+    
+    match /groupChats/{roomId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        isRoomMember(roomId)
+      );
+      
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        isVC() ||
+        isFounder()
+      );
+      
+      allow list: if isAuthenticated();
+      
+      // Messages subcollection
+      match /messages/{messageId} {
+        allow read, write: if isAuthenticated() && (
+          isAdmin() ||
+          isRoomMember(roomId)
+        );
+        
+        allow create: if isAuthenticated() && (
+          isAdmin() ||
+          (isRoomMember(roomId) && request.auth.uid == request.resource.data.authorId)
+        );
+        
+        allow list: if isAuthenticated() && (
+          isAdmin() ||
+          isRoomMember(roomId)
+        );
+      }
+      
+      // Attachments subcollection
+      match /attachments/{attachmentId} {
+        allow read, write: if isAuthenticated() && (
+          isAdmin() ||
+          isRoomMember(roomId)
+        );
+        
+        allow create: if isAuthenticated() && (
+          isAdmin() ||
+          isRoomMember(roomId)
+        );
+      }
+    }
+    
+    // ===========================================
+    // PITCHES COLLECTION
+    // ===========================================
+    
+    match /pitches/{pitchId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        (isFounder() && 
+         exists(/databases/$(database)/documents/pitches/$(pitchId)) &&
+         get(/databases/$(database)/documents/pitches/$(pitchId)).data.founderId == request.auth.uid) ||
+        isVC() ||
+        isExchange() ||
+        isAgency()
+      );
+      
+      allow write: if isAuthenticated() && (
+        isAdmin() ||
+        (isFounder() && 
+         exists(/databases/$(database)/documents/pitches/$(pitchId)) &&
+         get(/databases/$(database)/documents/pitches/$(pitchId)).data.founderId == request.auth.uid)
+      );
+      
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        (isFounder() && request.auth.uid == request.resource.data.founderId)
+      );
+      
+      allow delete: if isAuthenticated() && (
+        isAdmin() ||
+        (isFounder() && 
+         exists(/databases/$(database)/documents/pitches/$(pitchId)) &&
+         get(/databases/$(database)/documents/pitches/$(pitchId)).data.founderId == request.auth.uid)
+      );
+      
+      allow list: if isAuthenticated();
+    }
+    
+    // ===========================================
+    // VC TERM SHEET TEMPLATES
+    // ===========================================
+    
+    match /vcTermSheetTemplates/{templateId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        (isVC() && resource.data.orgId == request.auth.token.orgId)
+      );
+      
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        (isVC() && request.auth.uid == request.resource.data.orgId)
+      );
+      
+      allow list: if isAuthenticated() && (
+        isAdmin() ||
+        isVC()
+      );
+    }
+    
+    // ===========================================
+    // VC AI SESSIONS
+    // ===========================================
+    
+    match /vcAISessions/{sessionId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        (isVC() && resource.data.context.orgId == request.auth.token.orgId)
+      );
+      
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        (isVC() && request.auth.uid == request.resource.data.context.userId)
+      );
+      
+      allow list: if isAuthenticated() && (
+        isAdmin() ||
+        isVC()
+      );
+    }
+    
+    // ===========================================
+    // VC METRICS
+    // ===========================================
+    
+    match /vcMetrics/{metricsId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        (isVC() && resource.data.orgId == request.auth.token.orgId)
+      );
+      
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        (isVC() && request.auth.uid == request.resource.data.orgId)
+      );
+      
+      allow list: if isAuthenticated() && (
+        isAdmin() ||
+        isVC()
+      );
+    }
+    
+    // ===========================================
+    // NOTIFICATIONS
+    // ===========================================
+    
+    match /notifications/{notificationId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        resource.data.userId == request.auth.uid
+      );
+      
+      allow create: if isAuthenticated();
+      
+      allow list: if isAuthenticated();
+    }
+    
+    // ===========================================
+    // AUDIT EVENTS
+    // ===========================================
+    
+    match /audit/{auditId} {
+      allow read: if isAdmin();
+      allow write: if isAuthenticated();
+      allow list: if isAdmin();
+    }
+    
+    // ===========================================
+    // RATE LIMITS
+    // ===========================================
+    
+    match /rateLimits/{limitId} {
+      allow read, write: if isAuthenticated();
+      allow list: if isAdmin();
+    }
+    
+    // ===========================================
+    // CHAT ROOMS (GENERAL)
+    // ===========================================
+    
+    match /chatRooms/{chatId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        request.auth.uid in resource.data.participants
+      );
+      
+      allow create: if isAuthenticated();
+      
+      allow list: if isAuthenticated();
+      
+      // Messages subcollection
+      match /messages/{messageId} {
+        allow read, write: if isAuthenticated() && (
+          isAdmin() ||
+          request.auth.uid in get(/databases/$(database)/documents/chatRooms/$(chatId)).data.participants
+        );
+        
+        allow create: if isAuthenticated() && (
+          isAdmin() ||
+          (request.auth.uid in get(/databases/$(database)/documents/chatRooms/$(chatId)).data.participants &&
+           request.auth.uid == request.resource.data.authorId)
+        );
+      }
+    }
+    
+    // ===========================================
+    // KYC/KYB DOCUMENTS
+    // ===========================================
+    
+    match /kycDocuments/{userId}/{documentId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        isOwner(userId)
+      );
+      
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        isOwner(userId)
+      );
+    }
+    
+    match /kybDocuments/{orgId}/{documentId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        isVCOrgMember(orgId)
+      );
+      
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        isVCOrgMember(orgId)
+      );
+    }
+    
+    // ===========================================
+    // EXCHANGE SPECIFIC COLLECTIONS
+    // ===========================================
+    
+    match /exchangeListings/{listingId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        isExchange() ||
+        isVC() ||
+        isFounder()
+      );
+      
+      allow write: if isAuthenticated() && (
+        isAdmin() ||
+        isExchange()
+      );
+      
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        isExchange()
+      );
+      
+      allow list: if isAuthenticated();
+    }
+    
+    // ===========================================
+    // AGENCY SPECIFIC COLLECTIONS
+    // ===========================================
+    
+    match /agencyProjects/{projectId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        isAgency()
+      );
+      
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        isAgency()
+      );
+      
+      allow list: if isAuthenticated();
+    }
+    
+    // ===========================================
+    // INFLUENCER SPECIFIC COLLECTIONS
+    // ===========================================
+    
+    match /influencerCampaigns/{campaignId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        isInfluencer()
+      );
+      
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        isInfluencer()
+      );
+      
+      allow list: if isAuthenticated();
+    }
+    
+    // ===========================================
+    // SYSTEM COLLECTIONS
+    // ===========================================
+    
+    match /system/{document=**} {
+      allow read, write: if isAdmin();
+    }
+    
+    match /config/{document=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    match /analytics/{document=**} {
+      allow read, write: if isAdmin();
+    }
+    
+    // ===========================================
+    // DEFAULT RULE - ADMIN OVERRIDE
+    // ===========================================
+    
+    match /{document=**} {
+      allow read, write: if isAdmin();
+    }
+  }
+}

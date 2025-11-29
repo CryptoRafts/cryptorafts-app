@@ -1,0 +1,26 @@
+# ============================================
+# QUICK DEPLOY COMMANDS FOR POWERSHELL
+# ============================================
+
+# Option 1: Run the script
+.\QUICK_DEPLOY_UI_FIX.ps1
+
+# Option 2: Manual commands (run one by one)
+
+# Step 1: Upload page.tsx
+scp "src/app/page.tsx" "root@72.61.98.99:/var/www/cryptorafts/src/app/page.tsx"
+
+# Step 2: SSH and rebuild/restart
+ssh root@72.61.98.99 "cd /var/www/cryptorafts; npm run build; pm2 restart cryptorafts"
+
+# Step 3: Wait 15 seconds for app to start
+# Then test: https://www.cryptorafts.com
+
+# ============================================
+# ONE-LINER (run all at once)
+# ============================================
+
+scp "src/app/page.tsx" "root@72.61.98.99:/var/www/cryptorafts/src/app/page.tsx"; ssh root@72.61.98.99 "cd /var/www/cryptorafts; npm run build; pm2 restart cryptorafts"
+
+# ============================================
+

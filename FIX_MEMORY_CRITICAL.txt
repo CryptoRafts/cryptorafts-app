@@ -1,0 +1,74 @@
+# ============================================
+# CRITICAL MEMORY FIX - Run on VPS
+# ============================================
+# Problem: Heap Usage is 95.66% - TOO HIGH!
+# Heap Size: 72.25 MiB (should be 2048MB)
+# The NODE_OPTIONS didn't apply correctly
+
+# ============================================
+# FIX COMMANDS (Copy-paste into VPS SSH)
+# ============================================
+
+cd /var/www/cryptorafts
+
+# Stop app
+pm2 stop cryptorafts
+pm2 delete cryptorafts
+
+# Update ecosystem.config.js with BOTH node_args and NODE_OPTIONS
+cat > ecosystem.config.js << 'EOF'
+module.exports = {
+  apps: [{
+    name: 'cryptorafts',
+    script: './server.js',
+    instances: 1,
+    exec_mode: 'fork',
+    node_args: '--max-old-space-size=2048',
+    env: {
+      NODE_ENV: 'production',
+      PORT: 3000,
+      HOSTNAME: '0.0.0.0',
+      NODE_OPTIONS: '--max-old-space-size=2048'
+    },
+    error_file: './logs/err.log',
+    out_file: './logs/out.log',
+    log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+    merge_logs: true,
+    autorestart: true,
+    max_memory_restart: '2G',
+    min_uptime: '10s',
+    max_restarts: 10,
+    restart_delay: 4000
+  }]
+};
+EOF
+
+# Verify config
+cat ecosystem.config.js | grep "max-old-space-size"
+
+# Start with new config
+pm2 start ecosystem.config.js
+pm2 save
+
+# Wait 5 seconds
+sleep 5
+
+# Check status
+pm2 status
+pm2 describe cryptorafts
+
+# Check memory
+pm2 monit
+
+# ============================================
+# KEY CHANGE:
+# ============================================
+# Added: node_args: '--max-old-space-size=2048'
+# This ensures Node.js heap is set to 2GB
+# 
+# Before: Heap Size = 72.25 MiB (too small)
+# After:  Heap Size = 2048 MB (2GB)
+# 
+# This will reduce heap usage from 95% to ~30-40%
+# ============================================
+

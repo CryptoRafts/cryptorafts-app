@@ -1,0 +1,26 @@
+# ============================================
+# DEPLOY COMPLETE BUILD - POWERSHELL COMMAND
+# Run this in PowerShell on Windows
+# ============================================
+
+.\DEPLOY_COMPLETE_BUILD_NOW.ps1
+
+
+# ============================================
+# OR RUN DIRECTLY (if script doesn't work):
+# ============================================
+
+powershell -ExecutionPolicy Bypass -File .\DEPLOY_COMPLETE_BUILD_NOW.ps1
+
+
+
+
+
+
+
+
+
+
+
+
+

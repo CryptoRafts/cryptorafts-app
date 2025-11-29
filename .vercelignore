@@ -1,0 +1,62 @@
+# Vercel ignore file - exclude large files from deployment
+
+# Large video files - Only optimized video is included
+# Optimized: Sequence 01.mp4 (3.83 MB) ✅
+# Excluded large videos: 1pagevideo.mp4 (572MB), newvideo.mp4 (324MB), home page video.mp4 (20MB)
+public/1pagevideo.mp4
+public/newvideo.mp4
+public/home page video.mp4
+public/*-backup.mp4
+
+# Deployment archives
+cryptorafts-deploy-*.zip
+cryptorafts-deploy-*.tar.gz
+
+# Build artifacts
+.next
+out
+dist
+build
+
+# Dependencies
+node_modules
+
+# Development files
+DEPLOY_TO_VPS
+*.md
+*.ps1
+*.sh
+*.bat
+*.txt
+
+# Cache
+.cache
+.next/cache
+
+# Environment files
+.env*
+!.env.example
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# Test files
+coverage
+.nyc_output
+

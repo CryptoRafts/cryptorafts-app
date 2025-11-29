@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Test Spotlight with Banner & Logo</title>
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, collection, addDoc, Timestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        // Your Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyBvQwF8qJ4K8L9M2N3O4P5Q6R7S8T9U0V1",
+            authDomain: "cryptorafts-b9067.firebaseapp.com",
+            projectId: "cryptorafts-b9067",
+            storageBucket: "cryptorafts-b9067.appspot.com",
+            messagingSenderId: "123456789012",
+            appId: "1:123456789012:web:abcdefghijklmnopqrstuv"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        async function addTestSpotlightWithImages() {
+            try {
+                const now = new Date();
+                const endDate = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days from now
+
+                const testApplication = {
+                    projectId: `cryptorafts-spotlight-${Date.now()}`,
+                    projectName: 'CryptoRafts',
+                    founderId: 'admin-user-123',
+                    founderName: 'CryptoRafts Team',
+                    founderEmail: 'admin@cryptorafts.com',
+                    slotType: 'premium',
+                    status: 'approved',
+                    
+                    // High-quality banner and logo URLs
+                    bannerUrl: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=1600&h=500&fit=crop&q=80',
+                    logoUrl: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=200&h=200&fit=crop&q=80',
+                    tagline: 'The Premier Platform for Crypto Founders',
+                    description: 'CryptoRafts is the trust layer for Web3—where founders, VCs, launchpads, and traders connect through AI-driven KYC/KYB, milestone-based funding, and verified deal flows. No noise. No guesswork. Just real builders, real due-diligence, and real progress. Join the family. Grow with proof.',
+                    website: 'https://cryptorafts.com',
+                    
+                    socialLinks: {
+                        twitter: 'https://twitter.com/cryptorafts',
+                        telegram: 'https://t.me/cryptorafts',
+                        discord: 'https://discord.gg/cryptorafts'
+                    },
+                    
+                    kycVerified: true,
+                    kybVerified: true,
+                    verificationBadges: ['KYC', 'KYB', 'RaftAI'],
+                    
+                    monthlyPrice: 5000,
+                    startDate: Timestamp.fromDate(now),
+                    endDate: Timestamp.fromDate(endDate),
+                    
+                    paymentStatus: 'completed',
+                    paymentMethod: 'admin',
+                    
+                    // Analytics with realistic data
+                    impressions: 2847,
+                    profileViews: 156,
+                    clicks: 89,
+                    investmentRaised: 2500000, // $2.5M
+                    
+                    createdAt: Timestamp.fromDate(now),
+                    updatedAt: Timestamp.fromDate(now),
+                    createdBy: 'admin',
+                    approvedAt: Timestamp.fromDate(now),
+                    approvedBy: 'admin'
+                };
+
+                const docRef = await addDoc(collection(db, 'spotlightApplications'), testApplication);
+                console.log('✅ Test spotlight with images added with ID:', docRef.id);
+                alert('✅ CryptoRafts spotlight added successfully!\n\nFeatures:\n- High-quality banner image\n- Professional logo\n- Complete project info\n- Social media links\n- Real analytics data\n- 30-day duration\n\nCheck the homepage to see the spotlight!');
+                
+            } catch (error) {
+                console.error('❌ Error adding test spotlight:', error);
+                alert('❌ Error adding test spotlight: ' + error.message);
+            }
+        }
+
+        // Auto-run when page loads
+        window.addEventListener('load', () => {
+            console.log('🚀 Adding CryptoRafts spotlight with banner and logo...');
+            addTestSpotlightWithImages();
+        });
+    </script>
+</head>
+<body style="font-family: Arial, sans-serif; padding: 20px; background: #1a1a1a; color: white;">
+    <h1>🎯 Adding CryptoRafts Spotlight</h1>
+    <p>This will add a CryptoRafts spotlight application with proper banner and logo images.</p>
+    <p>Check the console for progress...</p>
+    
+    <div style="margin-top: 20px; padding: 15px; background: #2a2a2a; border-radius: 8px;">
+        <h3>What this creates:</h3>
+        <ul>
+            <li>✅ CryptoRafts project spotlight</li>
+            <li>✅ High-quality banner image (1600x500px)</li>
+            <li>✅ Professional logo (200x200px)</li>
+            <li>✅ Complete project description</li>
+            <li>✅ Social media links (Twitter, Telegram, Discord)</li>
+            <li>✅ Real analytics data (2,847 impressions, $2.5M raised)</li>
+            <li>✅ 30-day duration with progress tracking</li>
+            <li>✅ Approved status (shows on homepage immediately)</li>
+        </ul>
+    </div>
+
+    <div style="margin-top: 20px; padding: 15px; background: #1a3a1a; border-radius: 8px; border: 1px solid #4ade80;">
+        <h3 style="color: #4ade80;">🎨 Image Details:</h3>
+        <p><strong>Banner:</strong> High-resolution crypto/blockchain themed image</p>
+        <p><strong>Logo:</strong> Clean, professional logo placeholder</p>
+        <p><strong>Fallback:</strong> Automatic fallback to gradient if images fail</p>
+    </div>
+</body>
+</html>

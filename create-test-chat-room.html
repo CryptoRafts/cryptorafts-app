@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Create Test Chat Room - Instant!</title>
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getFirestore, collection, doc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+    import { getAuth } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+
+    // Your Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyAr8QVkHTGZ3SLGF-IOOE6RLAIv-FuOV-8",
+      authDomain: "cryptorafts-b9067.firebaseapp.com",
+      projectId: "cryptorafts-b9067",
+      storageBucket: "cryptorafts-b9067.firebasestorage.app",
+      messagingSenderId: "466912526026",
+      appId: "1:466912526026:web:ffb20313d7925aeee39cda"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    // Wait for auth to be ready
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) {
+        document.body.innerHTML = `
+          <div style="font-family: Arial; max-width: 600px; margin: 50px auto; text-align: center; padding: 40px; background: #1e293b; color: white; border-radius: 20px;">
+            <h1>⚠️ Please Login First</h1>
+            <p>Open your app, login, then come back here.</p>
+            <button onclick="window.location.reload()" style="margin-top: 20px; padding: 15px 30px; background: #3b82f6; color: white; border: none; border-radius: 10px; font-size: 16px; cursor: pointer;">
+              Refresh After Login
+            </button>
+          </div>
+        `;
+        return;
+      }
+
+      // User is logged in!
+      document.body.innerHTML = `
+        <div style="font-family: Arial; max-width: 800px; margin: 50px auto; padding: 40px; background: #1e293b; color: white; border-radius: 20px;">
+          <h1 style="text-align: center; color: #60a5fa;">✨ Create Test Chat Room</h1>
+          <p style="text-align: center; color: #94a3b8; margin-bottom: 30px;">Logged in as: ${user.email}</p>
+          
+          <div style="background: #0f172a; padding: 30px; border-radius: 15px; margin: 20px 0;">
+            <button id="create-vc-room" style="width: 100%; padding: 20px; margin: 10px 0; background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer;">
+              🤝 Create Deal Room (Founder ↔ VC)
+            </button>
+            
+            <button id="create-exchange-room" style="width: 100%; padding: 20px; margin: 10px 0; background: linear-gradient(135deg, #10b981, #14b8a6); color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer;">
+              📈 Create Listing Room (Founder ↔ Exchange)
+            </button>
+            
+            <button id="create-ido-room" style="width: 100%; padding: 20px; margin: 10px 0; background: linear-gradient(135deg, #f59e0b, #ef4444); color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer;">
+              🚀 Create IDO Room (Founder ↔ IDO)
+            </button>
+          </div>
+          
+          <div id="output" style="background: #0f172a; padding: 20px; border-radius: 15px; margin-top: 20px; min-height: 100px; font-family: monospace; font-size: 14px;"></div>
+          
+          <div style="text-align: center; margin-top: 30px;">
+            <a href="/messages" target="_blank" style="display: inline-block; padding: 15px 40px; background: #3b82f6; color: white; text-decoration: none; border-radius: 10px; font-weight: bold;">
+              Open /messages →
+            </a>
+          </div>
+        </div>
+      `;
+
+      function log(message, type = 'info') {
+        const output = document.getElementById('output');
+        const colors = { success: '#10b981', error: '#ef4444', info: '#60a5fa' };
+        output.innerHTML += \`<div style="color: \${colors[type]}; padding: 5px 0;">\${message}</div>\`;
+      }
+
+      async function createTestRoom(type, counterpartRole, counterpartName) {
+        const output = document.getElementById('output');
+        output.innerHTML = '';
+        
+        try {
+          log('Creating test room...', 'info');
+          
+          const roomId = \`\${type}_\${user.uid}_test\${Date.now()}\`;
+          const roomRef = doc(db, 'groupChats', roomId);
+          
+          await setDoc(roomRef, {
+            name: \`Test \${type.toUpperCase()} Room - You / \${counterpartName}\`,
+            type,
+            status: 'active',
+            founderId: user.uid,
+            founderName: user.displayName || user.email || 'You',
+            founderLogo: user.photoURL || null,
+            counterpartId: 'test-' + counterpartRole,
+            counterpartName,
+            counterpartRole,
+            counterpartLogo: null,
+            members: [user.uid, 'raftai'],
+            memberRoles: {
+              [user.uid]: 'owner',
+              'raftai': 'admin'
+            },
+            settings: {
+              filesAllowed: true,
+              maxFileSize: 100,
+              allowedFileTypes: ['pdf', 'png', 'jpg', 'jpeg', 'mp4', 'mp3', 'wav', 'ogg'],
+              requireFileReview: true
+            },
+            createdAt: serverTimestamp(),
+            createdBy: user.uid,
+            lastActivityAt: Date.now(),
+            pinnedMessages: [],
+            mutedBy: [],
+            raftaiMemory: {
+              decisions: [],
+              tasks: [],
+              milestones: [],
+              notePoints: []
+            }
+          });
+          
+          log('✅ Room created successfully!', 'success');
+          log(\`Room ID: \${roomId}\`, 'info');
+          
+          // Add welcome message
+          await setDoc(doc(db, 'groupChats', roomId, 'messages', 'welcome'), {
+            senderId: 'raftai',
+            senderName: 'RaftAI',
+            type: 'system',
+            text: \`RaftAI created this \${type} room for \${user.displayName || 'You'} / \${counterpartName}.\`,
+            reactions: {},
+            readBy: [],
+            isPinned: false,
+            isEdited: false,
+            isDeleted: false,
+            createdAt: Date.now()
+          });
+          
+          // Add a test message
+          await setDoc(doc(db, 'groupChats', roomId, 'messages', 'test1'), {
+            senderId: user.uid,
+            senderName: user.displayName || 'You',
+            type: 'text',
+            text: 'Hello! This is a test message.',
+            reactions: {},
+            readBy: [user.uid],
+            isPinned: false,
+            isEdited: false,
+            isDeleted: false,
+            createdAt: Date.now() + 1000
+          });
+          
+          log('✅ Test messages added!', 'success');
+          log(\`\\n🔗 View at: /messages?room=\${roomId}\`, 'success');
+          log('\\nRefresh /messages to see the new room!', 'info');
+          
+          setTimeout(() => {
+            if (confirm('Room created! Open /messages now?')) {
+              window.open(\`/messages?room=\${roomId}\`, '_blank');
+            }
+          }, 1000);
+          
+        } catch (error) {
+          log(\`❌ Error: \${error.message}\`, 'error');
+          console.error(error);
+        }
+      }
+
+      document.getElementById('create-vc-room').onclick = () => {
+        createTestRoom('deal', 'vc', 'Test VC Partner');
+      };
+
+      document.getElementById('create-exchange-room').onclick = () => {
+        createTestRoom('listing', 'exchange', 'Test Exchange');
+      };
+
+      document.getElementById('create-ido-room').onclick = () => {
+        createTestRoom('ido', 'ido', 'Test IDO Platform');
+      };
+    });
+  </script>
+</head>
+<body>
+  <div style="font-family: Arial; max-width: 600px; margin: 50px auto; text-align: center; padding: 40px; background: #1e293b; color: white; border-radius: 20px;">
+    <div style="font-size: 48px; margin-bottom: 20px;">⏳</div>
+    <h2>Loading...</h2>
+    <p style="color: #94a3b8;">Please wait...</p>
+  </div>
+</body>
+</html>
+

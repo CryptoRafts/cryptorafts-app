@@ -1,0 +1,69 @@
+# ============================================
+# FIX MISSING FILES
+# ============================================
+# Missing files causing 404 errors:
+# 1. site.webmanifest (404)
+# 2. /spotlight/apply route (404)
+
+# ============================================
+# SOLUTION 1: Create site.webmanifest
+# ============================================
+# Create file: public/site.webmanifest
+# 
+# Content:
+{
+  "name": "CryptoRafts",
+  "short_name": "CryptoRafts",
+  "description": "AI-verified deal flow on chain",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "any",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/tablogo.ico",
+      "sizes": "any",
+      "type": "image/x-icon"
+    }
+  ]
+}
+
+# ============================================
+# SOLUTION 2: Create /spotlight/apply Route
+# ============================================
+# Create file: src/app/spotlight/apply/page.tsx
+# 
+# This is a Next.js route that needs to be created
+# Or check if route exists in a different location
+
+# ============================================
+# QUICK FIX: Upload site.webmanifest
+# ============================================
+# On Windows:
+# 1. Create public/site.webmanifest with content above
+# 2. Run: scp public/site.webmanifest root@72.61.98.99:/var/www/cryptorafts/public/
+# 
+# On VPS:
+# 1. Create file: /var/www/cryptorafts/public/site.webmanifest
+# 2. Add content from above
+# 3. Restart: pm2 restart cryptorafts
+
+# ============================================
+# ABOUT /spotlight/apply 404
+# ============================================
+# This route might be:
+# 1. Not created yet (needs to be built)
+# 2. In a different location
+# 3. Should redirect to another page
+# 
+# Check if route exists:
+# ls -la src/app/spotlight/
+# 
+# If missing, create the route or remove the link
+# ============================================
+

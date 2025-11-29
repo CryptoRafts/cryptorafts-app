@@ -1,0 +1,61 @@
+📤 FILES TO UPLOAD - EXACT LIST
+================================
+
+From: C:\Users\dell\cryptorafts-starter
+To: /home/u386122906/cryptorafts/
+
+CRITICAL FILES (Must upload):
+-----------------------------
+1. src/ folder (ENTIRE folder - MOST IMPORTANT!)
+   → Right-click src/ folder → Upload (entire folder!)
+
+2. package.json
+   → Right-click package.json → Upload
+
+3. next.config.js
+   → Right-click next.config.js → Upload
+
+4. AUTOMATE_EVERYTHING_FINAL.sh
+   → Right-click AUTOMATE_EVERYTHING_FINAL.sh → Upload
+
+
+IMPORTANT FILES (Should upload if they exist):
+-----------------------------------------------
+5. server.js
+6. ecosystem.config.js
+7. tsconfig.json
+8. public/ folder
+9. .env.local or .env.production
+
+
+DO NOT UPLOAD:
+--------------
+❌ node_modules/ folder
+❌ .next/ folder
+❌ .git/ folder
+❌ out/ folder
+❌ Any .md files (not needed for deployment)
+
+
+UPLOAD STEPS:
+-------------
+1. In Hostinger File Manager, navigate to: /home/u386122906/cryptorafts/
+2. Click "Upload" button (top of File Manager)
+3. Click "Select Files" or drag and drop
+4. Navigate to: C:\Users\dell\cryptorafts-starter
+5. Select:
+   - src/ folder (entire folder!)
+   - package.json
+   - next.config.js
+   - AUTOMATE_EVERYTHING_FINAL.sh
+   - All other files (except node_modules/, .next/, .git/, out/)
+6. Click "Upload"
+7. Wait for upload to complete (5-10 minutes)
+8. Verify: /home/u386122906/cryptorafts/src/app/page.tsx exists
+
+
+AFTER UPLOAD:
+-------------
+Run in SSH terminal:
+bash AUTOMATE_EVERYTHING_FINAL.sh
+

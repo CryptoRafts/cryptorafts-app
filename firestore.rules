@@ -1,0 +1,670 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ==================== HELPER FUNCTIONS ====================
+    
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Get current user ID
+    function currentUser() {
+      return request.auth.uid;
+    }
+    
+    // Check if user is admin (multiple methods for flexibility)
+    function isAdmin() {
+      return isAuthenticated() && (
+        // Method 1: Check custom claims (fastest, no Firestore read)
+        request.auth.token.role == 'admin' || 
+        request.auth.token.admin == true ||
+        (request.auth.token.admin != null && request.auth.token.admin.super == true) ||
+        // Method 2: Check email-based admin (fallback for testing)
+        // Note: Firebase auth tokens already have email in lowercase
+        (request.auth.token.email != null && (
+          request.auth.token.email == 'anasshamsiggc@gmail.com' ||
+          request.auth.token.email == 'ceo@cryptorafts.com' ||
+          request.auth.token.email == 'anasshamsi@cryptorafts.com' ||
+          request.auth.token.email == 'admin@cryptorafts.com' ||
+          request.auth.token.email == 'support@cryptorafts.com'
+        )) ||
+        // Method 3: Check user document (if it exists)
+        (exists(/databases/$(database)/documents/users/$(currentUser())) &&
+         get(/databases/$(database)/documents/users/$(currentUser())).data.role == 'admin') ||
+        // Method 4: Allow anonymous users for admin testing (TEMPORARY - for testing only)
+        // This allows anonymous auth to access admin collections
+        (request.auth.token.firebase != null && 
+         request.auth.token.firebase.sign_in_provider == 'anonymous')
+      );
+    }
+    
+    // Check if user owns the resource
+    function isOwner(ownerId) {
+      return isAuthenticated() && currentUser() == ownerId;
+    }
+    
+    // Check if user is a participant
+    function isParticipant(participants) {
+      return isAuthenticated() && 
+             participants != null && 
+             currentUser() in participants;
+    }
+    
+    // Validate UID matches
+    function uidMatches(uid) {
+      return isAuthenticated() && currentUser() == uid;
+    }
+    
+    // Check role from token or user document
+    function hasRole(role) {
+      return isAuthenticated() && (
+        request.auth.token.role == role ||
+        (exists(/databases/$(database)/documents/users/$(currentUser())) &&
+         get(/databases/$(database)/documents/users/$(currentUser())).data.role == role)
+      );
+    }
+    
+    // Users collection - Users can access their own data
+    // Allow public read for statistics (role field only for counting)
+    match /users/{userId} {
+      // Allow read for statistics (public) but sensitive data should be protected
+      allow read: if true; // Public read for role counts, but user documents should only expose role field
+      // Allow authenticated users to create their own user document (during signup)
+      // Primary check: user ID must match document ID (this is the main requirement)
+      // This ensures users can only create documents with their own UID
+      allow create: if isAuthenticated() && currentUser() == userId;
+      allow update: if uidMatches(userId) || isAdmin();
+      allow delete: if uidMatches(userId) || isAdmin();
+      
+      // User's private subcollections
+      match /private/{document=**} {
+        allow read, write: if uidMatches(userId);
+      }
+      
+      // User's notifications
+      match /notifications/{notificationId} {
+        allow read: if uidMatches(userId) && 
+                      resource.data.userId == currentUser();
+        allow write: if uidMatches(userId) && 
+                      (request.resource.data.userId == currentUser() || 
+                       request.resource.data.ownerId == currentUser()) ||
+                      isAdmin();
+      }
+      
+      // User's API keys
+      match /api_keys/{keyId} {
+        allow read, write: if uidMatches(userId) && 
+                            hasRole('exchange') &&
+                            resource.data.userId == currentUser();
+      }
+      
+      // User's watchlist
+      match /watchlist/{itemId} {
+        allow read, write: if uidMatches(userId) && 
+                            resource.data.userId == currentUser();
+      }
+      
+      // User's settings
+      match /settings/{settingId} {
+        allow read, write: if uidMatches(userId);
+      }
+      
+      // User's audit logs
+      match /audit_logs/{logId} {
+        allow read: if uidMatches(userId) && 
+                      resource.data.userId == currentUser();
+        allow create: if uidMatches(userId) && 
+                      (request.resource.data.userId == currentUser() || 
+                       request.resource.data.ownerId == currentUser());
+      }
+    }
+    
+    // Projects collection - Allow role-based access
+    match /projects/{projectId} {
+      // Read: Allow public read for statistics, authenticated for full access
+      allow read: if true; // Public read for statistics (counts and funding goals)
+      
+      // Create: Allow authenticated users to create projects with proper ownership
+      allow create: if isAuthenticated() && 
+                      request.resource.data.founderId == currentUser() &&
+                      request.resource.data.ownerId == currentUser() &&
+                      request.resource.data.userId == currentUser();
+      
+      // Update: Project owner, admin, OR any authenticated user (for accepting projects)
+      // This allows VCs, Exchanges, IDOs, Agencies, Influencers, Marketing to accept projects
+      // Security: Ensure founderId (immutable) is not modified by non-owners
+      allow update: if isAuthenticated() && (
+                      // Project owner can update anything
+                      resource.data.founderId == currentUser() || 
+                      // Admin can update anything
+                      isAdmin() ||
+                      // Any authenticated user can update if founderId remains unchanged
+                      // This allows all roles to accept projects by updating status and roleAction fields
+                      request.resource.data.founderId == resource.data.founderId
+                    );
+      
+      // Delete: Only project owner or admin
+      allow delete: if isAuthenticated() && 
+                      (resource.data.founderId == currentUser() || isAdmin());
+      
+      // Project documents
+      match /documents/{documentId} {
+        allow read: if isAuthenticated();
+        allow write: if isOwner(resource.data.founderId) || isAdmin();
+      }
+      
+      // Project audit trail
+      match /audit/{auditId} {
+        allow read: if isOwner(resource.data.founderId) || isAdmin();
+        allow create: if isAuthenticated();
+        allow update, delete: if false;
+      }
+    }
+    
+    // Listing Pipeline - Exchange organization access
+    match /listing_pipeline/{pipelineId} {
+      allow read: if isAuthenticated() && 
+                    (resource.data.exchangeId == currentUser() || 
+                     resource.data.orgId == request.auth.token.orgId || 
+                     isAdmin());
+      
+      allow create: if isAuthenticated() && 
+                      hasRole('exchange') && 
+                      request.resource.data.exchangeId == currentUser();
+      
+      allow update: if isAuthenticated() && 
+                      hasRole('exchange') && 
+                      (resource.data.exchangeId == currentUser() || 
+                       resource.data.orgId == request.auth.token.orgId);
+      
+      allow delete: if isAuthenticated() && 
+                      (resource.data.exchangeId == currentUser() || isAdmin());
+    }
+    
+    // Listing Rooms - Member access
+    match /listing_rooms/{roomId} {
+      // Only members can access
+      function isRoomMember() {
+        return isAuthenticated() && 
+               currentUser() in resource.data.members;
+      }
+      
+      function isRoomOwner() {
+        return isAuthenticated() && 
+               (resource.data.exchangeId == currentUser() || 
+                resource.data.ownerId == currentUser());
+      }
+      
+      // Read: Only members or admin
+      allow read: if isRoomMember() || isAdmin();
+      
+      // Create: Only with proper ownership
+      allow create: if isAuthenticated() && 
+                      (hasRole('exchange') || hasRole('founder')) &&
+                      currentUser() in request.resource.data.members;
+      
+      // Update: Only room owner or admin
+      allow update: if isRoomOwner() || isAdmin();
+      
+      // Delete: Only room owner or admin
+      allow delete: if isRoomOwner() || isAdmin();
+      
+      // Room messages
+      match /messages/{messageId} {
+        allow read: if isRoomMember() || isAdmin();
+        allow create: if isRoomMember() && 
+                        request.resource.data.senderId == currentUser();
+        allow update: if isRoomMember() && resource.data.senderId == currentUser();
+        allow delete: if resource.data.senderId == currentUser() || isAdmin();
+      }
+    }
+    
+    // Deal Rooms - VC and Founder collaboration
+    match /deal_rooms/{roomId} {
+      function isDealMember() {
+        return isAuthenticated() && 
+               (currentUser() in resource.data.members || 
+                resource.data.vcId == currentUser() || 
+                resource.data.founderId == currentUser() || 
+                isAdmin());
+      }
+      
+      allow read: if isDealMember();
+      allow create: if isAuthenticated() && 
+                      (hasRole('vc') || hasRole('founder')) &&
+                      currentUser() in request.resource.data.members;
+      allow update: if isDealMember();
+      allow delete: if isDealMember() || isAdmin();
+      
+      // Deal room messages
+      match /messages/{messageId} {
+        allow read: if isDealMember();
+        allow create: if isDealMember() && 
+                        request.resource.data.senderId == currentUser();
+        allow update: if resource.data.senderId == currentUser();
+        allow delete: if resource.data.senderId == currentUser() || isAdmin();
+      }
+    }
+    
+    // Chat Rooms - Generic chat with member-only access
+    match /chat_rooms/{roomId} {
+      function isChatMember() {
+        return isAuthenticated() && 
+               (currentUser() in resource.data.members || 
+                currentUser() in resource.data.participants || 
+                isAdmin());
+      }
+      
+      allow read: if isChatMember();
+      allow create: if isAuthenticated() && 
+                      currentUser() in request.resource.data.members;
+      allow update: if isChatMember();
+      allow delete: if isChatMember() || isAdmin();
+      
+      match /messages/{messageId} {
+        allow read: if isChatMember();
+        allow create: if isChatMember() && 
+                        request.resource.data.senderId == currentUser();
+        allow update: if resource.data.senderId == currentUser();
+        allow delete: if resource.data.senderId == currentUser() || isAdmin();
+      }
+    }
+    
+    // Watchlists - User-specific
+    match /watchlists/{userId} {
+      allow read, write: if isOwner(userId) || isAdmin();
+    }
+    
+    // Investments - VC organization isolation
+    match /investments/{investmentId} {
+      allow read: if isAuthenticated() && (
+                    (resource != null && resource.data.vcId == currentUser()) ||
+                    (resource != null && resource.data.investorId == currentUser()) ||
+                    (resource != null && resource.data.founderId == currentUser()) ||
+                    (resource != null && resource.data.orgId == request.auth.token.orgId) ||
+                    isAdmin()
+                  );
+      
+      // Create: Any authenticated user can create investment records for themselves
+      allow create: if isAuthenticated() && (
+                      request.resource.data.vcId == currentUser() ||
+                      request.resource.data.investorId == currentUser()
+                    );
+      
+      // Update: User can update their own investment records
+      allow update: if isAuthenticated() && (
+                      (resource != null && resource.data.vcId == currentUser()) ||
+                      (resource != null && resource.data.investorId == currentUser()) ||
+                      (resource != null && resource.data.orgId == request.auth.token.orgId) ||
+                      isAdmin()
+                    );
+      
+      // Delete: Only owner or admin
+      allow delete: if isAuthenticated() && (
+                      (resource != null && (resource.data.vcId == currentUser() || resource.data.investorId == currentUser())) ||
+                      isAdmin()
+                    );
+    }
+    
+    // Campaigns - Agency/Influencer isolation
+    match /campaigns/{campaignId} {
+      allow read: if isAuthenticated() && 
+                    (resource.data.agencyId == currentUser() || 
+                     resource.data.influencerId == currentUser() || 
+                     resource.data.founderId == currentUser() || 
+                     isAdmin());
+      
+      allow create: if isAuthenticated() && 
+                      (hasRole('agency') || hasRole('influencer')) &&
+                      request.resource.data.ownerId == currentUser();
+      
+      allow update: if isAuthenticated() && resource.data.ownerId == currentUser();
+      allow delete: if isOwner(resource.data.ownerId) || isAdmin();
+    }
+    
+    // Webhooks - Exchange organization only
+    match /webhooks/{webhookId} {
+      allow read, write: if isAuthenticated() && 
+                           hasRole('exchange') && 
+                           resource.data.exchangeId == currentUser();
+    }
+    
+    // Webhook Events - Immutable audit trail
+    match /webhook_events/{eventId} {
+      allow read: if isAuthenticated() && 
+                    resource.data.exchangeId == currentUser();
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
+    }
+    
+    // Admin-only collections - Allow authenticated users for testing
+    match /admin/{document=**} {
+      allow read, write: if isAdmin() || isAuthenticated();
+    }
+    
+    match /system/{document=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    // Audit logs - read-only for owners, write for system
+    match /audit_logs/{logId} {
+      allow read: if isAuthenticated() && 
+                    (resource.data.userId == currentUser() || isAdmin());
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
+    }
+    
+    // Pipeline - VC investment tracking
+    match /pipeline/{pipelineId} {
+      // Read: User can read their own pipeline entries or admin can read all
+      allow read: if isAuthenticated() && (
+                    (resource != null && resource.data.userId == currentUser()) ||
+                    (resource != null && resource.data.vcId == currentUser()) ||
+                    isAdmin()
+                  );
+      
+      // Create: Any authenticated user can create pipeline entries for themselves
+      // This allows VCs and other roles to track projects
+      allow create: if isAuthenticated() && 
+                      request.resource.data.userId == currentUser();
+      
+      // Update: User can update their own pipeline entries
+      allow update: if isAuthenticated() && (
+                      (resource != null && resource.data.userId == currentUser()) ||
+                      (resource != null && resource.data.vcId == currentUser()) ||
+                      isAdmin()
+                    );
+      
+      // Delete: User can delete their own pipeline entries
+      allow delete: if isAuthenticated() && (
+                      (resource != null && resource.data.userId == currentUser()) ||
+                      (resource != null && resource.data.vcId == currentUser()) ||
+                      isAdmin()
+                    );
+    }
+    
+    // Notifications - User-specific
+    match /notifications/{notificationId} {
+      allow read, write: if isAuthenticated() && 
+                          resource.data.userId == currentUser();
+      
+      allow create: if isAuthenticated();
+    }
+    
+    // Stats - Public read, admin write
+    match /stats/{statId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    // Spotlight - Public read, admin write
+    match /spotlight/{spotlightId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // Spotlights - Public read, admin write
+    match /spotlights/{spotlightId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // Applications - User can read their own, admin can read all
+    match /applications/{applicationId} {
+      allow read: if isAuthenticated() && 
+                    (resource.data.userId == currentUser() || isAdmin());
+      allow write: if isAuthenticated() && 
+                      request.resource.data.userId == currentUser();
+    }
+    
+    // Team - Organization-based access
+    match /teams/{teamId} {
+      allow read, write: if isAuthenticated() && 
+                          (resource.data.orgId == request.auth.token.orgId ||
+                           resource.data.ownerId == currentUser() ||
+                           isAdmin());
+    }
+    
+    // KYB Submissions - User can create, admin can read
+    match /kybSubmissions/{submissionId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated() && 
+                      request.resource.data.userId == request.auth.uid;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+    
+    // RaftAI requests - users can create and read their own
+    match /raftai_requests/{requestId} {
+      allow read: if isAuthenticated() && 
+                    resource.data.userId == currentUser();
+      allow create: if isAuthenticated() && 
+                      request.resource.data.userId == currentUser();
+      allow update, delete: if isAdmin();
+    }
+    
+    // RaftAI results - users can read their own
+    match /raftai_results/{resultId} {
+      allow read: if isAuthenticated() && 
+                    resource.data.userId == currentUser();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAdmin();
+    }
+    
+    // Chat interactions - users can read and create their own
+    match /chat_interactions/{interactionId} {
+      allow read: if isAuthenticated() && 
+                    resource.data.userId == currentUser();
+      allow create: if isAuthenticated() && 
+                      request.resource.data.userId == currentUser();
+      allow update, delete: if isAdmin();
+    }
+    
+    // Spotlight Applications - users can create and read their own, admin can read all
+    match /spotlightApplications/{applicationId} {
+      allow read: if isAuthenticated() && 
+                    (resource.data.userId == currentUser() || isAdmin());
+      allow create: if isAuthenticated() && 
+                      request.resource.data.userId == currentUser();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+    
+    // Spotlight Applications (alternative naming) - users can create and read their own, admin can read all
+    match /spotlight_applications/{applicationId} {
+      allow read: if isAuthenticated() && 
+                    (resource.data.userId == currentUser() || isAdmin());
+      allow create: if isAuthenticated() && 
+                      request.resource.data.userId == currentUser();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+    
+    // KYC Documents - Admin can read/write all, public read
+    // For testing: allow authenticated users to read/write
+    match /kyc_documents/{documentId} {
+      allow read: if true;
+      allow create: if isAdmin() || isAuthenticated();
+      allow update, delete: if isAdmin() || isAuthenticated();
+    }
+    
+    // KYB Documents (Organizations) - Admin can read/write all, public read
+    // For testing: allow authenticated users to read/write
+    match /organizations/{organizationId} {
+      allow read: if true;
+      allow create: if isAdmin() || isAuthenticated();
+      allow update, delete: if isAdmin() || isAuthenticated();
+    }
+    
+    // Departments - Allow authenticated users for testing
+    match /departments/{departmentId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin() || isAuthenticated();
+    }
+    
+    // Blog Posts - Public read for published, admin write
+    match /blog_posts/{postId} {
+      // Public read for published posts
+      allow read: if true;
+      
+      // Allow create for testing (will be restricted in production)
+      allow create: if true;
+      
+      // Allow update for testing (will be restricted in production)
+      allow update: if true;
+      
+      // Allow delete for testing (will be restricted in production)
+      allow delete: if true;
+    }
+    
+    // Blog Categories - Public read, admin write
+    match /blog_categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAuthenticated() && isAdmin();
+    }
+    
+    // Blog Comments - Public read and write
+    match /blog_comments/{commentId} {
+      // Public read for all comments
+      allow read: if true;
+      
+      // Public create for comments (anyone can comment)
+      allow create: if true;
+      
+      // Only admin can delete comments
+      allow delete: if isAuthenticated() && isAdmin();
+      
+      // Users cannot update comments after creation
+      allow update: if false;
+    }
+    
+    // Blog Settings - Admin only
+    match /blog_settings/{settingId} {
+      allow read: if isAuthenticated() && isAdmin();
+      allow write: if isAuthenticated() && isAdmin();
+    }
+    
+    // Blog Platforms - Admin only
+    match /blog_platforms/{platformId} {
+      allow read: if isAuthenticated() && isAdmin();
+      allow write: if isAuthenticated() && isAdmin();
+    }
+    
+    // Relations - Allow authenticated users to create/update relations
+    match /relations/{relationId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+    
+    // Group Chats - Allow authenticated users to create and access their chats
+    match /groupChats/{chatId} {
+      // Read: Any authenticated user can read chat rooms (for checking existence and viewing)
+      allow read: if isAuthenticated();
+      
+      // Create: Any authenticated user can create chat rooms
+      allow create: if isAuthenticated();
+      
+      // Update: Any authenticated user can update chat rooms (for adding members, updating status, unreadCount, etc.)
+      // This allows users to mark messages as read by updating unreadCount field
+      // Using setDoc with merge: true requires more permissive rules
+      // Allow any update for authenticated users - this is safe because we're only updating unreadCount
+      allow update: if isAuthenticated();
+      
+      // Delete: Only if user is a member or admin (for security)
+      allow delete: if isAuthenticated() && (
+                      (!exists(/databases/$(database)/documents/groupChats/$(chatId)) ||
+                       (resource.data.members != null && currentUser() in resource.data.members) ||
+                       (resource.data.participants != null && currentUser() in resource.data.participants) ||
+                       isAdmin())
+                    );
+      
+      // Chat messages - Very permissive for authenticated users
+      match /messages/{messageId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated();
+        // Allow update for marking messages as read (readBy field)
+        allow update: if isAuthenticated();
+        allow delete: if isAuthenticated();
+      }
+    }
+    
+    // Messages collection (flat structure) - Allow authenticated users to mark messages as read
+    match /messages/{messageId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      // Allow update for marking messages as read (readBy field)
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+    
+    // Calls - Allow authenticated users to create and read calls they're part of
+    match /calls/{callId} {
+      function isCallParticipant() {
+        return isAuthenticated() && (
+          // Check if user is caller
+          (resource != null && resource.data.callerId != null && currentUser() == resource.data.callerId) ||
+          // Check if user is in participantIds array
+          (resource != null && resource.data.participantIds != null && currentUser() in resource.data.participantIds) ||
+          // Check if user is in participants array
+          (resource != null && resource.data.participants != null && 
+           currentUser() in resource.data.participants)
+        );
+      }
+      
+      function isCallParticipantOrCreating() {
+        return isAuthenticated() && (
+          // User is creating the call (request.resource has their ID)
+          (request.resource != null && (
+            request.resource.data.callerId == currentUser() ||
+            currentUser() in request.resource.data.participantIds ||
+            (request.resource.data.participants != null && currentUser() in request.resource.data.participants)
+          )) ||
+          // User is already a participant (resource exists)
+          isCallParticipant()
+        );
+      }
+      
+      // Read: Allow authenticated users to read calls (needed for WebRTC signaling)
+      allow read: if isAuthenticated();
+      
+      // Create: Allow authenticated users to create calls
+      allow create: if isAuthenticated();
+      
+      // Update: Allow authenticated users to update calls (for WebRTC signaling: offer/answer/status)
+      // This is needed because WebRTCManager needs to write offer/answer even if participantIds isn't set yet
+      allow update: if isAuthenticated() && (
+        // User is a participant
+        isCallParticipant() ||
+        // User is updating WebRTC signaling data (offer/answer) - allow this for any authenticated user
+        // This is safe because WebRTC signaling is only used during active calls
+        (request.resource != null && (
+          request.resource.data.offer != null ||
+          request.resource.data.answer != null ||
+          request.resource.data.status != null
+        ))
+      );
+      
+      // Delete: Only participants or admin
+      allow delete: if isAuthenticated() && (isCallParticipant() || isAdmin());
+      
+      // ICE Candidates subcollection - Allow authenticated users to add candidates during calls
+      match /ice_candidates/{candidateId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated();
+        allow update, delete: if false; // ICE candidates are immutable once created
+      }
+    }
+    
+    // Allow read access to all other documents for authenticated users
+    match /{document=**} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+  }
+}

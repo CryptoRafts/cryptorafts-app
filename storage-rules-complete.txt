@@ -1,0 +1,202 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+             request.auth.token.role == 'admin';
+    }
+    
+    function isVC() {
+      return isAuthenticated() && 
+             request.auth.token.role == 'vc';
+    }
+    
+    function isFounder() {
+      return isAuthenticated() && 
+             request.auth.token.role == 'founder';
+    }
+    
+    function isExchange() {
+      return isAuthenticated() && 
+             request.auth.token.role == 'exchange';
+    }
+    
+    function isAgency() {
+      return isAuthenticated() && 
+             request.auth.token.role == 'agency';
+    }
+    
+    // User can access their own files
+    function isOwner(userId) {
+      return isAuthenticated() && 
+             request.auth.uid == userId;
+    }
+
+    // Organization logos - Public read, authenticated write for org members
+    match /org-logos/{fileName} {
+      allow read: if true; // Public read for logos
+      allow write: if isAuthenticated() && (
+        isAdmin() ||
+        isVC() ||
+        isFounder() ||
+        isExchange() ||
+        isAgency()
+      );
+    }
+
+    // User profile images - Users can manage their own
+    match /profile-images/{userId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (
+        isAdmin() ||
+        isOwner(userId)
+      );
+    }
+
+    // Project files - Role-based access
+    match /project-files/{projectId}/{fileName} {
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        isVC() ||
+        (isFounder() && resource.metadata.projectOwnerId == request.auth.uid) ||
+        isExchange() ||
+        isAgency()
+      );
+      allow write: if isAuthenticated() && (
+        isAdmin() ||
+        (isFounder() && request.resource.metadata.projectOwnerId == request.auth.uid) ||
+        (isVC() && request.resource.metadata.orgId == request.auth.token.orgId)
+      );
+    }
+
+    // Pitch deck files - Founders can manage their own, VCs can read
+    match /pitch-decks/{projectId}/{fileName} {
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        isVC() ||
+        (isFounder() && resource.metadata.projectOwnerId == request.auth.uid) ||
+        isExchange() ||
+        isAgency()
+      );
+      allow write: if isAuthenticated() && (
+        isAdmin() ||
+        (isFounder() && request.resource.metadata.projectOwnerId == request.auth.uid)
+      );
+    }
+
+    // Whitepaper files - Founders can manage their own, VCs can read
+    match /whitepapers/{projectId}/{fileName} {
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        isVC() ||
+        (isFounder() && resource.metadata.projectOwnerId == request.auth.uid) ||
+        isExchange() ||
+        isAgency()
+      );
+      allow write: if isAuthenticated() && (
+        isAdmin() ||
+        (isFounder() && request.resource.metadata.projectOwnerId == request.auth.uid)
+      );
+    }
+
+    // Legal documents - Strict access
+    match /legal-docs/{projectId}/{fileName} {
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        (isVC() && resource.metadata.orgId == request.auth.token.orgId) ||
+        (isFounder() && resource.metadata.projectOwnerId == request.auth.uid)
+      );
+      allow write: if isAuthenticated() && (
+        isAdmin() ||
+        (isFounder() && request.resource.metadata.projectOwnerId == request.auth.uid)
+      );
+    }
+
+    // KYB/KYC documents - Strict access
+    match /kyb-docs/{userId}/{fileName} {
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        isOwner(userId)
+      );
+      allow write: if isAuthenticated() && (
+        isAdmin() ||
+        isOwner(userId)
+      );
+    }
+
+    // VC pipeline documents - VCs only
+    match /vc-pipeline/{orgId}/{fileName} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        (isVC() && request.auth.token.orgId == orgId)
+      );
+    }
+
+    // VC term sheets - VCs only
+    match /vc-term-sheets/{orgId}/{fileName} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        (isVC() && request.auth.token.orgId == orgId)
+      );
+    }
+
+    // Exchange listings files - Exchanges can manage their own
+    match /exchange-listings/{exchangeId}/{fileName} {
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        isExchange() ||
+        isVC() ||
+        isFounder()
+      );
+      allow write: if isAuthenticated() && (
+        isAdmin() ||
+        (isExchange() && isOwner(exchangeId))
+      );
+    }
+
+    // Agency campaign files - Agencies can manage their own
+    match /agency-campaigns/{agencyId}/{fileName} {
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        isAgency() ||
+        isVC() ||
+        isFounder()
+      );
+      allow write: if isAuthenticated() && (
+        isAdmin() ||
+        (isAgency() && isOwner(agencyId))
+      );
+    }
+
+    // Chat attachments - Room members only
+    match /chat-attachments/{roomId}/{fileName} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        // Add room membership check here if needed
+        true // For now, allow all authenticated users
+      );
+    }
+
+    // Audit files - Admins only
+    match /audit-files/{fileName} {
+      allow read, write: if isAuthenticated() && isAdmin();
+    }
+
+    // Public assets - Anyone can read
+    match /public/{fileName} {
+      allow read: if true;
+      allow write: if isAuthenticated() && isAdmin();
+    }
+
+    // Default rule - Admin only
+    match /{allPaths=**} {
+      allow read, write: if isAuthenticated() && isAdmin();
+    }
+  }
+}

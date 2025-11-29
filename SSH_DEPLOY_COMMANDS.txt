@@ -1,0 +1,116 @@
+# ============================================
+# SSH DEPLOYMENT COMMANDS - Copy & Paste
+# ============================================
+# Run these commands on your VPS via SSH
+
+# Step 1: SSH into your VPS
+ssh root@72.61.98.99
+
+# Step 2: Navigate to app directory
+cd /var/www/cryptorafts
+
+# Step 3: Stop existing app
+pm2 stop cryptorafts 2>/dev/null || true
+pm2 delete cryptorafts 2>/dev/null || true
+
+# Step 4: Clean old files
+rm -rf .next node_modules src app server.js ecosystem.config.js next.config.js package.json package-lock.json logs 2>/dev/null || true
+
+# Step 5: Extract archive (if you uploaded one)
+# If you have an archive:
+tar -xzf cryptorafts-deploy-*.tar.gz --strip-components=1 2>/dev/null || tar -xzf cryptorafts-deploy-*.tar.gz
+
+# Step 6: Install dependencies with legacy peer deps (fixes zod conflict)
+npm install --legacy-peer-deps --production=false
+
+# Step 7: Create PM2 ecosystem file
+cat > ecosystem.config.js << 'EOF'
+module.exports = {
+  apps: [{
+    name: 'cryptorafts',
+    script: './server.js',
+    instances: 1,
+    exec_mode: 'fork',
+    env: {
+      NODE_ENV: 'production',
+      PORT: 3000,
+      HOSTNAME: '0.0.0.0'
+    },
+    error_file: './logs/err.log',
+    out_file: './logs/out.log',
+    log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+    merge_logs: true,
+    autorestart: true,
+    max_memory_restart: '1G'
+  }]
+};
+EOF
+
+# Step 8: Create server.js if missing
+if [ ! -f "server.js" ]; then
+cat > server.js << 'EOF'
+const { createServer } = require('http');
+const { parse } = require('url');
+const next = require('next');
+
+const dev = process.env.NODE_ENV !== 'production';
+const hostname = process.env.HOSTNAME || '0.0.0.0';
+const port = parseInt(process.env.PORT || '3000', 10);
+
+const app = next({ dev, hostname, port });
+const handle = app.getRequestHandler();
+
+app.prepare().then(() => {
+  createServer(async (req, res) => {
+    try {
+      const parsedUrl = parse(req.url, true);
+      await handle(req, res, parsedUrl);
+    } catch (err) {
+      console.error('Error occurred handling', req.url, err);
+      res.statusCode = 500;
+      res.end('internal server error');
+    }
+  })
+    .once('error', (err) => {
+      console.error('Server error:', err);
+      process.exit(1);
+    })
+    .listen(port, () => {
+      console.log(`> Ready on http://${hostname}:${port}`);
+    });
+});
+EOF
+fi
+
+# Step 9: Create logs directory
+mkdir -p logs
+
+# Step 10: Start with PM2
+pm2 start ecosystem.config.js
+pm2 save
+pm2 startup
+
+# Step 11: Check status
+pm2 status
+pm2 logs cryptorafts --lines 20
+
+# ============================================
+# ONE-LINER DEPLOYMENT (After uploading files)
+# ============================================
+cd /var/www/cryptorafts && pm2 stop cryptorafts 2>/dev/null || true && pm2 delete cryptorafts 2>/dev/null || true && rm -rf .next node_modules src app server.js ecosystem.config.js package.json package-lock.json logs 2>/dev/null || true && tar -xzf cryptorafts-deploy-*.tar.gz --strip-components=1 2>/dev/null || tar -xzf cryptorafts-deploy-*.tar.gz && npm install --legacy-peer-deps --production=false && cat > ecosystem.config.js << 'ECOFILE'
+module.exports = {
+  apps: [{
+    name: 'cryptorafts',
+    script: './server.js',
+    instances: 1,
+    exec_mode: 'fork',
+    env: { NODE_ENV: 'production', PORT: 3000, HOSTNAME: '0.0.0.0' },
+    error_file: './logs/err.log',
+    out_file: './logs/out.log',
+    merge_logs: true,
+    autorestart: true
+  }]
+};
+ECOFILE
+mkdir -p logs && pm2 start ecosystem.config.js && pm2 save && pm2 logs cryptorafts --lines 20
+

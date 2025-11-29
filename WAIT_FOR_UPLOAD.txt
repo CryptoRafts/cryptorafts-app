@@ -1,0 +1,5 @@
+# ⏳ WAIT FOR UPLOAD TO COMPLETE
+# Then run: bash AFTER_UPLOAD_COMPLETE.sh
+
+cd /var/www/cryptorafts && echo "📋 Checking upload status..." && FILE_COUNT=$(find src -type f 2>/dev/null | wc -l) && echo "Files in src/: $FILE_COUNT" && if [ $FILE_COUNT -lt 100 ]; then echo ""; echo "⏳ Upload still in progress..."; echo "Current: $FILE_COUNT files (need 700+)"; echo ""; echo "Please wait for upload to complete (~20 minutes)"; echo "Progress: Check File Manager"; echo ""; echo "After upload completes, run:"; echo "  bash AFTER_UPLOAD_COMPLETE.sh"; exit 0; else echo ""; echo "✅ Upload appears complete ($FILE_COUNT files)"; echo ""; echo "Running deployment..."; bash AFTER_UPLOAD_COMPLETE.sh; fi
+

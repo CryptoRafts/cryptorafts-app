@@ -1,0 +1,6 @@
+# ============================================
+# COPY-PASTE THIS INTO POWERSHELL
+# ============================================
+
+cd C:\Users\dell\cryptorafts-starter
+.\DEPLOY_EVERYTHING_NOW.ps1

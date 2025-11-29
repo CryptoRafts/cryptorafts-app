@@ -1,0 +1,20 @@
+QUICK FIX - DO THIS:
+
+1. Go to: https://vercel.com/anas-s-projects-8d19f880/cryptorafts/settings/domains
+
+2. Remove BOTH domains:
+   - Click "..." next to www.cryptorafts.com → Remove
+   - Click "..." next to cryptorafts.com → Remove
+
+3. Run in terminal:
+   vercel domains add www.cryptorafts.com
+   vercel domains add cryptorafts.com
+
+4. Add to Firebase: https://console.firebase.google.com/project/cryptorafts-b9067/authentication/settings
+   - Add: www.cryptorafts.com
+   - Add: cryptorafts.com
+
+5. Wait 2 minutes, visit: https://www.cryptorafts.com
+
+DONE!
+

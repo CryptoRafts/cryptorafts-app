@@ -1,0 +1,51 @@
+⚠️ NODE.JS VERSION TOO OLD - QUICK FIX
+=======================================
+
+Next.js 16 requires Node.js >= 20.9.0, but you have 18.20.8
+
+IN YOUR SSH TERMINAL, RUN THESE COMMANDS:
+-----------------------------------------
+
+STEP 1: Upgrade to Node.js 20
+------------------------------
+export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+nvm install 20
+nvm use 20
+nvm alias default 20
+
+
+STEP 2: Verify Node.js version
+-------------------------------
+node --version
+
+Should show: v20.x.x (not v18.x.x)
+
+
+STEP 3: Rebuild the app
+-----------------------
+cd ~/cryptorafts
+rm -rf .next out node_modules/.cache
+npm install --legacy-peer-deps
+NODE_ENV=production npm run build
+
+
+STEP 4: Restart PM2
+-------------------
+pm2 restart cryptorafts
+
+
+STEP 5: Check status
+--------------------
+pm2 status
+pm2 logs cryptorafts --lines 30
+
+
+STEP 6: Verify app is responding
+--------------------------------
+curl http://localhost:3000
+
+Should show HTML response (not 404 or error)
+
+
+THEN VISIT: https://www.cryptorafts.com
+

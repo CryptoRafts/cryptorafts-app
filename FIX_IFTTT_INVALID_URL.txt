@@ -1,0 +1,123 @@
+# ============================================
+# FIX IFTTT INVALID URL ERROR
+# ============================================
+
+# IFTTT is saying "The URL is invalid" even though feed works
+# This is usually a validation issue or missing required elements
+
+cd /var/www/cryptorafts
+
+# ============================================
+# Step 1: Verify Feed is Accessible
+# ============================================
+
+echo "Testing feed accessibility..."
+curl -I https://www.cryptorafts.com/feed.xml
+
+# Expected: HTTP 200 OK, Content-Type: application/rss+xml
+
+# ============================================
+# Step 2: Test Feed Content
+# ============================================
+
+echo ""
+echo "Testing feed content..."
+curl https://www.cryptorafts.com/feed.xml | head -30
+
+# Should show valid XML starting with:
+# <?xml version="1.0" encoding="UTF-8"?>
+# <rss version="2.0"...
+
+# ============================================
+# Step 3: Validate with W3C Feed Validator
+# ============================================
+
+echo ""
+echo "IMPORTANT: Validate with W3C Feed Validator"
+echo "Visit: https://validator.w3.org/feed/"
+echo "Enter: https://www.cryptorafts.com/feed.xml"
+echo ""
+echo "Fix any validation errors shown!"
+
+# ============================================
+# Step 4: Upload Updated Feed Files
+# ============================================
+
+# On Windows PowerShell, run:
+# scp src/app/feed.xml/route.ts root@72.61.98.99:/var/www/cryptorafts/src/app/feed.xml/route.ts
+# scp src/app/api/blog/rss/route.ts root@72.61.98.99:/var/www/cryptorafts/src/app/api/blog/rss/route.ts
+
+# ============================================
+# Step 5: Rebuild and Restart
+# ============================================
+
+echo ""
+echo "Rebuilding Next.js..."
+npm run build
+
+echo ""
+echo "Restarting PM2..."
+pm2 restart cryptorafts
+
+sleep 10
+
+# ============================================
+# Step 6: Test Again
+# ============================================
+
+echo ""
+echo "Testing feed after rebuild..."
+curl -I https://www.cryptorafts.com/feed.xml
+
+curl https://www.cryptorafts.com/feed.xml | head -30
+
+# ============================================
+# IFTTT Requirements Checklist
+# ============================================
+
+echo ""
+echo "=========================================="
+echo "IFTTT Requirements Checklist:"
+echo "=========================================="
+echo "✓ Feed URL: https://www.cryptorafts.com/feed.xml"
+echo "✓ HTTP Status: 200 OK"
+echo "✓ Content-Type: application/rss+xml; charset=utf-8"
+echo "✓ Valid RSS 2.0 XML format"
+echo "✓ At least one <item> tag"
+echo "✓ Each item has: title, link, guid, pubDate"
+echo "✓ Each item has: content:encoded (IFTTT requirement)"
+echo "✓ Feed is publicly accessible (no auth required)"
+echo "✓ Feed validates with W3C Feed Validator"
+echo ""
+
+# ============================================
+# Common IFTTT Validation Issues
+# ============================================
+
+# Issue 1: Feed not accessible from external
+# Solution: Check firewall/nginx configuration
+
+# Issue 2: Content-Type not correct
+# Solution: Verify headers in route.ts
+
+# Issue 3: Missing content:encoded
+# Solution: Ensure all items have content:encoded tag
+
+# Issue 4: Invalid XML format
+# Solution: Validate with W3C Feed Validator
+
+# Issue 5: Feed has errors
+# Solution: Check W3C validator output and fix errors
+
+# ============================================
+# If Still Invalid in IFTTT
+# ============================================
+
+# Try these alternatives:
+# 1. Use API endpoint: https://www.cryptorafts.com/api/blog/rss
+# 2. Try with trailing slash: https://www.cryptorafts.com/feed.xml/
+# 3. Check IFTTT status page for RSS service issues
+# 4. Wait a few minutes and try again (IFTTT may cache validation)
+
+# ============================================
+

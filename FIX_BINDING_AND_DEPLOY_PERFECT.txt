@@ -1,0 +1,69 @@
+cd /var/www/cryptorafts && echo "🔧 FIXING BINDING ISSUE - PERFECT DEPLOYMENT" && echo "========================================" && echo "" && echo "📋 Step 1: Removing conflicting lockfile..." && rm -f /var/www/package-lock.json && echo "✅ Lockfile removed" && echo "" && echo "📋 Step 2: Fixing server.js to bind to 0.0.0.0..." && cat > server.js << 'EOFSERVER'
+const { createServer } = require('http');
+const { parse } = require('url');
+const next = require('next');
+const dev = process.env.NODE_ENV !== 'production';
+const port = parseInt(process.env.PORT || '3000', 10);
+const app = next({ dev, hostname: '0.0.0.0', port });
+const handle = app.getRequestHandler();
+app.prepare().then(() => {
+  createServer(async (req, res) => {
+    try {
+      const parsedUrl = parse(req.url, true);
+      await handle(req, res, parsedUrl);
+    } catch (err) {
+      console.error('Error occurred handling', req.url, err);
+      res.statusCode = 500;
+      res.end('internal server error');
+    }
+  })
+    .once('error', (err) => {
+      console.error(err);
+      process.exit(1);
+    })
+    .listen(port, '0.0.0.0', () => {
+      console.log(`> Ready on http://0.0.0.0:${port}`);
+    });
+});
+EOFSERVER
+echo "✅ server.js fixed to bind to 0.0.0.0" && echo "" && echo "📋 Step 3: Updating ecosystem.config.js..." && NODE_PATH=$(which node) && cat > ecosystem.config.js << EOF
+module.exports = {
+  apps: [{ name: 'cryptorafts', script: './server.js', instances: 1, exec_mode: 'fork', interpreter: '${NODE_PATH}', env: { NODE_ENV: 'production', PORT: 3000 }, error_file: './logs/pm2-error.log', out_file: './logs/pm2-out.log', log_date_format: 'YYYY-MM-DD HH:mm:ss Z', merge_logs: true, autorestart: true, watch: false, max_memory_restart: '1G', min_uptime: '10s', max_restarts: 10, restart_delay: 4000 }],
+};
+EOF
+echo "✅ ecosystem.config.js updated" && echo "" && echo "📋 Step 4: Restarting PM2..." && pm2 stop cryptorafts && pm2 delete cryptorafts && pm2 start ecosystem.config.js && pm2 save && sleep 15 && echo "✅ PM2 restarted" && echo "" && echo "📋 Step 5: Checking PM2 logs..." && pm2 logs cryptorafts --lines 10 --nostream && echo "" && echo "📋 Step 6: Testing local app..." && sleep 5 && curl -I http://127.0.0.1:3000 2>&1 | head -5 || echo "⚠️  Testing IPv6..." && curl -I http://[::1]:3000 2>&1 | head -5 || echo "⚠️  App may still be starting..." && echo "" && echo "📋 Step 7: Checking port binding..." && ss -tlnp | grep :3000 && echo "" && echo "🔧 Step 8: Fixing Nginx config..." && cat > /etc/nginx/sites-available/cryptorafts << 'NGINXEOF'
+server {
+    listen 80;
+    listen [::]:80;
+    server_name cryptorafts.com www.cryptorafts.com;
+    return 301 https://www.cryptorafts.com$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name cryptorafts.com www.cryptorafts.com;
+
+    ssl_certificate /etc/letsencrypt/live/cryptorafts.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/cryptorafts.com/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+        proxy_read_timeout 300s;
+        proxy_connect_timeout 75s;
+        proxy_buffering off;
+    }
+}
+NGINXEOF
+nginx -t && systemctl reload nginx && echo "✅ Nginx updated and reloaded" || echo "⚠️  Nginx error" && echo "" && echo "✅ FINAL VERIFICATION" && echo "========================================" && echo "PM2:" && pm2 status cryptorafts && echo "" && echo "Port check:" && ss -tlnp | grep :3000 && echo "" && echo "Local test (IPv4):" && curl -sS -I http://127.0.0.1:3000 2>&1 | head -3 || echo "Testing IPv6..." && curl -sS -I http://[::1]:3000 2>&1 | head -3 || echo "Checking..." && echo "" && echo "Web test:" && curl -sS -I https://www.cryptorafts.com 2>&1 | head -3 || echo "Checking..." && echo "" && echo "✅ DEPLOYMENT COMPLETE!" && echo "🌐 Visit: https://www.cryptorafts.com"
+

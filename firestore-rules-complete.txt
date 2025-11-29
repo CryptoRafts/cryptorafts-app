@@ -1,0 +1,376 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+             request.auth.token.role == 'admin';
+    }
+    
+    function isVC() {
+      return isAuthenticated() && 
+             request.auth.token.role == 'vc';
+    }
+    
+    function isFounder() {
+      return isAuthenticated() && 
+             request.auth.token.role == 'founder';
+    }
+    
+    function isExchange() {
+      return isAuthenticated() && 
+             request.auth.token.role == 'exchange';
+    }
+    
+    function isAgency() {
+      return isAuthenticated() && 
+             request.auth.token.role == 'agency';
+    }
+    
+    // User can access their own data
+    function isOwner(userId) {
+      return isAuthenticated() && 
+             request.auth.uid == userId;
+    }
+    
+    // VC can access their organization's data
+    function isVCOrgMember(orgId) {
+      return isVC() && 
+             exists(/databases/$(database)/documents/organizations/$(orgId)) &&
+             request.auth.uid in get(/databases/$(database)/documents/organizations/$(orgId)).data.members;
+    }
+    
+    // Founder can access their own projects
+    function isProjectOwner(projectId) {
+      return isFounder() && 
+             exists(/databases/$(database)/documents/projects/$(projectId)) &&
+             get(/databases/$(database)/documents/projects/$(projectId)).data.founderId == request.auth.uid;
+    }
+    
+    // Check if user is member of a deal room
+    function isRoomMember(roomId) {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/groupChats/$(roomId)) &&
+             request.auth.uid in get(/databases/$(database)/documents/groupChats/$(roomId)).data.members;
+    }
+
+    // Users collection - All roles can read, users can write their own data
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (
+        isOwner(userId) || 
+        isAdmin()
+      );
+    }
+
+    // Organizations collection - Role-based access
+    match /organizations/{orgId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (
+        isAdmin() ||
+        (isVC() && isVCOrgMember(orgId)) ||
+        (isFounder() && resource.data.founderId == request.auth.uid) ||
+        (isExchange() && resource.data.exchangeId == request.auth.uid) ||
+        (isAgency() && resource.data.agencyId == request.auth.uid)
+      );
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        isVC() ||
+        isFounder() ||
+        isExchange() ||
+        isAgency()
+      );
+      allow list: if isAuthenticated();
+    }
+
+    // Projects collection - Founders can manage their own, VCs can read all
+    match /projects/{projectId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        isVC() ||
+        isProjectOwner(projectId) ||
+        isExchange() ||
+        isAgency()
+      );
+      allow write: if isAuthenticated() && (
+        isAdmin() ||
+        (isFounder() && isProjectOwner(projectId)) ||
+        (isVC() && isVCOrgMember(resource.data.orgId))
+      );
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        (isFounder() && request.auth.uid == request.resource.data.founderId) ||
+        isVC()
+      );
+      allow list: if isAuthenticated();
+    }
+
+    // VC Pipeline collection - VCs only
+    match /vcPipelines/{orgId}/items/{projectId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        (isVC() && isVCOrgMember(orgId))
+      );
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        (isVC() && request.auth.uid == request.resource.data.orgId)
+      );
+      allow list: if isAuthenticated() && (
+        isAdmin() ||
+        isVC()
+      );
+    }
+
+    // Group Chats (Deal Rooms) - Members only
+    match /groupChats/{roomId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        isRoomMember(roomId)
+      );
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        (isVC() && request.auth.uid in request.resource.data.members) ||
+        (isFounder() && request.auth.uid in request.resource.data.members) ||
+        (isExchange() && request.auth.uid in request.resource.data.members) ||
+        (isAgency() && request.auth.uid in request.resource.data.members)
+      );
+      allow list: if isAuthenticated();
+      
+      // Messages subcollection
+      match /messages/{messageId} {
+        allow read, write: if isAuthenticated() && (
+          isAdmin() ||
+          isRoomMember(roomId)
+        );
+        allow create: if isAuthenticated() && (
+          isAdmin() ||
+          (isRoomMember(roomId) && request.auth.uid == request.resource.data.authorId)
+        );
+        allow list: if isAuthenticated() && (
+          isAdmin() ||
+          isRoomMember(roomId)
+        );
+      }
+    }
+
+    // VC Term Sheet Templates - VCs only
+    match /vcTermSheetTemplates/{templateId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        (isVC() && resource.data.orgId == request.auth.token.orgId)
+      );
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        (isVC() && request.auth.uid == request.resource.data.orgId)
+      );
+      allow list: if isAuthenticated() && (
+        isAdmin() ||
+        isVC()
+      );
+    }
+
+    // VC AI Sessions - VCs only
+    match /vcAISessions/{sessionId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        (isVC() && resource.data.context.orgId == request.auth.token.orgId)
+      );
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        (isVC() && request.auth.uid == request.resource.data.context.userId)
+      );
+      allow list: if isAuthenticated() && (
+        isAdmin() ||
+        isVC()
+      );
+    }
+
+    // VC Metrics - VCs only
+    match /vcMetrics/{metricsId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        (isVC() && resource.data.orgId == request.auth.token.orgId)
+      );
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        (isVC() && request.auth.uid == request.resource.data.orgId)
+      );
+      allow list: if isAuthenticated() && (
+        isAdmin() ||
+        isVC()
+      );
+    }
+
+    // Exchange listings - Exchanges only
+    match /exchangeListings/{listingId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        isExchange() ||
+        isVC() ||
+        isFounder()
+      );
+      allow write: if isAuthenticated() && (
+        isAdmin() ||
+        (isExchange() && resource.data.exchangeId == request.auth.uid)
+      );
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        (isExchange() && request.auth.uid == request.resource.data.exchangeId)
+      );
+      allow list: if isAuthenticated();
+    }
+
+    // Agency campaigns - Agencies only
+    match /agencyCampaigns/{campaignId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        (isAgency() && resource.data.agencyId == request.auth.uid) ||
+        isVC() ||
+        isFounder()
+      );
+      allow write: if isAuthenticated() && (
+        isAdmin() ||
+        (isAgency() && resource.data.agencyId == request.auth.uid)
+      );
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        (isAgency() && request.auth.uid == request.resource.data.agencyId)
+      );
+      allow list: if isAuthenticated();
+    }
+
+    // Notifications - Users can read their own
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        resource.data.userId == request.auth.uid
+      );
+      allow write: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow list: if isAuthenticated();
+    }
+
+    // Audit events - Admins and role-specific access
+    match /audit/{auditId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        (isVC() && resource.data.role == 'vc') ||
+        (isFounder() && resource.data.role == 'founder') ||
+        (isExchange() && resource.data.role == 'exchange') ||
+        (isAgency() && resource.data.role == 'agency')
+      );
+      allow write: if isAuthenticated();
+      allow list: if isAuthenticated() && (
+        isAdmin() ||
+        isVC() ||
+        isFounder() ||
+        isExchange() ||
+        isAgency()
+      );
+    }
+
+    // Rate limits - All roles
+    match /rateLimits/{limitId} {
+      allow read, write: if isAuthenticated();
+      allow list: if isAuthenticated();
+    }
+
+    // Pitches collection - Founders can manage their own
+    match /pitches/{pitchId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        exists(/databases/$(database)/documents/pitches/$(pitchId)) &&
+        get(/databases/$(database)/documents/pitches/$(pitchId)).data.founderId == request.auth.uid ||
+        isVC() ||
+        isExchange() ||
+        isAgency()
+      );
+      allow create: if isAuthenticated() && (
+        request.auth.uid == request.resource.data.founderId ||
+        isAdmin()
+      );
+      allow update, delete: if isAuthenticated() && (
+        isAdmin() ||
+        exists(/databases/$(database)/documents/pitches/$(pitchId)) &&
+        get(/databases/$(database)/documents/pitches/$(pitchId)).data.founderId == request.auth.uid
+      );
+      allow list: if isAuthenticated();
+    }
+
+    // Chat Rooms (general) - Members only
+    match /chatRooms/{chatId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        request.auth.uid in resource.data.participants
+      );
+      allow create: if isAuthenticated();
+      allow list: if isAuthenticated();
+    }
+
+    // Founder dashboard data
+    match /founderDashboards/{userId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        (isFounder() && isOwner(userId))
+      );
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        (isFounder() && request.auth.uid == request.resource.data.userId)
+      );
+      allow list: if isAuthenticated();
+    }
+
+    // Exchange dashboard data
+    match /exchangeDashboards/{userId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        (isExchange() && isOwner(userId))
+      );
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        (isExchange() && request.auth.uid == request.resource.data.userId)
+      );
+      allow list: if isAuthenticated();
+    }
+
+    // Agency dashboard data
+    match /agencyDashboards/{userId} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin() ||
+        (isAgency() && isOwner(userId))
+      );
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        (isAgency() && request.auth.uid == request.resource.data.userId)
+      );
+      allow list: if isAuthenticated();
+    }
+
+    // KYB/KYC verification data - Role-based access
+    match /kybVerifications/{verificationId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        (isVC() && resource.data.orgId == request.auth.token.orgId) ||
+        (isFounder() && resource.data.userId == request.auth.uid)
+      );
+      allow write: if isAuthenticated() && (
+        isAdmin() ||
+        (isVC() && resource.data.orgId == request.auth.token.orgId)
+      );
+      allow create: if isAuthenticated();
+      allow list: if isAuthenticated();
+    }
+
+    // Default rule for any other collections
+    match /{document=**} {
+      allow read, write: if isAuthenticated() && (
+        isAdmin()
+      );
+    }
+  }
+}
