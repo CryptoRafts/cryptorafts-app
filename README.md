@@ -209,7 +209,14 @@ Set all environment variables in your deployment platform's dashboard. Never com
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+**Copyright © 2025 CryptoRafts. All Rights Reserved.**
+
+This software is proprietary and confidential. This repository is made public 
+solely for BNB Chain ecosystem submission and review purposes.
+
+**Unauthorized use, copying, or distribution is strictly prohibited.**
+
+See [LICENSE](LICENSE) and [COPYRIGHT_NOTICE.md](COPYRIGHT_NOTICE.md) for full terms.
 
 ## 🆘 Support
 
