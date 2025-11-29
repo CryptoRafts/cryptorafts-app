@@ -925,33 +925,54 @@ export default function WebRTCCallModal({
       }
 
       // CRITICAL: Use local video as a temporary full‑screen preview until remote video arrives
-      // This prevents the large black area you see in the first screenshot and makes
-      // the layout immediately look like the second screenshot.
+      // This prevents the large black area and makes layout immediately look like Zoom/Google Meet
       if (remoteVideoRef.current) {
         const remoteEl = remoteVideoRef.current;
         const existingStream = remoteEl.srcObject as MediaStream | null;
-        const hasRemoteVideoTrack =
-          existingStream &&
+        
+        // Check if current stream is actually a remote stream (not local preview)
+        const isLocalPreview = existingStream && 
+          existingStream.getVideoTracks().some(t => {
+            // Check if this track is from local stream by comparing with local video tracks
+            if (localVideoRef.current?.srcObject) {
+              const localStream = localVideoRef.current.srcObject as MediaStream;
+              return localStream.getVideoTracks().some(lt => lt.id === t.id);
+            }
+            return false;
+          });
+        
+        const hasRealRemoteVideo = existingStream && !isLocalPreview &&
           existingStream.getVideoTracks().some(t => t.readyState === 'live');
 
         // Only attach local stream to remote video element if there is no real remote video yet
-        if (!hasRemoteVideoTrack) {
-          console.log('📹 [WebRTC Call] Using local stream as temporary main video preview');
+        if (!hasRealRemoteVideo) {
+          console.log('📹 [WebRTC Call] Using local stream as temporary main video preview (Zoom/Meet style)');
           remoteEl.srcObject = stream;
           remoteEl.muted = true; // mute to avoid any echo
           remoteEl.volume = 0;
-          remoteEl.style.display = 'block';
-          remoteEl.style.visibility = 'visible';
-          remoteEl.style.opacity = '1';
-          remoteEl.style.position = 'absolute';
-          remoteEl.style.top = '0';
-          remoteEl.style.left = '0';
-          remoteEl.style.right = '0';
-          remoteEl.style.bottom = '0';
-          remoteEl.style.width = '100%';
-          remoteEl.style.height = '100%';
-          remoteEl.style.objectFit = 'cover';
-          remoteEl.style.objectPosition = 'center';
+          remoteEl.style.cssText = `
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            min-width: 100% !important;
+            min-height: 100% !important;
+            max-width: 100% !important;
+            max-height: 100% !important;
+            object-fit: cover !important;
+            object-position: center !important;
+            background-color: #000000 !important;
+            z-index: 9999 !important;
+            pointer-events: auto !important;
+            transform: translateZ(0) !important;
+            -webkit-transform: translateZ(0) !important;
+          `;
           setRemoteVideoVisible(true);
           safePlay(remoteEl, 'local-preview-main-video').catch(() => {});
         }
@@ -1024,8 +1045,22 @@ export default function WebRTCCallModal({
       videoElement.style.objectFit = 'cover';
       videoElement.style.objectPosition = 'center';
       
-      // Check if we need to update the stream (new tracks added)
-      if (currentStream) {
+      // CRITICAL: Check if current stream is local preview - if so, always replace with remote
+      const isLocalPreview = currentStream && 
+        currentStream.getVideoTracks().some(t => {
+          if (localVideoRef.current?.srcObject) {
+            const localStream = localVideoRef.current.srcObject as MediaStream;
+            return localStream.getVideoTracks().some(lt => lt.id === t.id);
+          }
+          return false;
+        });
+      
+      // If current stream is local preview, always replace with remote stream
+      if (isLocalPreview) {
+        console.log('📹 [WebRTC Call] Replacing local preview with remote stream');
+        // Continue to set up the remote stream below (skip the existing stream check)
+      } else if (currentStream) {
+        // Check if we need to update the stream (new tracks added)
         const currentTracks = currentStream.getTracks();
         const newTracks = stream.getTracks();
         
