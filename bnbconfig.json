@@ -1,0 +1,96 @@
+{
+  "name": "CryptoRafts BNB Chain Configuration",
+  "version": "1.0.0",
+  "description": "BNB Chain (BSC) network configuration for CryptoRafts platform",
+  "networks": {
+    "bsc": {
+      "chainId": 56,
+      "name": "BNB Smart Chain (BSC)",
+      "rpcUrls": [
+        "https://bsc-dataseed1.binance.org",
+        "https://bsc-dataseed2.binance.org",
+        "https://bsc-dataseed1.defibit.io",
+        "https://bsc-dataseed1.nodereal.io"
+      ],
+      "blockExplorerUrls": [
+        "https://bscscan.com"
+      ],
+      "nativeCurrency": {
+        "name": "BNB",
+        "symbol": "BNB",
+        "decimals": 18
+      },
+      "isTestnet": false
+    },
+    "bscTestnet": {
+      "chainId": 97,
+      "name": "BNB Smart Chain Testnet",
+      "rpcUrls": [
+        "https://data-seed-prebsc-1-s1.binance.org:8545",
+        "https://data-seed-prebsc-2-s1.binance.org:8545"
+      ],
+      "blockExplorerUrls": [
+        "https://testnet.bscscan.com"
+      ],
+      "nativeCurrency": {
+        "name": "BNB",
+        "symbol": "BNB",
+        "decimals": 18
+      },
+      "isTestnet": true
+    },
+    "opBNB": {
+      "chainId": 204,
+      "name": "opBNB Mainnet",
+      "rpcUrls": [
+        "https://opbnb-mainnet-rpc.bnbchain.org"
+      ],
+      "blockExplorerUrls": [
+        "https://mainnet.opbnbscan.com"
+      ],
+      "nativeCurrency": {
+        "name": "BNB",
+        "symbol": "BNB",
+        "decimals": 18
+      },
+      "isTestnet": false
+    },
+    "opBNBTestnet": {
+      "chainId": 5611,
+      "name": "opBNB Testnet",
+      "rpcUrls": [
+        "https://opbnb-testnet-rpc.bnbchain.org"
+      ],
+      "blockExplorerUrls": [
+        "https://testnet.opbnbscan.com"
+      ],
+      "nativeCurrency": {
+        "name": "BNB",
+        "symbol": "BNB",
+        "decimals": 18
+      },
+      "isTestnet": true
+    }
+  },
+  "primaryNetwork": "bsc",
+  "contracts": {
+    "projectRegistry": {
+      "address": "",
+      "description": "Main project registry contract on BNB Chain"
+    },
+    "kycVerification": {
+      "address": "",
+      "description": "KYC/KYB verification contract on BNB Chain"
+    },
+    "tokenContract": {
+      "address": "",
+      "description": "Platform token contract on BNB Chain"
+    }
+  },
+  "deployment": {
+    "target": "BNB Chain (BSC)",
+    "priority": "primary",
+    "status": "planned"
+  }
+}
+

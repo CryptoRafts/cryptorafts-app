@@ -18,6 +18,7 @@ class StripNodeSchemePlugin {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // ✅ Vercel Deployment Configuration
+  // ✅ BNB Chain Integration: Platform deployed on BNB Smart Chain (BSC)
   reactStrictMode: true,
   
   // ✅ Vercel handles assetPrefix automatically - no need to set it

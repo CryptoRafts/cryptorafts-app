@@ -2,6 +2,24 @@
 
 A comprehensive Web3 platform connecting founders, VCs, exchanges, IDOs, influencers, and marketing agencies with AI-powered verification and intelligent communication.
 
+## 🌐 BNB Chain Deployment
+
+**CryptoRafts is deployed on the BNB Chain ecosystem**, specifically on **BNB Smart Chain (BSC)**. The platform leverages BNB Chain's high-performance infrastructure for:
+
+- Smart contract deployment and execution
+- Token transactions and payments
+- KYC/KYB verification on-chain
+- Project registry and dealflow management
+- Cross-chain compatibility with opBNB and Greenfield
+
+### BNB Chain Networks Supported
+
+- **BNB Smart Chain (BSC)** - Primary deployment network (Chain ID: 56)
+- **opBNB** - Layer 2 solution for enhanced scalability (Chain ID: 204)
+- **BSC Testnet** - Development and testing environment (Chain ID: 97)
+
+See `bnbconfig.json` for complete BNB Chain network configuration.
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -208,8 +226,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [ ] Multi-language support
 
 ### Q2 2025
-- [ ] Blockchain integration
-- [ ] NFT marketplace
+- [x] **BNB Chain integration** - Deployed on BNB Smart Chain (BSC)
+- [ ] Smart contract deployment on BNB Chain
+- [ ] BNB token integration for payments
+- [ ] opBNB Layer 2 integration
+- [ ] NFT marketplace on BNB Chain
 - [ ] Advanced security features
 - [ ] API v2.0
 
