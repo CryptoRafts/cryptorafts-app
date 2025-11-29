@@ -3,15 +3,18 @@ const { initializeApp } = require('firebase/app');
 const { getAuth, connectAuthEmulator } = require('firebase/auth');
 const { getFirestore, collection, query, where, getDocs, limit } = require('firebase/firestore');
 
-// Firebase config (from your .env or firebase config)
+// Firebase config - Load from environment variables for security
+// NEVER hardcode API keys or credentials in code
+require('dotenv').config({ path: '.env.local' });
+
 const firebaseConfig = {
-  apiKey: "AIzaSyCQkV37RvvRinrHh6dV01-4VRokgw-4d-o",
-  authDomain: "cryptorafts-b9067.firebaseapp.com",
-  projectId: "cryptorafts-b9067",
-  storageBucket: "cryptorafts-b9067.firebasestorage.app",
-  messagingSenderId: "262857818599",
-  appId: "1:262857818599:web:46bd96e3d8a57df65eff8f",
-  measurementId: "G-F47LMQF593"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "your_api_key_here",
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "your_project.firebaseapp.com",
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "your_project_id",
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "your_project.appspot.com",
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "your_sender_id",
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "your_app_id",
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || "your_measurement_id"
 };
 
 async function checkData() {

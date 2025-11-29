@@ -1,14 +1,17 @@
 const { initializeApp } = require('firebase/app');
 const { getFirestore, collection, addDoc, doc, setDoc, serverTimestamp } = require('firebase/firestore');
 
-// Firebase configuration
+// Firebase configuration - Load from environment variables for security
+// NEVER hardcode API keys or credentials in code
+require('dotenv').config({ path: '.env.local' });
+
 const firebaseConfig = {
-  apiKey: "AIzaSyBvOkBwJ1Z4Z4Z4Z4Z4Z4Z4Z4Z4Z4Z4Z4Z4",
-  authDomain: "cryptorafts-starter.firebaseapp.com",
-  projectId: "cryptorafts-starter",
-  storageBucket: "cryptorafts-starter.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abcdef123456789"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "your_api_key_here",
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "your_project.firebaseapp.com",
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "your_project_id",
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "your_project.appspot.com",
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "your_sender_id",
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "your_app_id"
 };
 
 // Initialize Firebase
