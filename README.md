@@ -35,8 +35,10 @@ See `bnbconfig.json` for complete BNB Chain network configuration.
 - **opBNB Mainnet** (Chain ID: 204) - Layer 2 solution for enhanced scalability
 - **BNB Smart Chain Testnet** (Chain ID: 97) - Development and testing
 - **opBNB Testnet** (Chain ID: 5611) - Layer 2 testing environment
-- **Ethereum Mainnet** (Chain ID: 1) - Secondary support (future)
-- **Polygon** (Chain ID: 137) - Multi-chain compatibility (future)
+- **Ethereum Mainnet** (Chain ID: 1) - Secondary support (future expansion)
+- **Polygon** (Chain ID: 137) - Multi-chain compatibility (future expansion)
+
+> **Note**: BNB Smart Chain (BSC) is the **PRIMARY and PRIMARY deployment network**. Other networks listed are for future multi-chain expansion only. All core functionality and smart contracts are designed for and will be deployed on BNB Chain first.
 
 ## 📍 Contract Addresses
 
@@ -51,12 +53,12 @@ See `bnbconfig.json` for complete BNB Chain network configuration.
 ## ✨ Features
 
 - **Low-cost transactions on BNB Chain** - Leverage BSC's low gas fees for KYC/KYB verification and project management
-- **Multi-chain token support** - Native BNB token integration with cross-chain compatibility
+- **Multi-chain token support** - Native BNB token integration with cross-chain compatibility (BNB Chain infrastructure support, not just token trading)
 - **On-chain KYC/KYB verification** - Decentralized identity verification deployed on BNB Smart Chain
 - **Project registry on BNB Chain** - Immutable project records stored on-chain
 - **Gas-efficient design** - Optimized for BNB Smart Chain's low transaction costs
 - **Decentralized dealflow management** - Smart contracts for project acceptance and milestone tracking
-- **BNB token payments** - Native BNB integration for platform transactions
+- **BNB token payments** - Native BNB integration for platform transactions on BNB Chain infrastructure
 - **Security with timelocks** - Secure smart contract architecture with pause controls
 
 ## 🚀 Quick Start
