@@ -1,6 +1,6 @@
 # CryptoRafts - AI-Powered Web3 Ecosystem
 
-A comprehensive Web3 platform connecting founders, VCs, exchanges, IDOs, influencers, and marketing agencies with AI-powered verification and intelligent communication.
+A comprehensive Web3 platform connecting founders, VCs, exchanges, IDOs, influencers, and marketing agencies with AI-powered verification and intelligent communication, built on **BNB Smart Chain (BSC)** and compatible with other EVM networks.
 
 ## 🌐 BNB Chain Deployment
 
@@ -19,6 +19,45 @@ A comprehensive Web3 platform connecting founders, VCs, exchanges, IDOs, influen
 - **BSC Testnet** - Development and testing environment (Chain ID: 97)
 
 See `bnbconfig.json` for complete BNB Chain network configuration.
+
+## 📋 Technology Stack
+
+- **Blockchain**: BNB Smart Chain (BSC) + EVM-compatible chains
+- **Smart Contracts**: Solidity (for on-chain KYC/KYB verification and project registry)
+- **Frontend**: Next.js 16 + React 18 + TypeScript
+- **Web3 Integration**: ethers.js, BNB Chain RPC integration
+- **Development**: Hardhat (for smart contract development)
+- **Security**: OpenZeppelin libraries for contract security
+
+## 🌐 Supported Networks
+
+- **BNB Smart Chain Mainnet** (Chain ID: 56) - Primary deployment network
+- **opBNB Mainnet** (Chain ID: 204) - Layer 2 solution for enhanced scalability
+- **BNB Smart Chain Testnet** (Chain ID: 97) - Development and testing
+- **opBNB Testnet** (Chain ID: 5611) - Layer 2 testing environment
+- **Ethereum Mainnet** (Chain ID: 1) - Secondary support (future)
+- **Polygon** (Chain ID: 137) - Multi-chain compatibility (future)
+
+## 📍 Contract Addresses
+
+| Network | Project Registry | KYC Verification | Token Contract | Funding Pool |
+|---------|------------------|------------------|----------------|--------------|
+| BNB Mainnet | *To be deployed* | *To be deployed* | *To be deployed* | *To be deployed* |
+| BNB Testnet | *To be deployed* | *To be deployed* | *To be deployed* | *To be deployed* |
+| opBNB Mainnet | *To be deployed* | *To be deployed* | *To be deployed* | *To be deployed* |
+
+> **Note**: Contract addresses will be updated after deployment to BNB Chain. See `bnbconfig.json` for configuration details.
+
+## ✨ Features
+
+- **Low-cost transactions on BNB Chain** - Leverage BSC's low gas fees for KYC/KYB verification and project management
+- **Multi-chain token support** - Native BNB token integration with cross-chain compatibility
+- **On-chain KYC/KYB verification** - Decentralized identity verification deployed on BNB Smart Chain
+- **Project registry on BNB Chain** - Immutable project records stored on-chain
+- **Gas-efficient design** - Optimized for BNB Smart Chain's low transaction costs
+- **Decentralized dealflow management** - Smart contracts for project acceptance and milestone tracking
+- **BNB token payments** - Native BNB integration for platform transactions
+- **Security with timelocks** - Secure smart contract architecture with pause controls
 
 ## 🚀 Quick Start
 
