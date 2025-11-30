@@ -54,12 +54,29 @@ See `bnbconfig.json` for complete BNB Chain network configuration.
 
 - **Low-cost transactions on BNB Chain** - Leverage BSC's low gas fees for KYC/KYB verification and project management
 - **Multi-chain token support** - Native BNB token integration with cross-chain compatibility (BNB Chain infrastructure support, not just token trading)
-- **On-chain KYC/KYB verification** - Decentralized identity verification deployed on BNB Smart Chain
-- **Project registry on BNB Chain** - Immutable project records stored on-chain
+- **On-chain KYC/KYB verification** - Decentralized identity verification deployed on BNB Smart Chain (hashed and salted data stored on-chain)
+- **Project registry on BNB Chain** - Immutable project records stored on-chain (full project data hashed and stored after successful funding/launch)
+- **Hybrid data storage** - Public data off-chain, sensitive/verified data on BNB Chain
 - **Gas-efficient design** - Optimized for BNB Smart Chain's low transaction costs
 - **Decentralized dealflow management** - Smart contracts for project acceptance and milestone tracking
 - **BNB token payments** - Native BNB integration for platform transactions on BNB Chain infrastructure
 - **Security with timelocks** - Secure smart contract architecture with pause controls
+
+## 📦 Data Storage Strategy
+
+CryptoRafts implements a hybrid data storage approach leveraging **BNB Smart Chain (BSC)**:
+
+### Off-Chain Storage (Backend)
+- Public profile data (username, bio, social links)
+- Project narratives and descriptions
+- Public information accessible on frontend
+
+### On-Chain Storage (BNB Smart Chain)
+- **KYC/KYB Data**: Hashed and salted sensitive documents stored on BSC after admin approval
+- **Project Data**: Full pitch and deal flow data hashed and stored on BSC after successful funding/launch
+- **Verification Records**: Immutable approval and verification records on BNB Chain
+
+See `BNB_CHAIN_DATA_STORAGE_STRATEGY.md` for complete details.
 
 ## 🚀 Quick Start
 
