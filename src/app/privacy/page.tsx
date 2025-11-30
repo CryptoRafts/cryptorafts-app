@@ -20,10 +20,10 @@ export default function PrivacyPolicyPage() {
           <div className="neo-glass-card rounded-2xl p-8 border border-white/10">
             <h2 className="text-3xl font-bold text-white mb-6">1. Introduction</h2>
             <p className="text-white/90 text-lg leading-relaxed mb-4">
-              Welcome to Cryptorafts.
+              Welcome to Cryptorafts, a Web3 platform deployed on <strong className="text-white">BNB Smart Chain (BSC)</strong>.
             </p>
             <p className="text-white/90 text-lg leading-relaxed mb-4">
-              Your privacy is important to us. This Privacy Policy explains how we collect, use, store, and protect your information when you use our platform and related services.
+              Your privacy is important to us. This Privacy Policy explains how we collect, use, store, and protect your information when you use our platform and related services on the <strong className="text-white">BNB Chain ecosystem</strong>.
             </p>
             <p className="text-white/90 text-lg leading-relaxed">
               By using Cryptorafts, you agree to the terms outlined in this policy.
@@ -54,7 +54,7 @@ export default function PrivacyPolicyPage() {
                 <ul className="space-y-2 text-white/90 text-lg leading-relaxed list-disc list-inside">
                   <li>Limited identity or business verification data for authentication purposes.</li>
                   <li>Verification is handled off-chain through AI-powered systems.</li>
-                  <li>Only hashed proofs of verification are stored on-chain.</li>
+                  <li>Only hashed proofs of verification are stored on-chain on <strong className="text-white">BNB Smart Chain (BSC)</strong>.</li>
                   <li>No sensitive personal or business documents are ever made public.</li>
                 </ul>
               </div>
@@ -91,10 +91,11 @@ export default function PrivacyPolicyPage() {
           <div className="neo-glass-card rounded-2xl p-8 border border-white/10">
             <h2 className="text-3xl font-bold text-white mb-6">4. Data Storage & Security</h2>
             <ul className="space-y-3 text-white/90 text-lg leading-relaxed list-disc list-inside">
-              <li><strong className="text-white">Hybrid Model:</strong> Sensitive data stays off-chain (AI verification servers), while hashed proofs are stored on-chain for transparency.</li>
+              <li><strong className="text-white">Hybrid Model:</strong> Sensitive data stays off-chain (AI verification servers), while hashed proofs are stored on-chain on <strong className="text-white">BNB Smart Chain (BSC)</strong> for transparency and immutability.</li>
+              <li><strong className="text-white">BNB Chain Deployment:</strong> All on-chain data storage and smart contract operations are deployed on <strong className="text-white">BNB Smart Chain (BSC)</strong> - Chain ID: 56, leveraging BSC's low gas costs and high performance.</li>
               <li><strong className="text-white">Encryption:</strong> All data is protected using AES-256 encryption.</li>
               <li><strong className="text-white">Access Control:</strong> Only verified users and authorized staff can access restricted areas.</li>
-              <li><strong className="text-white">No Raw Data On-Chain:</strong> We do not store images, IDs, or documents on the blockchain.</li>
+              <li><strong className="text-white">No Raw Data On-Chain:</strong> We do not store images, IDs, or documents on the blockchain. Only hashed and salted verification proofs are stored on <strong className="text-white">BNB Smart Chain</strong>.</li>
             </ul>
           </div>
 

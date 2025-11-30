@@ -34,8 +34,11 @@ export default function TermsOfServicePage() {
           {/* Platform Overview */}
           <div className="neo-glass-card rounded-2xl p-8 border border-white/10">
             <h2 className="text-3xl font-bold text-white mb-6">2. Platform Overview</h2>
+            <p className="text-white/90 text-lg leading-relaxed mb-4">
+              Cryptorafts provides a Web3 ecosystem deployed on <strong className="text-white">BNB Smart Chain (BSC)</strong>, connecting startups, investors, exchanges, and influencers. Users can explore verified projects, engage in fundraising activities, and interact within a secure hybrid KYC/KYB-verified environment.
+            </p>
             <p className="text-white/90 text-lg leading-relaxed">
-              Cryptorafts provides a blockchain-based ecosystem connecting startups, investors, exchanges, and influencers. Users can explore verified projects, engage in fundraising activities, and interact within a secure hybrid KYC/KYB-verified environment.
+              All smart contracts, on-chain verification records, and blockchain operations are deployed on the <strong className="text-white">BNB Chain ecosystem</strong>, specifically on <strong className="text-white">BNB Smart Chain (BSC)</strong> - Chain ID: 56, with support for opBNB and future Greenfield integration.
             </p>
           </div>
 
@@ -43,7 +46,7 @@ export default function TermsOfServicePage() {
           <div className="neo-glass-card rounded-2xl p-8 border border-white/10">
             <h2 className="text-3xl font-bold text-white mb-6">3. Account Registration</h2>
             <p className="text-white/90 text-lg leading-relaxed">
-              Users must register and complete hybrid KYC/KYB verification (AI + blockchain validation). You agree to provide accurate, complete, and updated information and are responsible for maintaining the confidentiality of your account credentials.
+              Users must register and complete hybrid KYC/KYB verification (AI + blockchain validation on <strong className="text-white">BNB Smart Chain</strong>). You agree to provide accurate, complete, and updated information and are responsible for maintaining the confidentiality of your account credentials.
             </p>
           </div>
 
