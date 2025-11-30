@@ -3,7 +3,7 @@
 ## Recommended Description (199/200 characters)
 
 ```
-AI-powered Web3 platform connecting founders, VCs, exchanges, IDOs, influencers, and agencies. Deployed on BNB Smart Chain (BSC) with on-chain KYC/KYB verification, project registry, and dealflow management. Built with Next.js, React, and TypeScript.
+AI-powered Web3 platform deployed on BNB Smart Chain (BSC). On-chain KYC/KYB verification, project registry, and dealflow management for founders, VCs, exchanges, IDOs, influencers, and agencies.
 ```
 
 **Character Count**: 199/200 ✅
