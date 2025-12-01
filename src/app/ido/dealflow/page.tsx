@@ -147,7 +147,7 @@ export default function IDODealflowPage() {
             
             return projectData;
           }) as Project[];
-          
+
           // Store all projects for stats BEFORE filtering
           setAllProjects(allProjectsRaw);
           
@@ -158,16 +158,16 @@ export default function IDODealflowPage() {
           const beforeFilter = projectsData.length;
           projectsData = projectsData.filter(p => {
             try {
-              const status = (p.status || '').toLowerCase();
-              const reviewStatus = (p.reviewStatus || '').toLowerCase();
-              
+            const status = (p.status || '').toLowerCase();
+            const reviewStatus = (p.reviewStatus || '').toLowerCase();
+            
               // Must be approved by admin - match VC logic exactly
               const isApproved = status === 'approved' || reviewStatus === 'approved';
               
               if (!isApproved) {
-                return false;
-              }
-              
+              return false;
+            }
+            
               // Must have visibility set to discoverable OR not set at all (fallback for approved projects)
               let isDiscoverable = false;
               if (p.visibility) {
@@ -667,7 +667,7 @@ export default function IDODealflowPage() {
           ) : filteredProjects.length === 0 ? (
             <div className="text-center py-12 neo-glass-card rounded-xl p-8">
               <NeonCyanIcon type="document" size={64} className="text-gray-500 mx-auto mb-4" />
-              {projects.length === 0 ? (
+            {projects.length === 0 ? (
                 <>
                   <div className="text-white/60 text-lg mb-2">No projects available in dealflow</div>
                   <p className="text-cyan-400/70 text-sm mb-4">
@@ -691,15 +691,15 @@ export default function IDODealflowPage() {
                   </button>
                 </>
               )}
-            </div>
-          ) : (
+              </div>
+            ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {filteredProjects.map((project: Project) => (
-                <div
-                  key={project.id}
+                  <div 
+                    key={project.id} 
                   className="neo-glass-card rounded-xl p-6 border border-cyan-400/20 hover:border-cyan-400/40 transition-all duration-300 group hover:shadow-xl hover:shadow-cyan-500/20"
-                >
-                  <div className="flex items-start justify-between mb-4">
+                  >
+                    <div className="flex items-start justify-between mb-4">
                     <div className="flex items-start gap-3 flex-1">
                       {(() => {
                         const logoUrl = extractProjectLogoUrl(project);
@@ -738,8 +738,8 @@ export default function IDODealflowPage() {
                       'border-white/15 bg-white/5 text-white/80'
                     }`}>
                       {project.raftai?.rating || "Pending"}
-                    </span>
-                  </div>
+                        </span>
+                      </div>
 
                   <p className="text-white/60 text-sm line-clamp-3 mb-4 leading-relaxed">
                     {project.raftai?.summary || project.description || "No description available"}
@@ -779,8 +779,8 @@ export default function IDODealflowPage() {
                       <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full border border-blue-500/30">
                         Audited
                       </span>
-                    )}
-                  </div>
+                      )}
+                    </div>
 
                   <div className="flex items-center justify-between text-xs text-cyan-400/70 mb-4 pt-3 border-t border-cyan-400/20">
                     <span>
@@ -791,7 +791,7 @@ export default function IDODealflowPage() {
                         ${(project.fundingGoal / 1000).toFixed(0)}K goal
                       </span>
                     )}
-                  </div>
+                    </div>
 
                   <div className="grid grid-cols-2 gap-2">
                     <button
@@ -821,7 +821,7 @@ export default function IDODealflowPage() {
                       <NeonCyanIcon type="chat" size={16} className="text-current" />
                       Message
                     </button>
-                    <button
+                    <button 
                       onClick={(e) => {
                         e.stopPropagation();
                         router.push(`/ido/project/${project.id}?action=reject`);
@@ -832,10 +832,10 @@ export default function IDODealflowPage() {
                       Reject
                     </button>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
+                  </div>
+                ))}
+              </div>
+            )}
         </div>
       </div>
     </ErrorBoundary>

@@ -502,3 +502,55 @@ export function createSnapshotErrorHandler(context: string = 'Firestore listener
   };
 }
 
+/**
+ * Safely convert Firestore Timestamp or any date-like value to a JavaScript Date
+ * Handles all possible date formats from Firestore
+ */
+export function safeToDate(timestamp: any): Date {
+  if (!timestamp) return new Date();
+  
+  // Firestore Timestamp with toDate method
+  if (timestamp.toDate && typeof timestamp.toDate === 'function') {
+    try {
+      return timestamp.toDate();
+    } catch {
+      // Fall through to other checks
+    }
+  }
+  
+  // Firestore Timestamp with toMillis method
+  if (timestamp.toMillis && typeof timestamp.toMillis === 'function') {
+    try {
+      return new Date(timestamp.toMillis());
+    } catch {
+      // Fall through to other checks
+    }
+  }
+  
+  // Firestore Timestamp with seconds property
+  if (timestamp.seconds && typeof timestamp.seconds === 'number') {
+    return new Date(timestamp.seconds * 1000);
+  }
+  
+  // Already a Date object
+  if (timestamp instanceof Date) {
+    return timestamp;
+  }
+  
+  // Number timestamp (milliseconds)
+  if (typeof timestamp === 'number') {
+    return new Date(timestamp);
+  }
+  
+  // String date
+  if (typeof timestamp === 'string') {
+    const parsed = new Date(timestamp);
+    if (!isNaN(parsed.getTime())) {
+      return parsed;
+    }
+  }
+  
+  // Fallback: return current date
+  return new Date();
+}
+

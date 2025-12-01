@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/providers/SimpleAuthProvider';
 import { db, collection, onSnapshot, query, where } from '@/lib/firebase.client';
-import { ensureDb, waitForFirebase, createSnapshotErrorHandler } from '@/lib/firebase-utils';
+import { ensureDb, waitForFirebase, createSnapshotErrorHandler, safeToDate } from '@/lib/firebase-utils';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import RoleAnalytics from '@/components/RoleAnalytics';
@@ -54,7 +54,7 @@ export default function FounderDashboard() {
           const projectsData = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
-            createdAt: doc.data().createdAt?.toDate() || new Date(),
+            createdAt: safeToDate(doc.data().createdAt),
             updatedAt: (doc.data().updatedAt?.toDate && typeof doc.data().updatedAt.toDate === 'function') 
               ? doc.data().updatedAt.toDate() 
               : (doc.data().updatedAt ? new Date(doc.data().updatedAt) : new Date()),

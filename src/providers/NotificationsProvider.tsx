@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { useAuth } from "./SimpleAuthProvider";
 import { collection, query, where, onSnapshot, orderBy, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase.client";
+import { safeToDate } from "@/lib/firebase-utils";
 
 interface Notification {
   id: string;
@@ -71,7 +72,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
           const notificationsData = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
-            createdAt: doc.data().createdAt?.toDate() || new Date(),
+            createdAt: safeToDate(doc.data().createdAt),
           })) as Notification[];
 
           setNotifications(notificationsData);

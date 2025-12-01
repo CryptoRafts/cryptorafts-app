@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { useAuth } from '@/providers/SimpleAuthProvider';
 import { db } from '@/lib/firebase.client';
 import { collection, doc, getDocs, setDoc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
+import { safeToDate } from '@/lib/firebase-utils';
 import {
   PencilIcon,
   TrashIcon,
@@ -123,7 +124,7 @@ export default function SpotlightCardManager() {
       const layoutsData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate() || new Date(),
+        createdAt: safeToDate(doc.data().createdAt),
         updatedAt: doc.data().updatedAt?.toDate() || new Date()
       })) as SpotlightCardLayout[];
       setLayouts(layoutsData);

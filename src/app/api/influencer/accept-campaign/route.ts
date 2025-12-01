@@ -235,130 +235,99 @@ export async function POST(req: NextRequest) {
       updatedAt: Date.now()
     });
 
-    // Create Campaign Room (Telegram-style chat)
-    const roomId = `campaign_room_${founderId}_${uid}_${campaignId || projectId}`;
+    // Create Chat Room in groupChats (for consistency with other roles)
+    const roomId = `deal_${founderId}_${uid}_${campaignId || projectId}`;
+    const chatRef = db.collection("groupChats").doc(roomId);
+    const existingChat = await chatRef.get();
     
-    await db.collection("campaignRooms").doc(roomId).set({
-      id: roomId,
-      name: `${campaignData.title || campaignData.name || "Campaign"} - Collaboration`,
-      type: "influencer-campaign",
-      campaignId: campaignId || projectId,
-      projectId: projectId || null,
+    if (!existingChat.exists) {
+      const influencerName = influencerData?.displayName || `${influencerData?.firstName || ''} ${influencerData?.lastName || ''}`.trim() || 'Influencer';
+      const founderName = founderData?.displayName || founderData?.companyName || "Founder";
+      const projectName = campaignData.title || campaignData.name || "Campaign";
       
-      // Members
-      founderId,
-      influencerId: uid,
-      participants: [founderId, uid, "raftai"],
-      memberRoles: {
-        [founderId]: "founder",
-        [uid]: "influencer",
-        "raftai": "assistant"
-      },
-      memberData: {
-        [founderId]: {
-          id: founderId,
-          name: founderData?.displayName || founderData?.companyName || "Founder",
-          email: founderData?.email || '',
-          avatar: founderData?.photoURL || founderData?.logo || null,
-          role: "founder"
+      // Create new room in groupChats (matching ChatRoom interface)
+      await chatRef.set({
+        id: roomId,
+        name: `${projectName} - ${founderName} / ${influencerName}`,
+        type: "deal",
+        projectId: projectId || campaignId,
+        
+        // Members
+        founderId,
+        founderName,
+        founderLogo: founderData?.photoURL || founderData?.logo || null,
+        counterpartId: uid,
+        counterpartName: influencerName,
+        counterpartRole: "influencer",
+        counterpartLogo: influencerData?.photoURL || influencerData?.profilePhotoURL || null,
+        members: [founderId, uid, "raftai"],
+        memberRoles: {
+          [founderId]: "owner",
+          [uid]: "member",
+          "raftai": "admin"
         },
-        [uid]: {
-          id: uid,
-          name: influencerData?.displayName || `${influencerData?.firstName || ''} ${influencerData?.lastName || ''}` || 'Influencer',
-          email: influencerData?.email || '',
-          avatar: influencerData?.profilePhotoURL || null,
-          role: "influencer"
+        memberNames: {
+          [founderId]: founderName,
+          [uid]: influencerName,
+          "raftai": "RaftAI"
         },
-        "raftai": {
-          id: "raftai",
-          name: "RaftAI",
-          email: null,
-          avatar: null,
-          role: "assistant"
-        }
-      },
-      
-      // Room settings
-      settings: {
-        filesAllowed: true,
-        imagesAllowed: true,
-        videoAllowed: true,
-        voiceAllowed: true,
-        threadsEnabled: true,
-        pinsEnabled: true,
-        reactionsEnabled: true,
-        mentionsEnabled: true,
-        readReceiptsEnabled: true,
-        tasksEnabled: true,
-        pollsEnabled: true,
-        eventsEnabled: true,
-        groupCallsEnabled: true,
-        screenShareEnabled: true,
-        ndaGated: false,
-        maxFileSize: 100 * 1024 * 1024, // 100MB
-      },
-      
-      // NDA status
-      nda: {
-        required: campaignData.ndaRequired || false,
-        acceptedBy: [],
-        document: campaignData.ndaDocument || null
-      },
-      
-      // Unread counts
-      unreadCount: {
-        [founderId]: 0,
-        [uid]: 0,
-        "raftai": 0
-      },
-      
-      // Room data
-      status: "active",
-      lastMessage: null,
-      lastMessageAt: null,
-      lastActivityAt: Date.now(),
-      pinnedMessages: [],
-      mutedBy: [],
-      
-      // Tasks/deliverables
-      tasks: [],
-      completedTasks: [],
-      
-      // Polls
-      polls: [],
-      
-      // Events
-      events: [],
-      
-      // RaftAI memory
-      raftaiContext: {
-        campaignBrief: campaignData.brief || "",
-        decisions: [],
-        actionItems: [],
-        notePoints: []
-      },
-      
-      createdAt: Date.now(),
-      createdBy: uid,
-      updatedAt: Date.now()
-    });
+        memberAvatars: {
+          [founderId]: founderData?.photoURL || founderData?.logo || null,
+          [uid]: influencerData?.photoURL || influencerData?.profilePhotoURL || null,
+          "raftai": null
+        },
+        
+        // Room settings
+        settings: {
+          filesAllowed: true,
+          maxFileSize: 100 * 1024 * 1024, // 100MB
+          voiceNotesAllowed: true,
+          videoCallAllowed: true
+        },
+        
+        // Room data
+        status: "active",
+        lastActivityAt: Date.now(),
+        pinnedMessages: [],
+        mutedBy: [],
+        unreadCount: {
+          [founderId]: 0,
+          [uid]: 0,
+          "raftai": 0
+        },
+        
+        // RaftAI memory
+        raftaiMemory: {
+          decisions: [],
+          tasks: [],
+          milestones: [],
+          notePoints: []
+        },
+        
+        createdAt: Date.now(),
+        createdBy: uid,
+        updatedAt: Date.now()
+      });
 
-    // Create welcome message from RaftAI
-    await db.collection("campaignRooms").doc(roomId).collection("messages").add({
-      senderId: "raftai",
-      senderName: "RaftAI",
-      senderAvatar: null,
-      type: "system",
-      text: `🎉 Campaign Room created! ${influencerData?.displayName || "Influencer"} has accepted the campaign "${campaignData.title || "Campaign"}". I'm here to assist with brief generation, copy variants, hashtags, and more. Type /raftai for commands!`,
-      reactions: {},
-      readBy: [],
-      mentions: [],
-      isPinned: false,
-      isEdited: false,
-      isDeleted: false,
-      createdAt: Date.now(),
-      timestamp: Date.now()
-    });
+      // Create welcome message from RaftAI in groupChats
+      await db.collection("groupChats").doc(roomId).collection("messages").add({
+        senderId: "raftai",
+        senderName: "RaftAI",
+        senderAvatar: null,
+        type: "system",
+        text: `🎉 Deal room created! ${influencerName} has accepted the project "${projectName}". You can now discuss the project details, next steps, and collaboration opportunities.`,
+        reactions: {},
+        readBy: [],
+        isPinned: false,
+        isEdited: false,
+        isDeleted: false,
+        createdAt: Date.now()
+      });
+      
+      console.log(`✅ [INFLUENCER API] Created chat room in groupChats: ${roomId}`);
+    } else {
+      console.log(`✅ [INFLUENCER API] Chat room already exists: ${roomId}`);
+    }
 
     // Send notification to founder
     await db.collection("notifications").add({
@@ -372,7 +341,7 @@ export async function POST(req: NextRequest) {
         influencerId: uid,
         influencerName: influencerData?.displayName
       },
-      link: `/founder/rooms/${roomId}`,
+      link: `/founder/messages?room=${roomId}`,
       read: false,
       createdAt: Date.now()
     });
@@ -387,7 +356,7 @@ export async function POST(req: NextRequest) {
         campaignId: campaignId || projectId,
         roomId
       },
-      link: `/influencer/rooms/${roomId}`,
+      link: `/influencer/messages?room=${roomId}`,
       read: false,
       createdAt: Date.now()
     });
@@ -408,45 +377,46 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ 
       success: true, 
       roomId,
-      roomUrl: `/influencer/rooms/${roomId}`,
+      chatId: roomId,
+      roomUrl: `/influencer/messages?room=${roomId}`,
       acceptanceId
     });
-    } catch (error: any) {
-      console.error('❌ [INFLUENCER API] Error in accept-campaign:', error);
-      console.error('❌ [INFLUENCER API] Error stack:', error?.stack);
-      console.error('❌ [INFLUENCER API] Error name:', error?.name);
-      console.error('❌ [INFLUENCER API] Error code:', error?.code);
-      
-      // Provide more helpful error messages
-      let errorMessage = 'Internal server error';
-      let errorDetails = String(error?.message || error);
-      
-      // Check for specific Firebase credential errors FIRST (most common issue)
-      if (errorDetails.includes('Could not load the default credentials') || 
-          errorDetails.includes('Application Default Credentials') ||
-          (errorDetails.includes('credential') && (errorDetails.includes('load') || errorDetails.includes('default')))) {
-        errorMessage = 'Firebase Admin credentials not configured';
-        errorDetails = 'Server needs Firebase Admin service account credentials configured in Vercel.';
-        return NextResponse.json({
-          error: errorMessage,
-          details: errorDetails,
-          solution: "Add FIREBASE_SERVICE_ACCOUNT_B64 to Vercel → Settings → Environment Variables. Run: .\\scripts\\auto-setup-firebase.ps1 for automated setup.",
-          helpUrl: "https://vercel.com/anas-s-projects-8d19f880/settings/environment-variables",
-          documentation: "See COMPLETE_SETUP_INSTRUCTIONS.md in the project root for step-by-step guide.",
-          type: 'CredentialsMissing'
-        }, {status:503});
-      } else if (errorDetails.includes('Permission denied') || errorDetails.includes('permission-denied')) {
-        errorMessage = 'Permission denied';
-        errorDetails = 'You do not have permission to perform this action.';
-      } else if (errorDetails.includes('not found') || errorDetails.includes('does not exist')) {
-        errorMessage = 'Resource not found';
-      }
-      
+  } catch (error: any) {
+    console.error('❌ [INFLUENCER API] Error in accept-campaign:', error);
+    console.error('❌ [INFLUENCER API] Error stack:', error?.stack);
+    console.error('❌ [INFLUENCER API] Error name:', error?.name);
+    console.error('❌ [INFLUENCER API] Error code:', error?.code);
+    
+    // Provide more helpful error messages
+    let errorMessage = 'Internal server error';
+    let errorDetails = String(error?.message || error);
+    
+    // Check for specific Firebase credential errors FIRST (most common issue)
+    if (errorDetails.includes('Could not load the default credentials') || 
+        errorDetails.includes('Application Default Credentials') ||
+        (errorDetails.includes('credential') && (errorDetails.includes('load') || errorDetails.includes('default')))) {
+      errorMessage = 'Firebase Admin credentials not configured';
+      errorDetails = 'Server needs Firebase Admin service account credentials configured in Vercel.';
       return NextResponse.json({
         error: errorMessage,
         details: errorDetails,
-        type: error?.name || 'UnknownError'
-      }, {status:500});
+        solution: "Add FIREBASE_SERVICE_ACCOUNT_B64 to Vercel → Settings → Environment Variables. Run: .\\scripts\\auto-setup-firebase.ps1 for automated setup.",
+        helpUrl: "https://vercel.com/anas-s-projects-8d19f880/settings/environment-variables",
+        documentation: "See COMPLETE_SETUP_INSTRUCTIONS.md in the project root for step-by-step guide.",
+        type: 'CredentialsMissing'
+      }, {status:503});
+    } else if (errorDetails.includes('Permission denied') || errorDetails.includes('permission-denied')) {
+      errorMessage = 'Permission denied';
+      errorDetails = 'You do not have permission to perform this action.';
+    } else if (errorDetails.includes('not found') || errorDetails.includes('does not exist')) {
+      errorMessage = 'Resource not found';
     }
+    
+    return NextResponse.json({
+      error: errorMessage,
+      details: errorDetails,
+      type: error?.name || 'UnknownError'
+    }, {status:500});
+  }
 }
 

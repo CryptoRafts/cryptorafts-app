@@ -22,12 +22,12 @@ export default function WhitepaperPage() {
 
           <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
             <a
-              href="/api/documents/CRYPTORAFTS%20WHITE%20PAPER%20.pdf"
+              href="/CRYPTORAFTS%20WHITE%20PAPER%20.pdf"
               className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-lg font-semibold hover:from-cyan-400 hover:to-blue-500 transition-all shadow-lg shadow-cyan-500/30"
               target="_blank"
               rel="noopener noreferrer"
             >
-              Download PDF
+              Open PDF in New Tab
             </a>
             <Link
               href="/signup"
@@ -35,6 +35,22 @@ export default function WhitepaperPage() {
             >
               Join Cryptorafts
             </Link>
+          </div>
+          
+          {/* Embedded PDF Viewer */}
+          <div className="mt-12 neo-glass-card rounded-2xl p-4 border border-white/10">
+            <iframe
+              src="/CRYPTORAFTS%20WHITE%20PAPER%20.pdf"
+              className="w-full h-[800px] rounded-lg border-0"
+              title="Cryptorafts White Paper"
+              allow="fullscreen"
+              onError={(e) => {
+                console.error('PDF iframe error:', e);
+              }}
+            />
+            <p className="text-white/60 text-sm mt-2 text-center">
+              If the PDF doesn't load, <a href="/CRYPTORAFTS%20WHITE%20PAPER%20.pdf" target="_blank" className="text-cyan-400 hover:underline">click here to open it directly</a>
+            </p>
           </div>
         </div>
 
@@ -238,12 +254,12 @@ export default function WhitepaperPage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a
-                href="/api/documents/CRYPTORAFTS%20WHITE%20PAPER%20.pdf"
+                href="/CRYPTORAFTS%20WHITE%20PAPER%20.pdf"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-lg font-semibold hover:from-cyan-400 hover:to-blue-500 transition-all"
               >
-                Open White Paper (PDF)
+                Open PDF in New Tab
               </a>
               <Link
                 href="/contact"

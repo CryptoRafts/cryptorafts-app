@@ -5,6 +5,7 @@ import { db } from '@/lib/firebase.client';
 import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, orderBy, where } from 'firebase/firestore';
 import { useAuth } from '@/providers/SimpleAuthProvider';
 import { NeonCyanIcon } from '@/components/icons/NeonCyanIcon';
+import { safeToDate } from '@/lib/firebase-utils';
 
 interface Spotlight {
   id: string;
@@ -61,11 +62,36 @@ export default function SpotlightManager({ className = '' }: SpotlightManagerPro
         const q = query(spotlightsRef, orderBy('priority', 'desc'), orderBy('createdAt', 'desc'));
         const snapshot = await getDocs(q);
         
+        // Safe date conversion helper
+        const safeToDate = (timestamp: any): Date => {
+          if (!timestamp) return new Date();
+          if (timestamp.toDate && typeof timestamp.toDate === 'function') {
+            return timestamp.toDate();
+          }
+          if (timestamp.toMillis && typeof timestamp.toMillis === 'function') {
+            return new Date(timestamp.toMillis());
+          }
+          if (timestamp.seconds && typeof timestamp.seconds === 'number') {
+            return new Date(timestamp.seconds * 1000);
+          }
+          if (timestamp instanceof Date) {
+            return timestamp;
+          }
+          if (typeof timestamp === 'number') {
+            return new Date(timestamp);
+          }
+          try {
+            return new Date(timestamp);
+          } catch {
+            return new Date();
+          }
+        };
+        
         const spotlightsData = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
-          createdAt: doc.data().createdAt?.toDate() || new Date(),
-          updatedAt: doc.data().updatedAt?.toDate() || new Date()
+          createdAt: safeToDate(doc.data().createdAt),
+          updatedAt: safeToDate(doc.data().updatedAt)
         })) as Spotlight[];
         
         setSpotlights(spotlightsData);
@@ -124,8 +150,8 @@ export default function SpotlightManager({ className = '' }: SpotlightManagerPro
       const spotlightsData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate() || new Date(),
-        updatedAt: doc.data().updatedAt?.toDate() || new Date()
+          createdAt: safeToDate(doc.data().createdAt),
+          updatedAt: safeToDate(doc.data().updatedAt)
       })) as Spotlight[];
       setSpotlights(spotlightsData);
     } catch (error) {

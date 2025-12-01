@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/providers/SimpleAuthProvider';
 import { ensureDb, waitForFirebase, createSnapshotErrorHandler } from '@/lib/firebase-utils';
@@ -64,6 +64,7 @@ export default function InfluencerDealflowPage() {
     audit: null as boolean | null,
     raftaiRating: [] as string[]
   });
+  const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
 
   // Check KYC status
   useEffect(() => {
@@ -254,21 +255,44 @@ export default function InfluencerDealflowPage() {
     return status === 'rejected' || reviewStatus === 'rejected';
   });
 
-  const filteredProjects = useMemo(() => {
+  // Use useMemo to create stable filter keys (create copies to avoid mutating original arrays)
+  const filterKeys = useMemo(() => ({
+    stage: [...filters.stage].sort().join(','),
+    sector: [...filters.sector].sort().join(','),
+    chain: [...filters.chain].sort().join(','),
+    geography: [...filters.geography].sort().join(','),
+    raftaiRating: [...filters.raftaiRating].sort().join(','),
+  }), [filters.stage, filters.sector, filters.chain, filters.geography, filters.raftaiRating]);
+
+  // Filter projects in useEffect with stable dependencies
+  useEffect(() => {
     try {
-      if (!projects || projects.length === 0) return [];
+      if (!projects || !Array.isArray(projects) || projects.length === 0) {
+        setFilteredProjects([]);
+        return;
+      }
       
-      return projects.filter(project => {
+      const searchLower = searchQuery ? searchQuery.toLowerCase().trim() : '';
+      const hasStageFilter = filters.stage.length > 0;
+      const hasSectorFilter = filters.sector.length > 0;
+      const hasChainFilter = filters.chain.length > 0;
+      const hasGeographyFilter = filters.geography.length > 0;
+      const hasDoxxedFilter = filters.doxxed !== null;
+      const hasAuditFilter = filters.audit !== null;
+      const hasRaftaiFilter = filters.raftaiRating.length > 0;
+      
+      const filtered = projects.filter(project => {
+        if (!project) return false;
+        
         // Safely normalize basic string fields
-        const name = typeof project.name === 'string' ? project.name : '';
-        const title = typeof project.title === 'string' ? project.title : '';
-        const description = typeof project.description === 'string' ? project.description : '';
-        const sector = typeof project.sector === 'string' ? project.sector : '';
-        const chain = typeof project.chain === 'string' ? project.chain : '';
+        const name = String(project.name || '');
+        const title = String(project.title || '');
+        const description = String(project.description || '');
+        const sector = String(project.sector || '');
+        const chain = String(project.chain || '');
 
         // Search filter
-        if (searchQuery) {
-          const searchLower = searchQuery.toLowerCase();
+        if (searchLower) {
           const matchesSearch = 
             name.toLowerCase().includes(searchLower) ||
             title.toLowerCase().includes(searchLower) ||
@@ -278,40 +302,40 @@ export default function InfluencerDealflowPage() {
         }
 
         // Stage filter - case-insensitive matching
-        if (filters.stage.length > 0) {
-          const projectStage = typeof project.stage === 'string' ? project.stage.toLowerCase() : '';
-          if (!filters.stage.some(s => projectStage === s.toLowerCase())) {
+        if (hasStageFilter) {
+          const projectStage = String(project.stage || '').toLowerCase();
+          if (!filters.stage.some(s => projectStage === String(s).toLowerCase())) {
             return false;
           }
         }
 
         // Sector filter - case-insensitive matching
-        if (filters.sector.length > 0) {
+        if (hasSectorFilter) {
           const projectSector = sector.toLowerCase();
-          if (!filters.sector.some(s => projectSector === s.toLowerCase())) {
+          if (!filters.sector.some(s => projectSector === String(s).toLowerCase())) {
             return false;
           }
         }
 
         // Chain filter - case-insensitive matching
-        if (filters.chain.length > 0) {
+        if (hasChainFilter) {
           const projectChain = chain.toLowerCase();
-          if (!filters.chain.some(c => projectChain === c.toLowerCase())) {
+          if (!filters.chain.some(c => projectChain === String(c).toLowerCase())) {
             return false;
           }
         }
 
         // Geography filter - partial matching
-        if (filters.geography.length > 0) {
+        if (hasGeographyFilter) {
           const geoSource = (project as any).geography || (project as any).location || '';
-          const projectGeo = typeof geoSource === 'string' ? geoSource.toLowerCase() : '';
-          if (!filters.geography.some(g => projectGeo.includes(g.toLowerCase()))) {
+          const projectGeo = String(geoSource).toLowerCase();
+          if (!filters.geography.some(g => projectGeo.includes(String(g).toLowerCase()))) {
             return false;
           }
         }
 
         // Doxxed filter - check multiple fields
-        if (filters.doxxed !== null) {
+        if (hasDoxxedFilter) {
           const team = (project as any).team;
           const hasDoxxedTeamMember = Array.isArray(team) && team.some((m: any) => m?.doxxed === true);
           const isDoxxed = project.isDoxxed || project.badges?.doxxed || hasDoxxedTeamMember || false;
@@ -321,7 +345,7 @@ export default function InfluencerDealflowPage() {
         }
 
         // Audit filter - check multiple fields
-        if (filters.audit !== null) {
+        if (hasAuditFilter) {
           const auditInfo = (project as any).audit;
           const isAudited = project.isAudited || project.badges?.audit || auditInfo?.completed || false;
           if (isAudited !== filters.audit) {
@@ -330,8 +354,8 @@ export default function InfluencerDealflowPage() {
         }
 
         // RaftAI rating filter
-        if (filters.raftaiRating.length > 0) {
-          const rating = project.raftai?.rating || '';
+        if (hasRaftaiFilter) {
+          const rating = String(project.raftai?.rating || '');
           if (!filters.raftaiRating.includes(rating)) {
             return false;
           }
@@ -339,21 +363,22 @@ export default function InfluencerDealflowPage() {
 
         return true;
       });
+      
+      setFilteredProjects(filtered);
     } catch (err) {
-      console.error('❌ [INFLUENCER-DEALFLOW] Error in filteredProjects useMemo:', err);
-      // Fail-safe: if something goes wrong, return the unfiltered list so the page still renders
-      return projects || [];
+      console.error('❌ [INFLUENCER-DEALFLOW] Error in filteredProjects useEffect:', err);
+      setFilteredProjects([]);
     }
   }, [
     projects,
     searchQuery,
-    filters.stage,
-    filters.sector,
-    filters.chain,
-    filters.geography,
+    filterKeys.stage,
+    filterKeys.sector,
+    filterKeys.chain,
+    filterKeys.geography,
     filters.doxxed,
     filters.audit,
-    filters.raftaiRating,
+    filterKeys.raftaiRating,
   ]);
 
   return (

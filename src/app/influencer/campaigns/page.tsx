@@ -442,11 +442,15 @@ export default function InfluencerCampaigns() {
                       <div className="flex items-center justify-between">
                         <span className="text-gray-400 text-sm">Start Date</span>
                         <span className="text-gray-300 text-sm">
-                          {campaign.startDate?.seconds 
+                          {campaign.startDate?.toMillis 
+                            ? new Date(campaign.startDate.toMillis()).toLocaleDateString()
+                            : campaign.startDate?.seconds 
                             ? new Date(campaign.startDate.seconds * 1000).toLocaleDateString()
-                            : campaign.startDate?.toDate 
-                            ? campaign.startDate.toDate().toLocaleDateString()
-                            : new Date(campaign.startDate).toLocaleDateString()}
+                            : campaign.startDate instanceof Date
+                            ? campaign.startDate.toLocaleDateString()
+                            : campaign.startDate
+                            ? new Date(campaign.startDate).toLocaleDateString()
+                            : 'N/A'}
                         </span>
                       </div>
                     )}
@@ -455,11 +459,15 @@ export default function InfluencerCampaigns() {
                       <div className="flex items-center justify-between">
                         <span className="text-gray-400 text-sm">End Date</span>
                         <span className="text-gray-300 text-sm">
-                          {campaign.endDate?.seconds 
+                          {campaign.endDate?.toMillis 
+                            ? new Date(campaign.endDate.toMillis()).toLocaleDateString()
+                            : campaign.endDate?.seconds 
                             ? new Date(campaign.endDate.seconds * 1000).toLocaleDateString()
-                            : campaign.endDate?.toDate 
-                            ? campaign.endDate.toDate().toLocaleDateString()
-                            : new Date(campaign.endDate).toLocaleDateString()}
+                            : campaign.endDate instanceof Date
+                            ? campaign.endDate.toLocaleDateString()
+                            : campaign.endDate
+                            ? new Date(campaign.endDate).toLocaleDateString()
+                            : 'N/A'}
                         </span>
                       </div>
                     )}

@@ -135,7 +135,8 @@ export default function InfluencerProjectDetailPage() {
       if (response.ok) {
         const data = await response.json();
         alert('Campaign accepted! Chat room created.');
-        router.push(`/influencer/messages?room=${data.chatId || data.roomId || data.roomUrl || `deal_${project.founderId}_${user.uid}_${projectId}`}`);
+        const roomId = data.chatId || data.roomId || `deal_${project.founderId}_${user.uid}_${projectId}`;
+        router.push(`/influencer/messages?room=${roomId}`);
       } else {
         const errorData = await response.json().catch(() => ({}));
         const errorMessage = errorData.details 

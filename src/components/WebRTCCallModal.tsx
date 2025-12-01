@@ -60,13 +60,25 @@ export default function WebRTCCallModal({
   const [raftaiAnalyzing, setRaftaiAnalyzing] = useState(false);
   const [remoteVideoVisible, setRemoteVideoVisible] = useState(false);
   
-  // RaftAI real-time detection
+  // CRITICAL: Use refs for RaftAI detection to prevent video re-renders
+  // State updates from AI detection should NOT trigger video element re-renders
+  const raftaiDetectionRef = useRef<{
+    isReal: boolean;
+    confidence: number;
+    aiDetected: boolean;
+    lastUpdate: number;
+  } | null>(null);
+  
+  // RaftAI real-time detection (for UI display only - updates don't affect video)
   const [raftaiDetection, setRaftaiDetection] = useState<{
     isReal: boolean;
     confidence: number;
     aiDetected: boolean;
     lastUpdate: number;
   } | null>(null);
+  
+  // CRITICAL: Track if remote stream has been attached to prevent re-attachment
+  const remoteStreamAttachedRef = useRef(false);
   
   // Active speaker detection
   const [activeSpeaker, setActiveSpeaker] = useState<'local' | 'remote' | null>(null);
@@ -262,12 +274,12 @@ export default function WebRTCCallModal({
   }, []);
 
   // CRITICAL: Ensure all UI elements are visible on mobile AND desktop when call connects
-  // This runs continuously to prevent elements from disappearing
+  // This runs ONCE on mount and when call state changes to prevent blinking
   useEffect(() => {
     // Only run if call is active (not ended)
     if (callEndedRef.current) return;
     
-    // Force all UI elements to be visible on mobile AND desktop
+    // Force all UI elements to be visible on mobile AND desktop - RUN ONCE to prevent blinking
     const ensureUIVisible = () => {
       // Skip if call has ended
       if (callEndedRef.current) return;
@@ -506,45 +518,24 @@ export default function WebRTCCallModal({
     const timeout3 = setTimeout(ensureUIVisible, 200);
     const timeout4 = setTimeout(ensureUIVisible, 500);
     
-    // CRITICAL FIX: Only run periodically if needed, and check before applying styles to prevent layout shifts
-    // Reduced frequency to prevent "moving up and down" issue
-    let lastCheckTime = 0;
-    const interval = setInterval(() => {
-      // Only check every 2 seconds to prevent excessive reflows
-      const now = Date.now();
-      if (now - lastCheckTime < 2000) return;
-      lastCheckTime = now;
-      
-      // Only run if call is still active
-      if (callEndedRef.current) {
-        clearInterval(interval);
-        return;
-      }
-      
-      // Only update if elements are actually hidden (prevent unnecessary style changes)
-      const backButton = document.querySelector('[aria-label="Back to Chat"]') as HTMLElement;
-      const needsUpdate = backButton && (
-        backButton.style.display === 'none' || 
-        backButton.style.visibility === 'hidden' ||
-        backButton.style.opacity === '0'
-      );
-      
-      if (needsUpdate) {
-        ensureUIVisible();
-      }
-    }, 2000); // Reduced from 200ms to 2000ms to prevent layout shifts
+    // CRITICAL FIX: Disable periodic checks to prevent blinking - only run on mount and state changes
+    // Removed setInterval to prevent repeated style updates that cause blinking
     
     return () => {
       clearTimeout(timeout1);
       clearTimeout(timeout2);
       clearTimeout(timeout3);
       clearTimeout(timeout4);
-      clearInterval(interval);
     };
   }, [callState, enableRaftAI, raftaiDetection, isVideoOff]);
 
-  // Monitor remote video element and force visibility when stream is available
+  // CRITICAL: DISABLED - Continuous monitoring causes blinking and re-renders
+  // Video element styles are locked after initial setup and should never be updated
+  // This useEffect is disabled to prevent video element re-renders
   useEffect(() => {
+    // DISABLED: No continuous monitoring - video styles are locked after initial setup
+    return;
+    
     if (!remoteVideoRef.current) return;
     
     const video = remoteVideoRef.current;
@@ -721,119 +712,14 @@ export default function WebRTCCallModal({
     return () => clearInterval(checkInterval);
   }, [callState, remoteVideoVisible]);
 
-  // CRITICAL: Aggressive video black screen fix - continuously monitor and force video to display
-  useEffect(() => {
-    if (callState !== 'connected' || callEndedRef.current) return;
-    
-    const fixBlackScreen = () => {
-      if (callEndedRef.current) return;
-      
-      const video = remoteVideoRef.current;
-      if (!video) return;
-      
-      const stream = video.srcObject as MediaStream;
-      if (!stream) return;
-      
-      const videoTracks = stream.getVideoTracks();
-      const hasVideoTrack = videoTracks.length > 0 && videoTracks[0]?.readyState === 'live';
-      
-      if (!hasVideoTrack) return;
-      
-      // CRITICAL: Check if video is actually rendering (not black screen)
-      // If video has stream but is paused or not visible, force it to play and be visible
-      const isBlackScreen = (
-        video.paused || 
-        video.readyState < 2 || 
-        video.style.opacity === '0' || 
-        video.style.visibility === 'hidden' || 
-        video.style.display === 'none' ||
-        video.clientWidth === 0 ||
-        video.clientHeight === 0
-      );
-      
-      if (isBlackScreen) {
-        console.log('🔧 [WebRTC Call] Black screen detected, fixing...', {
-          paused: video.paused,
-          readyState: video.readyState,
-          opacity: video.style.opacity,
-          visibility: video.style.visibility,
-          display: video.style.display,
-          clientWidth: video.clientWidth,
-          clientHeight: video.clientHeight
-        });
-        
-        // CRITICAL: Force all visibility styles
-        video.style.cssText = `
-          display: block !important;
-          visibility: visible !important;
-          opacity: 1 !important;
-          z-index: 9999 !important;
-          position: absolute !important;
-          top: 0 !important;
-          left: 0 !important;
-          right: 0 !important;
-          bottom: 0 !important;
-          width: 100% !important;
-          height: 100% !important;
-          min-width: 100% !important;
-          min-height: 100% !important;
-          max-width: 100% !important;
-          max-height: 100% !important;
-          object-fit: cover !important;
-          object-position: center !important;
-          background-color: #000000 !important;
-          pointer-events: auto !important;
-          transform: translateZ(0) !important;
-          -webkit-transform: translateZ(0) !important;
-        `;
-        
-        // CRITICAL: Ensure video container is visible
-        const container = video.parentElement;
-        if (container) {
-          container.style.cssText = `
-            position: relative !important;
-            width: 100% !important;
-            height: 100% !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            background-color: #000000 !important;
-            z-index: 10 !important;
-            overflow: hidden !important;
-            visibility: visible !important;
-            opacity: 1 !important;
-          `;
-        }
-        
-        // CRITICAL: Force play if paused
-        if (video.paused) {
-          safePlay(video, 'black-screen-fix').then(() => {
-            console.log('✅ [WebRTC Call] Video playing after black screen fix');
-            setRemoteVideoVisible(true);
-          }).catch((err) => {
-            console.warn('⚠️ [WebRTC Call] Failed to play video in black screen fix:', err);
-            // Retry after delay
-            setTimeout(() => {
-              if (video && !callEndedRef.current && video.paused) {
-                safePlay(video, 'black-screen-fix-retry').catch(() => {});
-              }
-            }, 500);
-          });
-        } else {
-          // Video is playing but might not be visible - ensure visibility
-          setRemoteVideoVisible(true);
-        }
-      }
-    };
-    
-    // Check immediately
-    fixBlackScreen();
-    
-    // Check every 500ms for black screen
-    const blackScreenInterval = setInterval(fixBlackScreen, 500);
-    
-    return () => clearInterval(blackScreenInterval);
-  }, [callState, remoteVideoVisible]);
+  // CRITICAL: DISABLED - Continuous black screen monitoring causes blinking and re-renders
+  // Video element styles are locked after initial setup in onRemoteStream handler
+  // This useEffect is disabled to prevent video element re-renders
+  // useEffect(() => {
+  //   // DISABLED: No continuous monitoring - video styles are locked after initial setup
+  //   // The onRemoteStream handler sets up the video element correctly once
+  //   return;
+  // }, [callState, remoteVideoVisible]);
 
   useEffect(() => {
     // Prevent duplicate initialization (React 18 Strict Mode)
@@ -909,19 +795,59 @@ export default function WebRTCCallModal({
         audioTracks: stream.getAudioTracks().length
       });
 
-      // Always show local video in the PiP window
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = stream;
-        localVideoRef.current.style.display = 'block';
-        localVideoRef.current.style.visibility = 'visible';
-        localVideoRef.current.style.opacity = '1';
-        localVideoRef.current.style.width = '100%';
-        localVideoRef.current.style.height = '100%';
-        localVideoRef.current.style.objectFit = 'cover';
-        localVideoRef.current.style.objectPosition = 'center';
-        localVideoRef.current.play().catch(err => {
-          console.log('⚠️ [WebRTC Call] Local stream autoplay blocked:', err);
-        });
+      // Always show local video in the PiP window - FORCE VISIBILITY
+      if (localVideoRef.current && type === 'video') {
+        const video = localVideoRef.current;
+        const container = video.parentElement;
+        
+        // CRITICAL: Force container visibility FIRST
+        if (container) {
+          container.style.cssText = `
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            position: absolute !important;
+            top: 16px !important;
+            right: 16px !important;
+            z-index: 80 !important;
+            pointer-events: auto !important;
+            transition: none !important;
+            animation: none !important;
+            width: clamp(120px, 25vw, 320px) !important;
+            height: clamp(90px, 18.75vw, 240px) !important;
+          `;
+        }
+        
+        // CRITICAL: Set all attributes FIRST
+        video.setAttribute('playsinline', 'true');
+        video.setAttribute('webkit-playsinline', 'true');
+        video.setAttribute('x5-playsinline', 'true');
+        video.setAttribute('x5-video-player-type', 'h5');
+        video.setAttribute('x5-video-player-fullscreen', 'true');
+        
+        // CRITICAL: Set styles BEFORE srcObject to prevent blinking
+        video.style.cssText = `
+          display: block !important;
+          visibility: visible !important;
+          opacity: ${isVideoOff ? '0.3' : '1'} !important;
+          width: 100% !important;
+          height: 100% !important;
+          object-fit: cover !important;
+          object-position: center !important;
+          position: relative !important;
+          z-index: 1 !important;
+          transform: translateZ(0) !important;
+          -webkit-transform: translateZ(0) !important;
+          transition: none !important;
+          animation: none !important;
+        `;
+        
+        // NOW set srcObject
+        video.srcObject = stream;
+        video.muted = true; // Always mute local video
+        
+        // CRITICAL: Force play immediately
+        safePlay(video, 'onLocalStream').catch(() => {});
       }
 
       // CRITICAL: Use local video as a temporary full‑screen preview until remote video arrives
@@ -986,6 +912,22 @@ export default function WebRTCCallModal({
         return;
       }
       
+      // CRITICAL: Prevent re-attaching stream if already attached (prevents black screen and blinking)
+      if (remoteStreamAttachedRef.current && remoteVideoRef.current?.srcObject) {
+        const existingStream = remoteVideoRef.current.srcObject as MediaStream;
+        const existingTracks = existingStream.getTracks();
+        const newTracks = stream.getTracks();
+        
+        // Check if it's the same stream (same track IDs)
+        const isSameStream = existingTracks.length === newTracks.length &&
+          existingTracks.every(et => newTracks.some(nt => nt.id === et.id));
+        
+        if (isSameStream) {
+          console.log('📹 [WebRTC Call] Stream already attached, skipping re-attachment (prevents blinking)');
+          return;
+        }
+      }
+      
       console.log('📹 [WebRTC Call] Remote stream received', {
         isInitiator,
         callState,
@@ -1010,22 +952,38 @@ export default function WebRTCCallModal({
             // Re-trigger the stream setup by calling the callback logic directly
             const videoElement = remoteVideoRef.current;
             if (videoElement) {
-              videoElement.srcObject = stream;
-              videoElement.muted = false;
-              videoElement.volume = 1.0;
-              videoElement.style.display = 'block';
-              videoElement.style.visibility = 'visible';
-              videoElement.style.opacity = '1';
-              videoElement.style.width = '100%';
-              videoElement.style.height = '100%';
-              videoElement.style.minWidth = '100%';
-              videoElement.style.minHeight = '100%';
-              videoElement.style.maxWidth = '100%';
-              videoElement.style.maxHeight = '100%';
-              videoElement.style.objectFit = 'cover';
-              videoElement.style.objectPosition = 'center';
-              setRemoteVideoVisible(true);
-              safePlay(videoElement, 'retry-after-ref-ready').catch(() => {});
+          // CRITICAL: Mark as attached BEFORE setting to prevent re-attachment
+          remoteStreamAttachedRef.current = true;
+          videoElement.srcObject = stream;
+          videoElement.muted = false;
+          videoElement.volume = 1.0;
+          // CRITICAL: Lock styles - set once and never update again (prevents blinking)
+          videoElement.style.cssText = `
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            width: 100% !important;
+            height: 100% !important;
+            min-width: 100% !important;
+            min-height: 100% !important;
+            max-width: 100% !important;
+            max-height: 100% !important;
+            object-fit: cover !important;
+            object-position: center !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            z-index: 20 !important;
+            background-color: #000000 !important;
+            transition: none !important;
+            animation: none !important;
+            filter: none !important;
+            -webkit-filter: none !important;
+          `;
+          setRemoteVideoVisible(true);
+          safePlay(videoElement, 'retry-after-ref-ready').catch(() => {});
             }
           }
         }, 100);
@@ -1282,6 +1240,9 @@ export default function WebRTCCallModal({
         trackStates: stream.getTracks().map(t => ({ kind: t.kind, id: t.id, enabled: t.enabled, readyState: t.readyState }))
       });
       
+      // CRITICAL: Mark stream as attached BEFORE setting srcObject to prevent re-attachment
+      remoteStreamAttachedRef.current = true;
+      
       // CRITICAL: Set all styles and attributes BEFORE setting srcObject for mobile compatibility
       // Mobile browsers require this order to properly display video
       
@@ -1295,11 +1256,12 @@ export default function WebRTCCallModal({
       
       // CRITICAL: Set all styles BEFORE setting srcObject for mobile compatibility
       // Use cssText with !important to override any conflicting styles on mobile
+      // CRITICAL: Lock styles to prevent re-renders - NO transitions, animations, or filters
       videoElement.style.cssText = `
         display: block !important;
         visibility: visible !important;
         opacity: 1 !important;
-        z-index: 9999 !important;
+        z-index: 20 !important;
         position: absolute !important;
         top: 0 !important;
         left: 0 !important;
@@ -1318,21 +1280,33 @@ export default function WebRTCCallModal({
         transform: translateZ(0) !important;
         -webkit-transform: translateZ(0) !important;
         will-change: auto !important;
+        transition: none !important;
+        animation: none !important;
+        filter: none !important;
+        -webkit-filter: none !important;
       `;
       
       // CRITICAL: Also ensure parent container is properly styled BEFORE setting stream
+      // CRITICAL: Use STRETCH instead of CENTER to fill entire container - NO BLACK AREAS
       const container = videoElement.parentElement;
       if (container) {
         container.style.cssText = `
           position: relative !important;
           width: 100% !important;
           height: 100% !important;
+          min-width: 100% !important;
+          min-height: 100% !important;
+          max-width: 100% !important;
+          max-height: 100% !important;
           display: flex !important;
-          align-items: center !important;
-          justify-content: center !important;
+          align-items: stretch !important;
+          justify-content: stretch !important;
           background-color: #000000 !important;
           z-index: 10 !important;
           overflow: hidden !important;
+          box-sizing: border-box !important;
+          margin: 0 !important;
+          padding: 0 !important;
         `;
       }
       
@@ -1375,7 +1349,9 @@ export default function WebRTCCallModal({
           }
         }, 10);
       } else {
-        // Set stream immediately if no previous stream
+        // CRITICAL: Set stream immediately if no previous stream - ONLY ONCE
+        // Mark as attached BEFORE setting to prevent re-attachment
+        remoteStreamAttachedRef.current = true;
         videoElement.srcObject = stream;
         
         // CRITICAL: For mobile, we need to trigger play immediately with user interaction context
@@ -1503,19 +1479,24 @@ export default function WebRTCCallModal({
           will-change: auto !important;
         `;
         
-        // CRITICAL: Ensure parent container is also properly styled
+        // CRITICAL: Ensure parent container fills ENTIRE space - NO BLACK AREAS
         const container = video.parentElement;
         if (container) {
           container.style.cssText = `
             position: relative !important;
             width: 100% !important;
             height: 100% !important;
+            min-height: 100% !important;
+            max-height: 100% !important;
             display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
+            align-items: stretch !important;
+            justify-content: stretch !important;
             background-color: #000000 !important;
             z-index: 10 !important;
             overflow: hidden !important;
+            box-sizing: border-box !important;
+            margin: 0 !important;
+            padding: 0 !important;
           `;
         }
         
@@ -1724,6 +1705,8 @@ export default function WebRTCCallModal({
           }
           
           if (shouldUpdateStream) {
+            // CRITICAL: Mark as attached BEFORE setting to prevent re-attachment
+            remoteStreamAttachedRef.current = true;
             currentVideoElement.srcObject = stream;
             // CRITICAL: Ensure video element is NOT muted so audio plays
             currentVideoElement.muted = false;
@@ -1902,12 +1885,24 @@ export default function WebRTCCallModal({
                                         frame.authenticityScore < 0.5 ||
                                         (!hasBlink && !hasMicroMovements && !naturalMovement);
                       
-                      setRaftaiDetection({
+                      // CRITICAL: Update ref first (doesn't trigger re-render)
+                      raftaiDetectionRef.current = {
                         isReal,
                         confidence: frame.authenticityScore * 100,
                         aiDetected,
                         lastUpdate: frame.timestamp
-                      });
+                      };
+                      
+                      // CRITICAL: Only update state if value changed significantly (throttle to prevent re-renders)
+                      const current = raftaiDetection;
+                      const shouldUpdate = !current || 
+                        current.isReal !== isReal || 
+                        current.aiDetected !== aiDetected ||
+                        Math.abs(current.confidence - (frame.authenticityScore * 100)) > 5; // Only update if confidence changed by >5%
+                      
+                      if (shouldUpdate) {
+                        setRaftaiDetection(raftaiDetectionRef.current);
+                      }
                       
                       // If AI detected, show warning and reduce bitrate
                       if (aiDetected && webrtcManagerRef.current) {
@@ -1948,12 +1943,31 @@ export default function WebRTCCallModal({
                   if (stream && stream.getVideoTracks().length > 0 && !actualStream) {
                     // The callback stream has video tracks but video element has no stream - attach it!
                     console.log('🔧 [WebRTC Call] Callback stream has video tracks, attaching to video element');
+                    // CRITICAL: Mark as attached BEFORE setting to prevent re-attachment
+                    remoteStreamAttachedRef.current = true;
                     video.srcObject = stream;
                     video.muted = false;
                     video.volume = 1.0;
-                    video.style.display = 'block';
-                    video.style.visibility = 'visible';
-                    video.style.opacity = '1';
+                    // CRITICAL: Lock styles - set once and never update again (prevents blinking)
+                    video.style.cssText = `
+                      display: block !important;
+                      visibility: visible !important;
+                      opacity: 1 !important;
+                      width: 100% !important;
+                      height: 100% !important;
+                      object-fit: cover !important;
+                      position: absolute !important;
+                      top: 0 !important;
+                      left: 0 !important;
+                      right: 0 !important;
+                      bottom: 0 !important;
+                      z-index: 20 !important;
+                      background-color: #000000 !important;
+                      transition: none !important;
+                      animation: none !important;
+                      filter: none !important;
+                      -webkit-filter: none !important;
+                    `;
                     setRemoteVideoVisible(true);
                     safePlay(video, 'waitForDimensions').catch(() => {});
                     // Retry immediately with the new stream
@@ -2861,17 +2875,19 @@ export default function WebRTCCallModal({
           }
         }
 
-        // Determine active speaker (threshold: 10)
-        if (pinnedParticipant) {
-          // If someone is pinned, they're always the active speaker
-          setActiveSpeaker(pinnedParticipant);
-        } else if (localLevel > remoteLevel + 5) {
-          setActiveSpeaker('local');
-        } else if (remoteLevel > localLevel + 5) {
-          setActiveSpeaker('remote');
-        } else {
-          // Similar levels or both quiet
-          setActiveSpeaker(null);
+        // CRITICAL: Throttle active speaker updates to prevent re-renders
+        // Only update if speaker actually changed
+        const newActiveSpeaker = pinnedParticipant 
+          ? pinnedParticipant
+          : localLevel > remoteLevel + 5 
+            ? 'local' 
+            : remoteLevel > localLevel + 5 
+              ? 'remote' 
+              : null;
+        
+        // Only update state if speaker actually changed (prevents unnecessary re-renders)
+        if (newActiveSpeaker !== activeSpeaker) {
+          setActiveSpeaker(newActiveSpeaker);
         }
       } catch (error) {
         console.warn('⚠️ [WebRTC Call] Error monitoring audio levels:', error);
@@ -4076,30 +4092,36 @@ export default function WebRTCCallModal({
         boxSizing: 'border-box'
       }}
     >
-      {/* Video Container - Zoom/Meet-like fixed layout - NO SCROLL - Perfect fit */}
-      {/* CRITICAL: Use calc with dvh for mobile and vh for desktop - video area = viewport - control bar height */}
+      {/* Video Container - Zoom/Meet-like fixed layout - NO SCROLL - Perfect fit - FULL SCREEN */}
+      {/* CRITICAL: Video container must fill ENTIRE available space - no black areas */}
       <div 
         className="relative bg-black"
         style={{ 
           width: '100%',
           flex: '1 1 auto',
           minHeight: 0, // Critical for flex children to shrink
-          // Use dvh for mobile (accounts for browser chrome), vh for desktop
-          // CRITICAL: Minimize control bar space - video should take maximum screen (like Zoom/Meet)
-          maxHeight: 'calc(100dvh - 80px)', // Minimal control bar - maximum video space
-          height: 'calc(100dvh - 80px)', // Explicit height to prevent stretching
+          // CRITICAL: Use 100% of available viewport minus control bar - NO BLACK SPACE
+          height: 'calc(100dvh - 80px)', // Full height minus control bar
+          maxHeight: 'calc(100dvh - 80px)', // Ensure it doesn't exceed
+          minHeight: 'calc(100dvh - 80px)', // Ensure it fills minimum space
           overflow: 'hidden',
           position: 'relative',
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+          alignItems: 'stretch', // CRITICAL: Stretch to fill container
+          justifyContent: 'stretch', // CRITICAL: Stretch to fill container
           backgroundColor: '#000000', // CRITICAL: Black background to prevent white flash
-          zIndex: 10
+          zIndex: 10,
+          // CRITICAL: Ensure container fills all available space
+          boxSizing: 'border-box',
+          margin: 0,
+          padding: 0
         }}
       >
         {/* Remote Video (Full Screen) - Zoom/Meet-like centered and fitted - NO STRETCH */}
         {/* CRITICAL: Ensure video is always visible when stream exists - prevents black screen */}
+        {/* CRITICAL: Use key to prevent re-mounting - stable video element */}
         <video
+          key={`remote-video-${callId}`}
           ref={remoteVideoRef}
           autoPlay
           playsInline
@@ -4115,32 +4137,41 @@ export default function WebRTCCallModal({
           disablePictureInPicture={true} // CRITICAL: Prevent PiP on mobile
           disableRemotePlayback={true} // CRITICAL: Prevent remote playback issues
           style={{ 
-            zIndex: 9999, // CRITICAL: Very high z-index to ensure video is on top
+            zIndex: 20, // BELOW PiP (z-index 80) - Google Meet/Zoom style
             backgroundColor: '#000000', // Black background to prevent white flash
-            display: 'block',
-            visibility: 'visible',
-            opacity: 1, // Always fully opaque when stream exists - prevents black screen
+            display: 'block !important',
+            visibility: 'visible !important',
+            opacity: '1 !important', // Always fully opaque when stream exists - prevents black screen
             pointerEvents: 'auto',
             position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
+            top: '0',
+            left: '0',
+            right: '0',
+            bottom: '0',
             width: '100%',
             height: '100%',
             minWidth: '100%',
             minHeight: '100%',
             maxWidth: '100%',
             maxHeight: '100%',
-            objectFit: 'cover', // CRITICAL: Fill container while maintaining aspect ratio - NO STRETCH
+            objectFit: 'cover', // CRITICAL: Fill container while maintaining aspect ratio - 16:9 cropped if needed
             objectPosition: 'center',
-            // CRITICAL: Ensure video always fills container
+            // CRITICAL: Ensure video always fills container - NO BLACK SPACE
             flexShrink: 0,
             flexGrow: 1,
             // CRITICAL: Additional mobile-specific styles
             WebkitTransform: 'translateZ(0)', // Force hardware acceleration
             transform: 'translateZ(0)', // Force hardware acceleration
-            willChange: 'auto' // Prevent browser optimizations that might hide video
+            willChange: 'auto', // Prevent browser optimizations that might hide video
+            // CRITICAL: Force video to fill entire container
+            boxSizing: 'border-box',
+            margin: 0,
+            padding: 0,
+            // CRITICAL: Disable ALL transitions and animations to prevent flickering
+            transition: 'none !important',
+            animation: 'none !important',
+            filter: 'none !important', // CRITICAL: No CSS filters on video
+            WebkitFilter: 'none !important' // CRITICAL: No CSS filters on video
           }}
           onLoadedMetadata={() => {
             console.log('✅ [WebRTC Call] Remote video metadata loaded', {
@@ -4201,11 +4232,15 @@ export default function WebRTCCallModal({
                 object-fit: cover !important;
                 object-position: center !important;
                 background-color: #000000 !important;
-                z-index: 9999 !important;
+                z-index: 20 !important;
                 pointer-events: auto !important;
                 transform: translateZ(0) !important;
                 -webkit-transform: translateZ(0) !important;
                 will-change: auto !important;
+                transition: none !important;
+                animation: none !important;
+                filter: none !important;
+                -webkit-filter: none !important;
               `;
               
               // CRITICAL: Force video to play immediately on desktop AND mobile
@@ -4244,19 +4279,24 @@ export default function WebRTCCallModal({
                 console.log('⏳ [WebRTC Call] Video dimensions not yet available (normal for WebRTC), waiting for frames...');
               }
               
-              // CRITICAL: Force video container to be visible on mobile
+              // CRITICAL: Force video container to be visible and fill ENTIRE space - NO BLACK AREAS
               const videoContainer = video.parentElement;
               if (videoContainer) {
                 videoContainer.style.cssText = `
                   position: relative !important;
                   width: 100% !important;
                   height: 100% !important;
+                  min-height: 100% !important;
+                  max-height: 100% !important;
                   display: flex !important;
-                  align-items: center !important;
-                  justify-content: center !important;
+                  align-items: stretch !important;
+                  justify-content: stretch !important;
                   background-color: #000000 !important;
                   z-index: 10 !important;
                   overflow: hidden !important;
+                  box-sizing: border-box !important;
+                  margin: 0 !important;
+                  padding: 0 !important;
                 `;
               }
               
@@ -4293,7 +4333,7 @@ export default function WebRTCCallModal({
                   display: block !important;
                   visibility: visible !important;
                   opacity: 1 !important;
-                  z-index: 9999 !important;
+                  z-index: 20 !important;
                   position: absolute !important;
                   top: 0 !important;
                   left: 0 !important;
@@ -4311,6 +4351,10 @@ export default function WebRTCCallModal({
                   transform: translateZ(0) !important;
                   -webkit-transform: translateZ(0) !important;
                   pointer-events: auto !important;
+                  transition: none !important;
+                  animation: none !important;
+                  filter: none !important;
+                  -webkit-filter: none !important;
                 `;
                 
                 // CRITICAL: Force play again on desktop if still paused
@@ -4338,7 +4382,7 @@ export default function WebRTCCallModal({
                         display: block !important;
                         visibility: visible !important;
                         opacity: 1 !important;
-                        z-index: 9999 !important;
+                        z-index: 20 !important;
                         position: absolute !important;
                         top: 0 !important;
                         left: 0 !important;
@@ -4350,6 +4394,10 @@ export default function WebRTCCallModal({
                         background-color: #000000 !important;
                         transform: translateZ(0) !important;
                         -webkit-transform: translateZ(0) !important;
+                        transition: none !important;
+                        animation: none !important;
+                        filter: none !important;
+                        -webkit-filter: none !important;
                       `;
                       // Try play again
                       safePlay(retryVideo, 'onLoadedMetadata-retry').then(() => {
@@ -4399,7 +4447,7 @@ export default function WebRTCCallModal({
                 min-height: 100% !important;
                 max-width: 100% !important;
                 max-height: 100% !important;
-                z-index: 9999 !important;
+                z-index: 20 !important;
                 background-color: #000000 !important;
                 pointer-events: auto !important;
                 transform: translateZ(0) !important;
@@ -4407,22 +4455,31 @@ export default function WebRTCCallModal({
                 will-change: auto !important;
                 object-fit: cover !important;
                 object-position: center !important;
+                transition: none !important;
+                animation: none !important;
+                filter: none !important;
+                -webkit-filter: none !important;
               `;
               setRemoteVideoVisible(true);
               
-              // CRITICAL: Force video container to be visible on mobile AND desktop
+              // CRITICAL: Force video container to be visible and fill ENTIRE space - NO BLACK AREAS
               const videoContainer = video.parentElement;
               if (videoContainer) {
                 videoContainer.style.cssText = `
                   position: relative !important;
                   width: 100% !important;
                   height: 100% !important;
+                  min-height: 100% !important;
+                  max-height: 100% !important;
                   display: flex !important;
-                  align-items: center !important;
-                  justify-content: center !important;
+                  align-items: stretch !important;
+                  justify-content: stretch !important;
                   background-color: #000000 !important;
                   z-index: 10 !important;
                   overflow: hidden !important;
+                  box-sizing: border-box !important;
+                  margin: 0 !important;
+                  padding: 0 !important;
                 `;
               }
               
@@ -4465,6 +4522,10 @@ export default function WebRTCCallModal({
                       height: 100% !important;
                       object-fit: cover !important;
                       background-color: #000000 !important;
+                      transition: none !important;
+                      animation: none !important;
+                      filter: none !important;
+                      -webkit-filter: none !important;
                     `;
                     setRemoteVideoVisible(true);
                   }
@@ -4489,7 +4550,7 @@ export default function WebRTCCallModal({
                 display: block !important;
                 visibility: visible !important;
                 opacity: 1 !important;
-                z-index: 9999 !important;
+                z-index: 20 !important;
                 position: absolute !important;
                 top: 0 !important;
                 left: 0 !important;
@@ -4507,24 +4568,33 @@ export default function WebRTCCallModal({
                 pointer-events: auto !important;
                 transform: translateZ(0) !important;
                 -webkit-transform: translateZ(0) !important;
+                transition: none !important;
+                animation: none !important;
+                filter: none !important;
+                -webkit-filter: none !important;
               `;
               setRemoteVideoVisible(true);
               
-              // CRITICAL: Ensure video container is also visible (desktop refresh fix)
+              // CRITICAL: Ensure video container is visible and fills ENTIRE space - NO BLACK AREAS
               const container = video.parentElement;
               if (container) {
                 container.style.cssText = `
                   position: relative !important;
                   width: 100% !important;
                   height: 100% !important;
+                  min-height: 100% !important;
+                  max-height: 100% !important;
                   display: flex !important;
-                  align-items: center !important;
-                  justify-content: center !important;
+                  align-items: stretch !important;
+                  justify-content: stretch !important;
                   background-color: #000000 !important;
                   z-index: 10 !important;
                   overflow: hidden !important;
                   visibility: visible !important;
                   opacity: 1 !important;
+                  box-sizing: border-box !important;
+                  margin: 0 !important;
+                  padding: 0 !important;
                 `;
               }
               
@@ -4585,34 +4655,38 @@ export default function WebRTCCallModal({
           }}
         />
         
-        {/* RaftAI Real-Time Detection Badge - Top Middle (Centered) - Fixed Alignment - Always Visible - Mobile Optimized */}
+        {/* RaftAI Real-Time Detection Badge - Top Middle (Centered) - BELOW video area - Fixed Alignment - Always Visible - Mobile Optimized */}
         {/* CRITICAL: Always show RaftAI badge when call is connected, even if detection is null (shows "Verifying" state) */}
+        {/* CRITICAL: Positioned BELOW video to avoid interference - Google Meet/Zoom style */}
         {enableRaftAI && type === 'video' && (callState === 'connected' || callState === 'connecting') && (
           <div 
-            className="absolute top-4 left-1/2 transform -translate-x-1/2 z-[100] bg-black/95 backdrop-blur-md rounded-lg px-3 py-2 border-2 shadow-lg transition-all duration-300"
+            className="absolute top-4 left-1/2 transform -translate-x-1/2 z-[100] bg-black/95 backdrop-blur-md rounded-lg px-3 py-2 border-2 shadow-lg"
             style={{
               borderColor: raftaiDetection?.aiDetected ? '#ef4444' : raftaiDetection?.isReal ? '#10b981' : '#f59e0b',
-              animation: 'none', // CRITICAL: Disable pulse animation to prevent blinking
+              animation: 'none !important', // CRITICAL: Disable ALL animations to prevent blinking
+              transition: 'none !important', // CRITICAL: Disable ALL transitions
               boxShadow: raftaiDetection?.aiDetected 
                 ? '0 0 20px rgba(239, 68, 68, 0.5)' 
                 : raftaiDetection?.isReal 
                   ? '0 0 20px rgba(16, 185, 129, 0.5)' 
                   : '0 0 20px rgba(245, 158, 11, 0.5)',
-              display: 'flex',
+              display: 'flex !important',
               alignItems: 'center',
               justifyContent: 'center',
               minWidth: 'fit-content',
               whiteSpace: 'nowrap',
-              transform: 'translateX(-50%)',
-              visibility: 'visible',
-              opacity: 1,
-              pointerEvents: 'auto',
+              transform: 'translateX(-50%) translateZ(0)',
+              visibility: 'visible !important',
+              opacity: '1 !important',
+              pointerEvents: 'auto !important',
               // CRITICAL: Hardware acceleration for smoother rendering
               willChange: 'transform',
               backfaceVisibility: 'hidden',
-              // CRITICAL: Ensure it's always on top
-              position: 'absolute',
-              zIndex: 100,
+              // CRITICAL: Ensure it's always on top - FORCE VISIBILITY
+              position: 'absolute !important',
+              zIndex: '100 !important',
+              top: '16px !important',
+              left: '50% !important',
               // CRITICAL: Mobile-specific styles to ensure visibility
               WebkitTransform: 'translateX(-50%) translateZ(0)',
               WebkitBackfaceVisibility: 'hidden',
@@ -4620,7 +4694,7 @@ export default function WebRTCCallModal({
               WebkitAppearance: 'none',
               appearance: 'none',
               // CRITICAL: Ensure text is visible on mobile
-              color: '#ffffff',
+              color: '#ffffff !important',
               textShadow: '0 1px 2px rgba(0, 0, 0, 0.8)'
             }}
             role="status"
@@ -4650,11 +4724,25 @@ export default function WebRTCCallModal({
           </div>
         )}
         
-        {/* Active Speaker Indicator - Only show when not pinned */}
+        {/* Active Speaker Indicator - Only show when not pinned - Positioned below RaftAI to prevent overlap */}
+        {/* CRITICAL: Positioned BELOW video area to avoid interference - Google Meet/Zoom style */}
         {callState === 'connected' && activeSpeaker && !pinnedParticipant && (
           <div 
-            className="absolute top-20 sm:top-4 left-1/2 transform -translate-x-1/2 z-40 bg-cyan-500/90 backdrop-blur-md rounded-full px-4 py-2 border-2 border-cyan-400 shadow-lg"
-            style={{ animation: 'none' }}
+            className="absolute top-20 sm:top-20 left-1/2 transform -translate-x-1/2 z-[95] bg-cyan-500/90 backdrop-blur-md rounded-full px-4 py-2 border-2 border-cyan-400 shadow-lg"
+            style={{ 
+              animation: 'none !important', // CRITICAL: Disable ALL animations
+              transition: 'none !important', // CRITICAL: Disable ALL transitions
+              display: 'flex !important',
+              visibility: 'visible !important',
+              opacity: '1 !important',
+              position: 'absolute !important',
+              top: '80px !important', // Position below RaftAI badge
+              left: '50% !important',
+              transform: 'translateX(-50%) translateZ(0) !important',
+              zIndex: '95 !important',
+              pointerEvents: 'auto !important',
+              willChange: 'transform'
+            }}
             role="status"
             aria-live="polite"
           >
@@ -4778,47 +4866,51 @@ export default function WebRTCCallModal({
           </div>
         )}
 
-        {/* Local Video (Picture-in-Picture) - Zoom/Meet-like layout - Always visible - No Overlap - Mobile Optimized */}
+        {/* Local Video (Picture-in-Picture) - Google Meet/Zoom style - BOTTOM-RIGHT thumbnail - Always visible - No Overlap */}
         {type === 'video' && (
           <div 
-            className="absolute top-4 right-4 sm:top-4 sm:right-4 bg-gray-900/95 backdrop-blur-md rounded-xl overflow-hidden shadow-2xl border-2 border-cyan-500/40 z-[80] transition-all hover:scale-105"
+            className="absolute bottom-20 right-4 sm:bottom-20 sm:right-4 bg-gray-900/95 backdrop-blur-md rounded-xl overflow-hidden shadow-2xl border-2 border-cyan-500/40 z-[80]"
             style={{
-              width: 'clamp(120px, 25vw, 320px)', // Larger on mobile for better visibility
-              height: 'clamp(90px, 18.75vw, 240px)', // Maintain 16:9 aspect ratio
+              // CRITICAL: Google Meet/Zoom style - SMALL thumbnail in bottom-right corner
+              width: 'clamp(120px, 20vw, 240px)', // Google Meet style size
+              height: 'clamp(90px, 15vw, 180px)', // Maintain 16:9 aspect ratio
               aspectRatio: '16/9',
-              maxWidth: '100%',
-              maxHeight: '100%',
-              // CRITICAL: Ensure it's always visible on mobile AND desktop
-              display: 'block',
-              visibility: 'visible',
-              opacity: 1,
-              pointerEvents: 'auto',
-              position: 'absolute',
-              zIndex: 80,
-              // Adjust position to avoid overlap with RaftAI badge
-              marginTop: enableRaftAI && raftaiDetection ? '40px' : '0',
+              maxWidth: '240px', // Maximum width for PiP
+              maxHeight: '180px', // Maximum height for PiP
+              // CRITICAL: Ensure it's always visible on mobile AND desktop - FORCE VISIBILITY
+              display: 'block !important',
+              visibility: 'visible !important',
+              opacity: '1 !important',
+              pointerEvents: 'auto !important',
+              position: 'absolute !important',
+              bottom: '100px !important', // Position above control bar (80px + 20px gap)
+              right: '16px !important',
+              zIndex: '80 !important',
               // CRITICAL: Mobile-specific styles to ensure visibility
               WebkitTransform: 'translateZ(0)',
               transform: 'translateZ(0)',
               willChange: 'transform',
               WebkitBackfaceVisibility: 'hidden',
-              backfaceVisibility: 'hidden'
+              backfaceVisibility: 'hidden',
+              transition: 'none', // Disable transitions to prevent blinking
+              animation: 'none' // Disable animations
             }}
           >
             <video
+              key={`local-video-${callId}`}
               ref={localVideoRef}
               autoPlay
               playsInline
               muted
               className="w-full h-full object-cover mirror"
               style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                objectPosition: 'center',
-                display: 'block',
-                visibility: 'visible',
-                opacity: isVideoOff ? '0.3' : '1',
+                width: '100% !important',
+                height: '100% !important',
+                objectFit: 'cover !important',
+                objectPosition: 'center !important',
+                display: 'block !important',
+                visibility: 'visible !important',
+                opacity: isVideoOff ? '0.3' : '1 !important',
                 // CRITICAL: Mobile-specific styles to ensure visibility
                 WebkitTransform: 'translateZ(0)',
                 transform: 'translateZ(0)',
@@ -4826,7 +4918,11 @@ export default function WebRTCCallModal({
                 backfaceVisibility: 'hidden',
                 willChange: 'transform',
                 position: 'relative',
-                zIndex: 1
+                zIndex: '1 !important',
+                transition: 'none !important', // CRITICAL: Disable ALL transitions to prevent blinking
+                animation: 'none !important', // CRITICAL: Disable ALL animations
+                filter: 'none !important', // CRITICAL: No CSS filters on video
+                WebkitFilter: 'none !important' // CRITICAL: No CSS filters on video
               }}
               onLoadedMetadata={() => {
                 if (localVideoRef.current) {
@@ -4997,7 +5093,7 @@ export default function WebRTCCallModal({
         {/* Back to Chat Button - Top Left - Fixed Alignment - Always visible - No Overlap - Mobile Optimized */}
         <button
           onClick={endCall}
-          className="absolute top-4 left-4 z-[100] bg-gray-900/90 hover:bg-gray-800/95 backdrop-blur-md rounded-lg px-3 py-2 sm:px-4 sm:py-2 border-2 border-cyan-500/40 shadow-lg shadow-cyan-500/20 flex items-center gap-2 transition-all hover:scale-105 touch-manipulation min-w-[44px] min-h-[44px]"
+              className="absolute top-4 left-4 z-[100] bg-gray-900/90 hover:bg-gray-800/95 backdrop-blur-md rounded-lg px-3 py-2 sm:px-4 sm:py-2 border-2 border-cyan-500/40 shadow-lg shadow-cyan-500/20 flex items-center gap-2 touch-manipulation min-w-[44px] min-h-[44px]"
           style={{
             // CRITICAL: Hardware acceleration for smoother rendering
             transform: 'translateZ(0)',
@@ -5006,13 +5102,15 @@ export default function WebRTCCallModal({
             // CRITICAL: Ensure no overlap with other elements
             marginRight: 'auto',
             marginBottom: 'auto',
-            // CRITICAL: Always visible on mobile AND desktop
-            display: 'flex',
-            visibility: 'visible',
-            opacity: 1,
-            pointerEvents: 'auto',
-            position: 'absolute',
-            zIndex: 100,
+            // CRITICAL: Always visible on mobile AND desktop - FORCE VISIBILITY
+            display: 'flex !important',
+            visibility: 'visible !important',
+            opacity: '1 !important',
+            pointerEvents: 'auto !important',
+            position: 'absolute !important',
+            zIndex: '100 !important',
+            top: '16px !important',
+            left: '16px !important',
             // CRITICAL: Mobile-specific styles to ensure visibility
             WebkitTransform: 'translateZ(0)',
             WebkitBackfaceVisibility: 'hidden',
@@ -5023,8 +5121,8 @@ export default function WebRTCCallModal({
           title="Back to Chat"
           aria-label="Back to Chat"
         >
-          <ArrowLeftIcon className="w-5 h-5 sm:w-6 sm:h-6 text-white" style={{ display: 'block', visibility: 'visible', opacity: 1 }} />
-          <span className="text-white text-xs sm:text-sm font-medium hidden sm:inline" style={{ display: 'block', visibility: 'visible', opacity: 1 }}>Back</span>
+          <ArrowLeftIcon className="w-5 h-5 sm:w-6 sm:h-6 text-white" style={{ display: 'block !important', visibility: 'visible !important', opacity: '1 !important' }} />
+          <span className="text-white text-xs sm:text-sm font-medium hidden sm:inline" style={{ display: 'block !important', visibility: 'visible !important', opacity: '1 !important' }}>Back</span>
         </button>
 
         {/* Call Info Overlay - Fixed Alignment - Below Back Button - No Overlap - Always Visible - Mobile Optimized */}
@@ -5094,17 +5192,17 @@ export default function WebRTCCallModal({
           minHeight: 'fit-content',
           maxHeight: '80px', // CRITICAL: Ultra compact - maximum video space (like Zoom/Meet)
           overflow: 'visible',
-          // CRITICAL: Fixed position at bottom to prevent movement
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          width: '100%',
-          zIndex: 1000,
-          display: 'flex',
-          visibility: 'visible',
-          opacity: 1,
-          pointerEvents: 'auto',
+          // CRITICAL: Fixed position at bottom to prevent movement - FORCE VISIBILITY
+          position: 'fixed !important',
+          bottom: '0 !important',
+          left: '0 !important',
+          right: '0 !important',
+          width: '100% !important',
+          zIndex: '10000 !important', // CRITICAL: Higher z-index to ensure it's always on top
+          display: 'flex !important',
+          visibility: 'visible !important',
+          opacity: '1 !important',
+          pointerEvents: 'auto !important',
           transition: 'none',
           animation: 'none',
           transform: 'translateZ(0)',
@@ -5115,39 +5213,55 @@ export default function WebRTCCallModal({
       >
         <div className="max-w-2xl mx-auto">
           {/* Control Buttons - Responsive for mobile - Horizontal on desktop, centered on mobile - Ultra Compact */}
-          <div className="flex flex-row items-center justify-center gap-2 sm:gap-3 mb-1 flex-wrap w-full">
+          <div className="flex flex-row items-center justify-center gap-2 sm:gap-3 mb-1 flex-wrap w-full" style={{ display: 'flex !important', visibility: 'visible !important', opacity: '1 !important' }}>
             {/* Mute/Unmute - Enhanced - Mobile responsive - Minimum 44px touch target - Ultra Compact */}
             <button
               onClick={toggleMute}
-              className={`group p-2.5 sm:p-3 rounded-full transition-all transform hover:scale-110 active:scale-95 shadow-lg border-2 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center ${
+              className={`group p-2.5 sm:p-3 rounded-full shadow-lg border-2 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center ${
                 isMuted 
                   ? 'bg-red-600/90 hover:bg-red-700 shadow-red-500/50 border-red-400/50' 
                   : 'bg-gray-800/80 hover:bg-gray-700/80 shadow-cyan-500/20 border-cyan-500/30'
               }`}
+              style={{ 
+                display: 'flex !important', 
+                visibility: 'visible !important', 
+                opacity: '1 !important', 
+                pointerEvents: 'auto !important',
+                transition: 'none', // Disable transitions to prevent blinking
+                animation: 'none' // Disable animations
+              }}
               title={isMuted ? 'Unmute Microphone' : 'Mute Microphone'}
               aria-label={isMuted ? 'Unmute Microphone' : 'Mute Microphone'}
               aria-pressed={isMuted}
             >
-              <MicrophoneIcon className={`w-6 h-6 sm:w-7 sm:h-7 text-white transition-all ${isMuted ? 'line-through' : ''}`} />
+              <MicrophoneIcon className={`w-6 h-6 sm:w-7 sm:h-7 text-white ${isMuted ? 'line-through' : ''}`} style={{ display: 'block !important', visibility: 'visible !important', opacity: '1 !important', transition: 'none', animation: 'none' }} />
             </button>
 
             {/* Video Toggle - Enhanced (only for video calls) - Mobile responsive - Minimum 44px touch target - Ultra Compact */}
             {type === 'video' && (
               <button
                 onClick={toggleVideo}
-                className={`group p-2.5 sm:p-3 rounded-full transition-all transform hover:scale-110 active:scale-95 shadow-lg border-2 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center ${
+                className={`group p-2.5 sm:p-3 rounded-full shadow-lg border-2 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center ${
                   isVideoOff 
                     ? 'bg-red-600/90 hover:bg-red-700 shadow-red-500/50 border-red-400/50' 
                     : 'bg-gray-800/80 hover:bg-gray-700/80 shadow-cyan-500/20 border-cyan-500/30'
                 }`}
+                style={{ 
+                  display: 'flex !important', 
+                  visibility: 'visible !important', 
+                  opacity: '1 !important', 
+                  pointerEvents: 'auto !important',
+                  transition: 'none', // Disable transitions to prevent blinking
+                  animation: 'none' // Disable animations
+                }}
                 title={isVideoOff ? 'Turn Camera On' : 'Turn Camera Off'}
                 aria-label={isVideoOff ? 'Turn Camera On' : 'Turn Camera Off'}
                 aria-pressed={isVideoOff}
               >
                 {isVideoOff ? (
-                  <VideoCameraSlashIcon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                  <VideoCameraSlashIcon className="w-6 h-6 sm:w-7 sm:h-7 text-white" style={{ display: 'block !important', visibility: 'visible !important', opacity: '1 !important' }} />
                 ) : (
-                  <VideoCameraIcon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                  <VideoCameraIcon className="w-6 h-6 sm:w-7 sm:h-7 text-white" style={{ display: 'block !important', visibility: 'visible !important', opacity: '1 !important' }} />
                 )}
               </button>
             )}
@@ -5155,29 +5269,45 @@ export default function WebRTCCallModal({
             {/* End Call - Large & Prominent - Mobile responsive - Minimum 44px touch target - Ultra Compact */}
             <button
               onClick={endCall}
-              className="p-3 sm:p-5 bg-gradient-to-br from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-full transition-all transform hover:scale-110 active:scale-95 shadow-2xl shadow-red-500/50 border-2 border-red-400/50 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center"
+              className="p-3 sm:p-5 bg-gradient-to-br from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-full shadow-2xl shadow-red-500/50 border-2 border-red-400/50 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center"
+              style={{ 
+                display: 'flex !important', 
+                visibility: 'visible !important', 
+                opacity: '1 !important', 
+                pointerEvents: 'auto !important',
+                transition: 'none', // Disable transitions to prevent blinking
+                animation: 'none' // Disable animations
+              }}
               title="End Call"
               aria-label="End Call"
             >
-              <PhoneIcon className="w-7 h-7 sm:w-9 sm:h-9 text-white rotate-[135deg]" />
+              <PhoneIcon className="w-7 h-7 sm:w-9 sm:h-9 text-white rotate-[135deg]" style={{ display: 'block !important', visibility: 'visible !important', opacity: '1 !important' }} />
             </button>
 
             {/* Speaker Toggle - Enhanced - Mobile responsive - Minimum 44px touch target - Ultra Compact */}
             <button
               onClick={toggleSpeaker}
-              className={`group p-2.5 sm:p-3 rounded-full transition-all transform hover:scale-110 active:scale-95 shadow-lg border-2 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center ${
+              className={`group p-2.5 sm:p-3 rounded-full shadow-lg border-2 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center ${
                 !isSpeakerOn 
                   ? 'bg-red-600/90 hover:bg-red-700 shadow-red-500/50 border-red-400/50' 
                   : 'bg-gray-800/80 hover:bg-gray-700/80 shadow-cyan-500/20 border-cyan-500/30'
               }`}
+              style={{ 
+                display: 'flex !important', 
+                visibility: 'visible !important', 
+                opacity: '1 !important', 
+                pointerEvents: 'auto !important',
+                transition: 'none', // Disable transitions to prevent blinking
+                animation: 'none' // Disable animations
+              }}
               title={isSpeakerOn ? 'Mute Speaker' : 'Unmute Speaker'}
               aria-label={isSpeakerOn ? 'Mute Speaker' : 'Unmute Speaker'}
               aria-pressed={!isSpeakerOn}
             >
               {isSpeakerOn ? (
-                <SpeakerWaveIcon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                <SpeakerWaveIcon className="w-6 h-6 sm:w-7 sm:h-7 text-white" style={{ display: 'block !important', visibility: 'visible !important', opacity: '1 !important' }} />
               ) : (
-                <SpeakerXMarkIcon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                <SpeakerXMarkIcon className="w-6 h-6 sm:w-7 sm:h-7 text-white" style={{ display: 'block !important', visibility: 'visible !important', opacity: '1 !important' }} />
               )}
             </button>
 
@@ -5461,13 +5591,23 @@ export default function WebRTCCallModal({
             backface-visibility: hidden !important;
           }
           
-          /* Video container height adjustment for mobile - MAXIMUM video space (like Zoom/Meet) */
+          /* Video container height adjustment for mobile - MAXIMUM video space (like Zoom/Meet) - NO BLACK SPACE */
           #webrtc-call-modal > div:first-child {
-            max-height: calc(100dvh - 80px) !important;
             height: calc(100dvh - 80px) !important;
+            min-height: calc(100dvh - 80px) !important;
+            max-height: calc(100dvh - 80px) !important;
             /* iOS Safari */
-            max-height: calc(-webkit-fill-available - 80px) !important;
             height: calc(-webkit-fill-available - 80px) !important;
+            min-height: calc(-webkit-fill-available - 80px) !important;
+            max-height: calc(-webkit-fill-available - 80px) !important;
+            /* CRITICAL: Ensure container fills entire space */
+            width: 100% !important;
+            display: flex !important;
+            align-items: stretch !important;
+            justify-content: stretch !important;
+            box-sizing: border-box !important;
+            margin: 0 !important;
+            padding: 0 !important;
           }
           
           /* Larger touch targets for mobile (minimum 44px) */
@@ -5495,8 +5635,8 @@ export default function WebRTCCallModal({
             flex-wrap: wrap !important;
           }
           
-          /* CRITICAL: Ensure video element is always visible and fills container - Fix mobile black screen */
-          #webrtc-call-modal video {
+          /* CRITICAL: Ensure REMOTE video (main video) is always visible and fills container - BIG like Zoom/Meet */
+          #webrtc-call-modal video:not(.mirror) {
             display: block !important;
             visibility: visible !important;
             opacity: 1 !important;
@@ -5514,7 +5654,7 @@ export default function WebRTCCallModal({
             left: 0 !important;
             right: 0 !important;
             bottom: 0 !important;
-            z-index: 20 !important;
+            z-index: 20 !important; /* BELOW PiP (z-index 80) */
             pointer-events: auto !important;
             /* CRITICAL: Force video to render on mobile */
             -webkit-transform: translateZ(0) !important;
@@ -5524,7 +5664,7 @@ export default function WebRTCCallModal({
             will-change: transform !important;
           }
           
-          /* CRITICAL: Ensure video container is visible and has proper dimensions */
+          /* CRITICAL: Ensure video container is visible and fills ENTIRE space - NO BLACK AREAS */
           #webrtc-call-modal > div:first-child {
             display: flex !important;
             visibility: visible !important;
@@ -5532,9 +5672,15 @@ export default function WebRTCCallModal({
             background-color: #000000 !important;
             position: relative !important;
             width: 100% !important;
-            height: 100% !important;
-            min-height: 100% !important;
+            height: calc(100dvh - 80px) !important;
+            min-height: calc(100dvh - 80px) !important;
+            max-height: calc(100dvh - 80px) !important;
             overflow: hidden !important;
+            align-items: stretch !important;
+            justify-content: stretch !important;
+            box-sizing: border-box !important;
+            margin: 0 !important;
+            padding: 0 !important;
           }
           
           /* CRITICAL: Force video stream to be attached and playing */
@@ -5552,7 +5698,7 @@ export default function WebRTCCallModal({
             display: flex !important;
             visibility: visible !important;
             opacity: 1 !important;
-            z-index: 1000 !important;
+            z-index: 10000 !important; /* CRITICAL: Higher z-index to ensure it's always on top */
             position: fixed !important;
             bottom: 0 !important;
             left: 0 !important;
@@ -5564,11 +5710,92 @@ export default function WebRTCCallModal({
           }
           
           /* Ensure control buttons are visible on mobile */
-          #webrtc-call-modal button {
+          #webrtc-call-modal > div:last-child button,
+          #webrtc-call-modal > div:last-child button * {
             display: flex !important;
             visibility: visible !important;
             opacity: 1 !important;
-            background-color: rgba(31, 41, 55, 0.8) !important;
+            pointer-events: auto !important;
+          }
+          
+          /* CRITICAL: Ensure back button is always visible */
+          #webrtc-call-modal button[aria-label="Back to Chat"],
+          #webrtc-call-modal button[aria-label*="Back"] {
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            z-index: 100 !important;
+            position: absolute !important;
+            top: 16px !important;
+            left: 16px !important;
+            pointer-events: auto !important;
+          }
+          
+        /* CRITICAL: Ensure RaftAI badge is always visible - Positioned at top center */
+        #webrtc-call-modal [aria-label*="RaftAI"],
+        #webrtc-call-modal [role="status"][aria-live="polite"][aria-label*="RaftAI"] {
+          display: flex !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+          z-index: 100 !important;
+          position: absolute !important;
+          top: 16px !important;
+          left: 50% !important;
+          transform: translateX(-50%) translateZ(0) !important;
+          pointer-events: auto !important;
+          transition: none !important;
+          animation: none !important;
+        }
+        
+        /* CRITICAL: Ensure Active Speaker Indicator is always visible - Positioned below RaftAI */
+        #webrtc-call-modal [role="status"][aria-live="polite"]:not([aria-label*="RaftAI"]) {
+          display: flex !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+          z-index: 95 !important;
+          position: absolute !important;
+          top: 80px !important;
+          left: 50% !important;
+          transform: translateX(-50%) translateZ(0) !important;
+          pointer-events: auto !important;
+          transition: none !important;
+          animation: none !important;
+        }
+        
+          /* CRITICAL: Ensure local video (PiP) is always visible - Positioned at BOTTOM-RIGHT - Google Meet/Zoom style */
+          #webrtc-call-modal video.mirror {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+            position: relative !important;
+            z-index: 1 !important;
+            transition: none !important;
+            animation: none !important;
+            filter: none !important;
+            -webkit-filter: none !important;
+          }
+          
+          /* CRITICAL: Ensure local video container is always visible - BOTTOM-RIGHT position - Google Meet/Zoom style */
+          #webrtc-call-modal > div:has(video.mirror),
+          #webrtc-call-modal video.mirror + div,
+          #webrtc-call-modal video.mirror ~ div {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            z-index: 80 !important;
+            position: absolute !important;
+            bottom: 100px !important; /* Position above control bar - Google Meet style */
+            right: 16px !important;
+            width: clamp(120px, 20vw, 240px) !important; /* Google Meet style size */
+            height: clamp(90px, 15vw, 180px) !important; /* Google Meet style size */
+            max-width: 240px !important; /* Maximum PiP width */
+            max-height: 180px !important; /* Maximum PiP height */
+            pointer-events: auto !important;
+            transition: none !important;
+            animation: none !important;
           }
           
           /* Hide browser address bar and navigation on mobile */
@@ -5601,10 +5828,18 @@ export default function WebRTCCallModal({
             min-height: 48px;
           }
           
-          /* Video container height for tablet - MAXIMUM video space */
+          /* Video container height for tablet - MAXIMUM video space - NO BLACK SPACE */
           #webrtc-call-modal > div:first-child {
-            max-height: calc(100dvh - 80px) !important;
             height: calc(100dvh - 80px) !important;
+            min-height: calc(100dvh - 80px) !important;
+            max-height: calc(100dvh - 80px) !important;
+            width: 100% !important;
+            display: flex !important;
+            align-items: stretch !important;
+            justify-content: stretch !important;
+            box-sizing: border-box !important;
+            margin: 0 !important;
+            padding: 0 !important;
           }
           
           /* Control bar padding on tablet - ULTRA COMPACT */
@@ -5616,10 +5851,57 @@ export default function WebRTCCallModal({
             left: 0 !important;
             right: 0 !important;
             width: 100% !important;
-            z-index: 1000 !important;
+            z-index: 10000 !important; /* CRITICAL: Higher z-index */
             display: flex !important;
             visibility: visible !important;
             opacity: 1 !important;
+            transition: none !important;
+            animation: none !important;
+          }
+          
+          /* Ensure all buttons are visible on tablet */
+          #webrtc-call-modal > div:last-child button,
+          #webrtc-call-modal > div:last-child button * {
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            pointer-events: auto !important;
+            transition: none !important;
+            animation: none !important;
+          }
+          
+          /* CRITICAL: Ensure local video (PiP) is always visible on tablet - BOTTOM-RIGHT - Google Meet/Zoom style */
+          #webrtc-call-modal video.mirror {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+            position: relative !important;
+            z-index: 1 !important;
+            transition: none !important;
+            animation: none !important;
+            filter: none !important;
+            -webkit-filter: none !important;
+          }
+          
+          /* CRITICAL: Ensure local video container is always visible on tablet - BOTTOM-RIGHT position */
+          #webrtc-call-modal > div:has(video.mirror),
+          #webrtc-call-modal video.mirror + div,
+          #webrtc-call-modal video.mirror ~ div {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            z-index: 80 !important;
+            position: absolute !important;
+            bottom: 100px !important; /* Position above control bar - Google Meet style */
+            right: 16px !important;
+            width: clamp(140px, 22vw, 260px) !important; /* Google Meet style size for tablet */
+            height: clamp(105px, 16.5vw, 195px) !important; /* Google Meet style size for tablet */
+            max-width: 260px !important;
+            max-height: 195px !important;
+            pointer-events: auto !important;
             transition: none !important;
             animation: none !important;
           }
@@ -5634,10 +5916,18 @@ export default function WebRTCCallModal({
             max-height: 100vh !important;
           }
           
-          /* Video container height for desktop - MAXIMUM video space (like Zoom/Meet) */
+          /* Video container height for desktop - MAXIMUM video space (like Zoom/Meet) - NO BLACK SPACE */
           #webrtc-call-modal > div:first-child {
-            max-height: calc(100vh - 80px) !important;
             height: calc(100vh - 80px) !important;
+            min-height: calc(100vh - 80px) !important;
+            max-height: calc(100vh - 80px) !important;
+            width: 100% !important;
+            display: flex !important;
+            align-items: stretch !important;
+            justify-content: stretch !important;
+            box-sizing: border-box !important;
+            margin: 0 !important;
+            padding: 0 !important;
           }
           
           /* Control bar padding on desktop - ULTRA COMPACT */
@@ -5649,7 +5939,7 @@ export default function WebRTCCallModal({
             left: 0 !important;
             right: 0 !important;
             width: 100% !important;
-            z-index: 1000 !important;
+            z-index: 10000 !important; /* CRITICAL: Higher z-index */
             display: flex !important;
             visibility: visible !important;
             opacity: 1 !important;
@@ -5657,8 +5947,97 @@ export default function WebRTCCallModal({
             animation: none !important;
           }
           
-          /* Ensure video displays properly on desktop */
-          #webrtc-call-modal video {
+          /* Ensure all buttons are visible on desktop */
+          #webrtc-call-modal > div:last-child button,
+          #webrtc-call-modal > div:last-child button * {
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            pointer-events: auto !important;
+          }
+          
+          /* CRITICAL: Ensure back button is always visible on desktop */
+          #webrtc-call-modal button[aria-label="Back to Chat"],
+          #webrtc-call-modal button[aria-label*="Back"] {
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            z-index: 100 !important;
+            position: absolute !important;
+            top: 16px !important;
+            left: 16px !important;
+            pointer-events: auto !important;
+          }
+          
+          /* CRITICAL: Ensure RaftAI badge is always visible on desktop - Positioned at top center */
+          #webrtc-call-modal [aria-label*="RaftAI"],
+          #webrtc-call-modal [role="status"][aria-live="polite"][aria-label*="RaftAI"] {
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            z-index: 100 !important;
+            position: absolute !important;
+            top: 16px !important;
+            left: 50% !important;
+            transform: translateX(-50%) translateZ(0) !important;
+            pointer-events: auto !important;
+            transition: none !important;
+            animation: none !important;
+          }
+          
+          /* CRITICAL: Ensure Active Speaker Indicator is always visible on desktop - Positioned below RaftAI */
+          #webrtc-call-modal [role="status"][aria-live="polite"]:not([aria-label*="RaftAI"]) {
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            z-index: 95 !important;
+            position: absolute !important;
+            top: 80px !important;
+            left: 50% !important;
+            transform: translateX(-50%) translateZ(0) !important;
+            pointer-events: auto !important;
+            transition: none !important;
+            animation: none !important;
+          }
+          
+          /* CRITICAL: Ensure local video (PiP) is always visible on desktop - BOTTOM-RIGHT - Google Meet/Zoom style */
+          #webrtc-call-modal video.mirror {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+            position: relative !important;
+            z-index: 1 !important;
+            transition: none !important;
+            animation: none !important;
+            filter: none !important;
+            -webkit-filter: none !important;
+          }
+          
+          /* CRITICAL: Ensure local video container is always visible on desktop - BOTTOM-RIGHT position - Google Meet/Zoom style */
+          #webrtc-call-modal > div:has(video.mirror),
+          #webrtc-call-modal video.mirror + div,
+          #webrtc-call-modal video.mirror ~ div {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            z-index: 80 !important;
+            position: absolute !important;
+            bottom: 100px !important; /* Position above control bar - Google Meet style */
+            right: 24px !important; /* Slightly more spacing on desktop */
+            width: 240px !important; /* Google Meet style size for desktop */
+            height: 180px !important; /* Google Meet style size for desktop (16:9 aspect ratio) */
+            max-width: 240px !important;
+            max-height: 180px !important;
+            pointer-events: auto !important;
+            transition: none !important;
+            animation: none !important;
+          }
+          
+          /* CRITICAL: Ensure REMOTE video (main video) displays properly on desktop - FILLS ENTIRE SCREEN - 16:9 aspect ratio */
+          #webrtc-call-modal video:not(.mirror) {
             display: block !important;
             visibility: visible !important;
             opacity: 1 !important;
@@ -5668,7 +6047,7 @@ export default function WebRTCCallModal({
             min-height: 100% !important;
             max-width: 100% !important;
             max-height: 100% !important;
-            object-fit: cover !important;
+            object-fit: cover !important; /* CRITICAL: 16:9 aspect ratio, cropped if needed - Google Meet/Zoom style */
             object-position: center !important;
             background-color: #000000 !important;
             position: absolute !important;
@@ -5676,16 +6055,30 @@ export default function WebRTCCallModal({
             left: 0 !important;
             right: 0 !important;
             bottom: 0 !important;
-            z-index: 20 !important;
+            z-index: 20 !important; /* BELOW PiP (z-index 80) */
             pointer-events: auto !important;
+            /* CRITICAL: Disable ALL transitions and animations to prevent flickering */
+            transition: none !important;
+            animation: none !important;
+            filter: none !important;
+            -webkit-filter: none !important;
           }
           
-          /* Ensure video container is visible on desktop */
+          /* Ensure video container is visible and fills ENTIRE space on desktop - NO BLACK AREAS */
           #webrtc-call-modal > div:first-child {
             display: flex !important;
             visibility: visible !important;
             opacity: 1 !important;
             background-color: #000000 !important;
+            height: calc(100vh - 80px) !important;
+            min-height: calc(100vh - 80px) !important;
+            max-height: calc(100vh - 80px) !important;
+            width: 100% !important;
+            align-items: stretch !important;
+            justify-content: stretch !important;
+            box-sizing: border-box !important;
+            margin: 0 !important;
+            padding: 0 !important;
           }
         }
         

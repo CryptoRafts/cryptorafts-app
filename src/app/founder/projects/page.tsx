@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/providers/SimpleAuthProvider';
-import { ensureDb, createSnapshotErrorHandler } from '@/lib/firebase-utils';
+import { ensureDb, createSnapshotErrorHandler, safeToDate } from '@/lib/firebase-utils';
 import { collection, query, where, onSnapshot, orderBy, doc, updateDoc, deleteDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorBoundary from '@/components/ErrorBoundary';
@@ -74,7 +74,7 @@ export default function FounderProjectsPage() {
           const projectsData = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
-            createdAt: doc.data().createdAt?.toDate() || new Date(),
+            createdAt: safeToDate(doc.data().createdAt),
             updatedAt: (doc.data().updatedAt?.toDate && typeof doc.data().updatedAt.toDate === 'function') 
               ? doc.data().updatedAt.toDate() 
               : (doc.data().updatedAt ? new Date(doc.data().updatedAt) : new Date()),
@@ -96,7 +96,7 @@ export default function FounderProjectsPage() {
                   const projectsData = snapshot.docs.map(doc => ({
                     id: doc.id,
                     ...doc.data(),
-                    createdAt: doc.data().createdAt?.toDate() || new Date(),
+                    createdAt: safeToDate(doc.data().createdAt),
                     updatedAt: (doc.data().updatedAt?.toDate && typeof doc.data().updatedAt.toDate === 'function') 
               ? doc.data().updatedAt.toDate() 
               : (doc.data().updatedAt ? new Date(doc.data().updatedAt) : new Date()),

@@ -22,6 +22,7 @@ import {
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from './firebase.client';
+import { safeToDate } from './firebase-utils';
 
 // ===========================
 // TYPE DEFINITIONS
@@ -260,8 +261,8 @@ class BlogService {
       let posts = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate() || new Date(),
-        updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+        createdAt: safeToDate(doc.data().createdAt),
+        updatedAt: safeToDate(doc.data().updatedAt),
       })) as BlogPost[];
 
       // Apply search filter if provided
@@ -333,8 +334,8 @@ class BlogService {
       return {
         id: doc.id,
         ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate() || new Date(),
-        updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+        createdAt: safeToDate(doc.data().createdAt),
+        updatedAt: safeToDate(doc.data().updatedAt),
       } as BlogPost;
     } catch (error) {
       console.error('❌ Error getting blog post by slug:', error);

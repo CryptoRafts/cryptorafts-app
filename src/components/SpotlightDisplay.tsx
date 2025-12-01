@@ -90,6 +90,32 @@ const SpotlightDisplay = React.memo(function SpotlightDisplay({
           const data = doc.data();
           // Check both isActive and status fields from Firestore
           const isActive = data.isActive !== undefined ? data.isActive : (data.status === 'active');
+          
+          // Safe date conversion helper
+          const safeToDate = (timestamp: any): Date => {
+            if (!timestamp) return new Date();
+            if (timestamp.toDate && typeof timestamp.toDate === 'function') {
+              return timestamp.toDate();
+            }
+            if (timestamp.toMillis && typeof timestamp.toMillis === 'function') {
+              return new Date(timestamp.toMillis());
+            }
+            if (timestamp.seconds && typeof timestamp.seconds === 'number') {
+              return new Date(timestamp.seconds * 1000);
+            }
+            if (timestamp instanceof Date) {
+              return timestamp;
+            }
+            if (typeof timestamp === 'number') {
+              return new Date(timestamp);
+            }
+            try {
+              return new Date(timestamp);
+            } catch {
+              return new Date();
+            }
+          };
+          
           return {
             id: doc.id,
             title: data.title || 'Untitled Spotlight',
@@ -98,8 +124,8 @@ const SpotlightDisplay = React.memo(function SpotlightDisplay({
             link: data.link || '/projects',
             priority: data.priority || 0,
             isActive: isActive,
-            createdAt: data.createdAt?.toDate() || new Date(),
-            updatedAt: data.updatedAt?.toDate() || new Date(),
+            createdAt: safeToDate(data.createdAt),
+            updatedAt: safeToDate(data.updatedAt),
             createdBy: data.createdBy || 'admin'
           };
         }) as Spotlight[];

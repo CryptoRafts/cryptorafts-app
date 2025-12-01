@@ -9,6 +9,7 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import RoleAnalytics from '@/components/RoleAnalytics';
 import { NeonCyanIcon } from '@/components/icons/NeonCyanIcon';
+import { extractProjectLogoUrl } from '@/lib/project-utils';
 
 interface Campaign {
   id: string;
