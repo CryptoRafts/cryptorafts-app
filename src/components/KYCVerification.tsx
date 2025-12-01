@@ -1526,12 +1526,16 @@ export default function KYCVerification() {
       if (userRole === 'influencer') {
         const influencerData = verificationData.influencer_info || {};
         
+        // Get wallet address from user profile
+        const walletAddress = profile?.walletAddress || '';
+        
         // Prepare simplified KYC data for influencers
         kycData = {
           status: pendingStatus,
           riskScore: 50, // Default score for simplified KYC
           reasons: ['Simplified influencer verification'],
           confidence: 0.8,
+          walletAddress: walletAddress, // Include wallet address for on-chain storage
           details: {
             email: influencerData.email,
             firstName: influencerData.firstName,
@@ -1541,7 +1545,8 @@ export default function KYCVerification() {
             profilePictureURL: influencerData.profilePictureURL,
             selfieURL: influencerData.selfieURL,
             profilePicture: influencerData.profilePicture,
-            selfie: influencerData.selfie
+            selfie: influencerData.selfie,
+            walletAddress: walletAddress
           },
           // Include document URLs at top level
           profilePictureURL: influencerData.profilePictureURL,
@@ -1625,6 +1630,9 @@ export default function KYCVerification() {
         selfieUrl: selfieUrl || 'EMPTY'
       });
       
+        // Get wallet address from user profile
+        const walletAddress = profile?.walletAddress || '';
+        
         // Prepare KYC data without undefined values
         // CRITICAL: Include both raw objects (for extraction) and extracted URLs (for direct access)
         kycData = {
@@ -1632,6 +1640,7 @@ export default function KYCVerification() {
           riskScore: verificationResult.riskScore,
           reasons: verificationResult.reasons,
           confidence: verificationResult.confidence,
+          walletAddress: walletAddress, // Include wallet address for on-chain storage
           details: {
             ...verificationResult.details,
             // CRITICAL: Preserve raw verification data structure so updateKYCStatus can extract documents
@@ -1652,7 +1661,9 @@ export default function KYCVerification() {
               selfie: selfieUrl
             },
             // Include personal info if available
-            personalInfo: verificationData.personal_info || {}
+            personalInfo: verificationData.personal_info || {},
+            // Include wallet address in details
+            walletAddress: walletAddress
           },
           // Also include document URLs at top level for direct access
           idFrontUrl: idFrontUrl,

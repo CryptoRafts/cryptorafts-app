@@ -8,6 +8,7 @@ import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { UserIcon, EnvelopeIcon, PhoneIcon, BriefcaseIcon, PhotoIcon } from '@heroicons/react/24/outline';
 import Image from 'next/image';
+import BinanceWalletConnect from '@/components/BinanceWalletConnect';
 
 export default function FounderRegisterPage() {
   const { user, isLoading } = useAuth();
@@ -17,6 +18,8 @@ export default function FounderRegisterPage() {
   const [error, setError] = useState('');
   const [photoURL, setPhotoURL] = useState<string>('');
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [walletAddress, setWalletAddress] = useState<string>('');
+  const [showWalletConnect, setShowWalletConnect] = useState(false);
   
   const [formData, setFormData] = useState({
     firstName: '',
@@ -230,10 +233,12 @@ export default function FounderRegisterPage() {
         linkedin: formData.linkedin,
         twitter: formData.twitter,
         website: formData.website,
+        // Wallet address (if connected)
+        walletAddress: walletAddress || '',
         // Status
         profileCompleted: true,
-        onboardingStep: 'kyc',
-        onboarding_state: 'KYC_PENDING',
+        onboardingStep: walletAddress ? 'kyc' : 'wallet',
+        onboarding_state: walletAddress ? 'KYC_PENDING' : 'WALLET_PENDING',
         // KYC/KYB status - set to not_submitted so user can complete KYC
         kycStatus: 'not_submitted',
         kyc_status: 'not_submitted', // Support both naming conventions
@@ -275,6 +280,12 @@ export default function FounderRegisterPage() {
       } catch (error) {
         console.error('❌ Error sending registration confirmation email:', error);
         // Don't block the flow if email fails
+      }
+
+      // If wallet not connected, show wallet connect step
+      if (!walletAddress) {
+        setShowWalletConnect(true);
+        return;
       }
 
       // Redirect to KYC
@@ -527,14 +538,52 @@ export default function FounderRegisterPage() {
               </div>
             </div>
 
+            {/* Wallet Connection Section */}
+            {showWalletConnect && (
+              <div className="bg-white/10 rounded-xl p-6 border border-white/20 backdrop-blur-sm">
+                <h3 className="text-white font-semibold mb-4">Connect Your Wallet</h3>
+                <BinanceWalletConnect
+                  onWalletConnected={async (address) => {
+                    setWalletAddress(address);
+                    // Save wallet address to user profile
+                    try {
+                      const dbInstance = ensureDb();
+                      if (dbInstance && user) {
+                        await setDoc(
+                          doc(dbInstance, 'users', user.uid),
+                          {
+                            walletAddress: address,
+                            onboardingStep: 'kyc',
+                            onboarding_state: 'KYC_PENDING',
+                            updatedAt: new Date()
+                          },
+                          { merge: true }
+                        );
+                      }
+                      // Redirect to KYC after wallet connection
+                      setTimeout(() => {
+                        router.push('/founder/kyc');
+                      }, 1000);
+                    } catch (err) {
+                      console.error('Error saving wallet address:', err);
+                    }
+                  }}
+                  onError={(error) => setError(error)}
+                  required={true}
+                />
+              </div>
+            )}
+
             {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white py-3 px-6 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-            >
-              {submitting ? 'Saving...' : 'Continue to KYC Verification'}
-            </button>
+            {!showWalletConnect && (
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white py-3 px-6 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              >
+                {submitting ? 'Saving...' : walletAddress ? 'Continue to KYC Verification' : 'Save Profile & Connect Wallet'}
+              </button>
+            )}
           </form>
         </div>
       </div>
