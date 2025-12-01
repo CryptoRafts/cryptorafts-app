@@ -233,28 +233,7 @@ export default function InfluencerDealflowPage() {
     };
   }, [user]);
 
-  if (isLoading || loading) {
-    return <LoadingSpinner />;
-  }
-
-  // Calculate stats based on ALL projects (not just filtered ones)
-  const totalProjects = allProjects.length;
-  const approvedProjects = allProjects.filter(p => {
-    const status = (p.status || '').toLowerCase();
-    const reviewStatus = (p.reviewStatus || '').toLowerCase();
-    return status === 'approved' || reviewStatus === 'approved' || p.adminApproved === true || p.adminStatus === 'approved';
-  });
-  const pendingProjects = allProjects.filter(p => {
-    const status = (p.status || '').toLowerCase();
-    const reviewStatus = (p.reviewStatus || '').toLowerCase();
-    return (status === 'pending' || reviewStatus === 'pending') && status !== 'approved' && reviewStatus !== 'approved';
-  });
-  const rejectedProjects = allProjects.filter(p => {
-    const status = (p.status || '').toLowerCase();
-    const reviewStatus = (p.reviewStatus || '').toLowerCase();
-    return status === 'rejected' || reviewStatus === 'rejected';
-  });
-
+  // CRITICAL: All hooks must be called BEFORE any early returns
   // Use useMemo to create stable filter keys (create copies to avoid mutating original arrays)
   const filterKeys = useMemo(() => ({
     stage: [...filters.stage].sort().join(','),
@@ -380,6 +359,29 @@ export default function InfluencerDealflowPage() {
     filters.audit,
     filterKeys.raftaiRating,
   ]);
+
+  // Early return AFTER all hooks
+  if (isLoading || loading) {
+    return <LoadingSpinner />;
+  }
+
+  // Calculate stats based on ALL projects (not just filtered ones)
+  const totalProjects = allProjects.length;
+  const approvedProjects = allProjects.filter(p => {
+    const status = (p.status || '').toLowerCase();
+    const reviewStatus = (p.reviewStatus || '').toLowerCase();
+    return status === 'approved' || reviewStatus === 'approved' || p.adminApproved === true || p.adminStatus === 'approved';
+  });
+  const pendingProjects = allProjects.filter(p => {
+    const status = (p.status || '').toLowerCase();
+    const reviewStatus = (p.reviewStatus || '').toLowerCase();
+    return (status === 'pending' || reviewStatus === 'pending') && status !== 'approved' && reviewStatus !== 'approved';
+  });
+  const rejectedProjects = allProjects.filter(p => {
+    const status = (p.status || '').toLowerCase();
+    const reviewStatus = (p.reviewStatus || '').toLowerCase();
+    return status === 'rejected' || reviewStatus === 'rejected';
+  });
 
   return (
     <ErrorBoundary>

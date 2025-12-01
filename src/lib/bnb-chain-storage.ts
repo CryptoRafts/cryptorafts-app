@@ -15,6 +15,11 @@
 import { getBNBChainRPC, getBNBChainConfig, PRIMARY_BNB_CHAIN } from './bnb-chain';
 import { ethers } from 'ethers';
 import crypto from 'crypto';
+import { 
+  KYC_VERIFICATION_ABI, 
+  KYB_VERIFICATION_ABI, 
+  PROJECT_REGISTRY_ABI 
+} from './contracts/abis';
 
 /**
  * Hash and salt sensitive data for on-chain storage on BNB Chain
@@ -34,15 +39,17 @@ export function hashAndSaltForBNBChain(data: string, salt?: string): { hash: str
 
 /**
  * Store KYC verification hash on BNB Smart Chain
- * @param kycHash - Hashed KYC data
+ * @param kycHash - Hashed KYC data (hex string)
  * @param userId - User ID
  * @param approvalStatus - Approval status
+ * @param signer - Ethers signer (admin wallet) - required for on-chain storage
  * @returns Transaction hash on BNB Chain
  */
 export async function storeKYCOnBNBChain(
   kycHash: string,
   userId: string,
-  approvalStatus: boolean
+  approvalStatus: boolean,
+  signer?: ethers.Signer
 ): Promise<string> {
   // Connect to BNB Smart Chain (BSC)
   const provider = new ethers.JsonRpcProvider(getBNBChainRPC());
@@ -53,28 +60,42 @@ export async function storeKYCOnBNBChain(
     throw new Error('BNB Chain KYC contract address not configured');
   }
 
-  // TODO: Implement smart contract interaction
-  // This will interact with KYCVerification.sol deployed on BNB Smart Chain
-  // const contract = new ethers.Contract(contractAddress, KYC_ABI, signer);
-  // const tx = await contract.storeKYCVerification(userId, kycHash, approvalStatus);
-  // return tx.hash;
+  // If no signer provided, this is a read-only operation
+  if (!signer) {
+    throw new Error('Signer required for on-chain storage. This function must be called from backend with admin wallet.');
+  }
 
-  // Placeholder: Return mock transaction hash
-  // In production, this will be the actual BNB Chain transaction hash
-  return `0x${crypto.randomBytes(32).toString('hex')}`;
+  // Connect signer to BNB Chain network
+  const connectedSigner = signer.connect(provider);
+  
+  // Create contract instance
+  const contract = new ethers.Contract(contractAddress, KYC_VERIFICATION_ABI, connectedSigner);
+  
+  // Convert hash string to bytes32
+  const kycHashBytes32 = ethers.hexlify(ethers.toUtf8Bytes(kycHash.slice(0, 32))).padEnd(66, '0');
+  
+  // Store on BNB Smart Chain
+  const tx = await contract.storeKYCVerification(userId, kycHashBytes32, approvalStatus);
+  
+  // Wait for transaction confirmation
+  await tx.wait();
+  
+  return tx.hash;
 }
 
 /**
  * Store KYB verification hash on BNB Smart Chain
- * @param emailHash - Hashed email address
+ * @param emailHash - Hashed email address (hex string)
  * @param userId - User ID
  * @param approvalStatus - Approval status
+ * @param signer - Ethers signer (admin wallet) - required for on-chain storage
  * @returns Transaction hash on BNB Chain
  */
 export async function storeKYBOnBNBChain(
   emailHash: string,
   userId: string,
-  approvalStatus: boolean
+  approvalStatus: boolean,
+  signer?: ethers.Signer
 ): Promise<string> {
   // Connect to BNB Smart Chain (BSC)
   const provider = new ethers.JsonRpcProvider(getBNBChainRPC());
@@ -85,28 +106,42 @@ export async function storeKYBOnBNBChain(
     throw new Error('BNB Chain KYB contract address not configured');
   }
 
-  // TODO: Implement smart contract interaction
-  // This will interact with KYBVerification.sol deployed on BNB Smart Chain
-  // const contract = new ethers.Contract(contractAddress, KYB_ABI, signer);
-  // const tx = await contract.storeKYBVerification(userId, emailHash, approvalStatus);
-  // return tx.hash;
+  // If no signer provided, this is a read-only operation
+  if (!signer) {
+    throw new Error('Signer required for on-chain storage. This function must be called from backend with admin wallet.');
+  }
 
-  // Placeholder: Return mock transaction hash
-  // In production, this will be the actual BNB Chain transaction hash
-  return `0x${crypto.randomBytes(32).toString('hex')}`;
+  // Connect signer to BNB Chain network
+  const connectedSigner = signer.connect(provider);
+  
+  // Create contract instance
+  const contract = new ethers.Contract(contractAddress, KYB_VERIFICATION_ABI, connectedSigner);
+  
+  // Convert hash string to bytes32
+  const emailHashBytes32 = ethers.hexlify(ethers.toUtf8Bytes(emailHash.slice(0, 32))).padEnd(66, '0');
+  
+  // Store on BNB Smart Chain
+  const tx = await contract.storeKYBVerification(userId, emailHashBytes32, approvalStatus);
+  
+  // Wait for transaction confirmation
+  await tx.wait();
+  
+  return tx.hash;
 }
 
 /**
  * Store project data hash on BNB Smart Chain after successful funding/launch
- * @param projectHash - Hashed project data (pitch, deal flow, etc.)
+ * @param projectHash - Hashed project data (pitch, deal flow, etc.) - hex string
  * @param projectId - Project ID
- * @param launchDate - Confirmed launch date
+ * @param launchDate - Confirmed launch date (Unix timestamp)
+ * @param signer - Ethers signer (admin wallet) - required for on-chain storage
  * @returns Transaction hash on BNB Chain
  */
 export async function storeProjectDataOnBNBChain(
   projectHash: string,
   projectId: string,
-  launchDate: Date
+  launchDate: number | Date,
+  signer?: ethers.Signer
 ): Promise<string> {
   // Connect to BNB Smart Chain (BSC)
   const provider = new ethers.JsonRpcProvider(getBNBChainRPC());
@@ -117,15 +152,32 @@ export async function storeProjectDataOnBNBChain(
     throw new Error('BNB Chain Project Registry contract address not configured');
   }
 
-  // TODO: Implement smart contract interaction
-  // This will interact with ProjectRegistry.sol deployed on BNB Smart Chain
-  // const contract = new ethers.Contract(contractAddress, PROJECT_REGISTRY_ABI, signer);
-  // const tx = await contract.storeProjectData(projectId, projectHash, launchDate);
-  // return tx.hash;
+  // If no signer provided, this is a read-only operation
+  if (!signer) {
+    throw new Error('Signer required for on-chain storage. This function must be called from backend with admin wallet.');
+  }
 
-  // Placeholder: Return mock transaction hash
-  // In production, this will be the actual BNB Chain transaction hash
-  return `0x${crypto.randomBytes(32).toString('hex')}`;
+  // Connect signer to BNB Chain network
+  const connectedSigner = signer.connect(provider);
+  
+  // Create contract instance
+  const contract = new ethers.Contract(contractAddress, PROJECT_REGISTRY_ABI, connectedSigner);
+  
+  // Convert hash string to bytes32
+  const projectHashBytes32 = ethers.hexlify(ethers.toUtf8Bytes(projectHash.slice(0, 32))).padEnd(66, '0');
+  
+  // Convert launch date to Unix timestamp
+  const launchTimestamp = typeof launchDate === 'number' 
+    ? launchDate 
+    : Math.floor(launchDate.getTime() / 1000);
+  
+  // Store on BNB Smart Chain
+  const tx = await contract.storeProjectData(projectId, projectHashBytes32, launchTimestamp);
+  
+  // Wait for transaction confirmation
+  await tx.wait();
+  
+  return tx.hash;
 }
 
 /**

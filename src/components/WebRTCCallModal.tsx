@@ -912,19 +912,55 @@ export default function WebRTCCallModal({
         return;
       }
       
-      // CRITICAL: Prevent re-attaching stream if already attached (prevents black screen and blinking)
-      if (remoteStreamAttachedRef.current && remoteVideoRef.current?.srcObject) {
+      // CRITICAL: Always attach stream if video element has no stream OR if video is not playing/visible
+      // Only skip if it's the EXACT same stream object AND video is playing AND visible
+      if (remoteVideoRef.current?.srcObject) {
         const existingStream = remoteVideoRef.current.srcObject as MediaStream;
-        const existingTracks = existingStream.getTracks();
-        const newTracks = stream.getTracks();
+        const video = remoteVideoRef.current;
         
-        // Check if it's the same stream (same track IDs)
-        const isSameStream = existingTracks.length === newTracks.length &&
-          existingTracks.every(et => newTracks.some(nt => nt.id === et.id));
+        // Check if it's the EXACT same stream object (not just same tracks)
+        const isExactSameStreamObject = existingStream === stream;
         
-        if (isSameStream) {
-          console.log('📹 [WebRTC Call] Stream already attached, skipping re-attachment (prevents blinking)');
+        // Check if video is actually playing and visible
+        const isVideoPlaying = !video.paused && video.readyState >= 2;
+        const isVideoVisible = video.style.opacity !== '0' && 
+                               video.style.visibility !== 'hidden' && 
+                               video.style.display !== 'none';
+        const hasVideoDimensions = video.videoWidth > 0 && video.videoHeight > 0;
+        
+        // Only skip if it's the exact same stream object AND video is playing AND visible AND has dimensions
+        if (isExactSameStreamObject && isVideoPlaying && isVideoVisible && hasVideoDimensions) {
+          console.log('📹 [WebRTC Call] Exact same stream already attached and playing, ensuring visibility');
+          // Still ensure video is visible and playing
+          video.style.cssText = `
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            z-index: 20 !important;
+            background-color: #000000 !important;
+            transition: none !important;
+            animation: none !important;
+            filter: none !important;
+          `;
+          if (video.paused) {
+            safePlay(video, 'existing-stream-ensure-play').catch(() => {});
+          }
           return;
+        }
+        
+        // If it's a different stream OR video isn't playing/visible, always attach
+        if (!isExactSameStreamObject) {
+          console.log('📹 [WebRTC Call] Different stream received, will replace');
+        } else if (!isVideoPlaying || !isVideoVisible || !hasVideoDimensions) {
+          console.log('📹 [WebRTC Call] Stream exists but video not playing/visible, will re-attach');
         }
       }
       
