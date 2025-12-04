@@ -771,23 +771,80 @@ export async function storeKYCOnBNBChain(
       live: callLive.substring(0, 20) + '...'
     });
     
-    // CRITICAL: Use Interface to encode function call manually
-    // This gives us complete control over the encoding and avoids string serialization issues
+    // CRITICAL: Use AbiCoder to encode parameters manually
+    // This gives us complete control and avoids any string serialization issues
+    const abiCoder = new ethers.AbiCoder();
+    
+    // CRITICAL: Ensure all bytes32 values are actual hex strings without any escape sequences
+    // Convert to Uint8Array and back one more time to be absolutely sure
+    const finalizeBytes32 = (hex: string): string => {
+      // Get bytes from hex
+      const bytes = ethers.getBytes(hex);
+      // Convert back - this should be completely clean
+      return ethers.hexlify(bytes);
+    };
+    
+    const encodedFrontId = finalizeBytes32(callFrontId);
+    const encodedBackId = finalizeBytes32(callBackId);
+    const encodedProof = finalizeBytes32(callProof);
+    const encodedLive = finalizeBytes32(callLive);
+    
+    // Validate one more time
+    [encodedFrontId, encodedBackId, encodedProof, encodedLive].forEach((val, idx) => {
+      const names = ['frontId', 'backId', 'proof', 'live'];
+      if (val.length !== 66 || !/^0x[0-9a-f]{64}$/.test(val)) {
+        throw new Error(`Invalid ${names[idx]} after finalization: ${val.substring(0, 20)}...`);
+      }
+      if (val.includes('\\') || val.includes('\r') || val.includes('\n')) {
+        throw new Error(`${names[idx]} contains escape sequences after finalization`);
+      }
+    });
+    
+    console.log('✅ Final bytes32 values after finalization:', {
+      frontId: encodedFrontId.substring(0, 20) + '...',
+      backId: encodedBackId.substring(0, 20) + '...',
+      proof: encodedProof.substring(0, 20) + '...',
+      live: encodedLive.substring(0, 20) + '...'
+    });
+    
+    // Get function selector using Interface
     const contractInterface = new ethers.Interface(KYC_ABI);
+    const functionFragment = contractInterface.getFunction('storeKYCVerification');
+    if (!functionFragment) {
+      throw new Error('Function storeKYCVerification not found in ABI');
+    }
+    
+    // Get function selector (first 4 bytes of keccak256 hash of function signature)
+    const functionSelector = functionFragment.selector;
+    
+    // CRITICAL: Encode parameters using AbiCoder with explicit types
+    // This ensures no string manipulation happens
+    let encodedParams: string;
+    try {
+      encodedParams = abiCoder.encode(
+        ['string', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bool'],
+        [cleanedUserId, encodedFrontId, encodedBackId, encodedProof, encodedLive, approvalStatus]
+      );
+    } catch (encodeError: any) {
+      console.error('❌ AbiCoder.encode failed:', {
+        error: encodeError.message,
+        userId: JSON.stringify(cleanedUserId),
+        frontId: JSON.stringify(encodedFrontId),
+        backId: JSON.stringify(encodedBackId),
+        proof: JSON.stringify(encodedProof),
+        live: JSON.stringify(encodedLive)
+      });
+      throw new Error(`Parameter encoding failed: ${encodeError.message}`);
+    }
+    
+    // Combine function selector with encoded parameters
+    const functionData = functionSelector + encodedParams.slice(2); // Remove 0x from encoded params
+    
+    console.log('✅ Function data encoded successfully, length:', functionData.length);
     
     // CRITICAL: Use try-catch to capture the exact parameter causing the error
     let tx;
     try {
-      // Encode the function call - this handles all parameter encoding internally
-      const functionData = contractInterface.encodeFunctionData('storeKYCVerification', [
-        cleanedUserId,
-        callFrontId,
-        callBackId,
-        callProof,
-        callLive,
-        approvalStatus
-      ]);
-      
       // Send transaction directly using signer - this bypasses Contract object string handling
       tx = await signer.sendTransaction({
         to: contractAddress,
@@ -795,20 +852,18 @@ export async function storeKYCOnBNBChain(
       });
     } catch (contractError: any) {
       // Enhanced error logging to identify which parameter is causing the issue
-      console.error('❌ Contract call failed:', {
+      console.error('❌ Contract transaction failed:', {
         error: contractError.message,
         code: contractError.code,
         argument: contractError.argument,
         value: contractError.value ? JSON.stringify(String(contractError.value).substring(0, 50)) : 'N/A',
         userId: JSON.stringify(cleanedUserId),
-        frontId: JSON.stringify(callFrontId),
-        backId: JSON.stringify(callBackId),
-        proof: JSON.stringify(callProof),
-        live: JSON.stringify(callLive),
-        frontIdHasEscape: callFrontId.includes('\\') || callFrontId.includes('\r') || callFrontId.includes('\n'),
-        backIdHasEscape: callBackId.includes('\\') || callBackId.includes('\r') || callBackId.includes('\n'),
-        proofHasEscape: callProof.includes('\\') || callProof.includes('\r') || callProof.includes('\n'),
-        liveHasEscape: callLive.includes('\\') || callLive.includes('\r') || callLive.includes('\n')
+        frontId: JSON.stringify(encodedFrontId),
+        backId: JSON.stringify(encodedBackId),
+        proof: JSON.stringify(encodedProof),
+        live: JSON.stringify(encodedLive),
+        functionDataLength: functionData.length,
+        functionSelector: functionSelector
       });
       throw contractError;
     }
