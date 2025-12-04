@@ -230,8 +230,6 @@ export async function storeKYCOnBNBChain(
                 /^0x[0-9a-fA-F]{64}$/.test(cleanedLiveHash)
     });
 
-    const contract = new ethers.Contract(contractAddress, KYC_ABI, signer);
-    
     // CRITICAL: Convert hex strings to bytes32 - use manual byte array construction
     // This completely bypasses any string parsing issues with ethers.js
     const toBytes32 = (hexString: string): string => {
@@ -348,18 +346,32 @@ export async function storeKYCOnBNBChain(
           bytes32Hex = '0x' + bytes32Hex.slice(2).replace(/[\r\n\\]/g, '').replace(/[^0-9a-fA-F]/g, '').padStart(64, '0').slice(0, 64);
         }
         
-        // CRITICAL: Use ethers.getBytes() to validate and convert to bytes, then hexlify back
-        // This ensures ethers.js recognizes it as a valid bytes32 value
+        // CRITICAL: Use ethers.zeroPadValue() to ensure proper bytes32 format
+        // This is safer than hexlify() and ensures no escape sequences are introduced
         try {
-          const validatedBytes = ethers.getBytes(bytes32Hex);
-          if (validatedBytes.length !== 32) {
-            throw new Error(`Invalid bytes length: ${validatedBytes.length}, expected 32`);
+          // Validate the hex string is correct format first
+          if (!/^0x[0-9a-fA-F]{64}$/.test(bytes32Hex)) {
+            throw new Error('Invalid hex format before zero pad');
           }
-          const finalBytes32 = ethers.hexlify(validatedBytes);
           
-          // Final validation
+          // Use zeroPadValue to ensure it's exactly 32 bytes (64 hex chars)
+          // This is the recommended way to create bytes32 values in ethers v6
+          const finalBytes32 = ethers.zeroPadValue(bytes32Hex, 32);
+          
+          // Final validation - ensure it's still clean
           if (finalBytes32.length !== 66 || !/^0x[0-9a-fA-F]{64}$/.test(finalBytes32)) {
-            throw new Error('Invalid final bytes32 format');
+            throw new Error('Invalid final bytes32 format after zero pad');
+          }
+          
+          // CRITICAL: Final check for any escape sequences or control characters
+          if (finalBytes32.includes('\r') || finalBytes32.includes('\n') || finalBytes32.includes('\\')) {
+            console.error('❌ Final bytes32 contains escape sequences:', {
+              bytes32: JSON.stringify(finalBytes32),
+              charCodes: Array.from(finalBytes32).map((c: string) => c.charCodeAt(0))
+            });
+            // Reconstruct from scratch using only hex characters
+            const hexOnly = finalBytes32.replace(/[^0-9a-fA-F]/g, '').toLowerCase();
+            return '0x' + hexOnly.padStart(64, '0').slice(0, 64);
           }
           
           return finalBytes32;
@@ -368,8 +380,9 @@ export async function storeKYCOnBNBChain(
             bytes32Hex: JSON.stringify(bytes32Hex),
             error: validationError.message
           });
-          // Fallback to our manually constructed hex string
-          return bytes32Hex;
+          // Fallback: reconstruct from scratch to ensure it's clean
+          const hexOnly = bytes32Hex.replace(/[^0-9a-fA-F]/g, '').toLowerCase();
+          return '0x' + hexOnly.padStart(64, '0').slice(0, 64);
         }
       } catch (error: any) {
         console.error('❌ Error in toBytes32 manual conversion:', {
@@ -426,6 +439,153 @@ export async function storeKYCOnBNBChain(
     }
     
     console.log('✅ All hashes converted to valid bytes32 format and final cleaned');
+    
+    // CRITICAL: Final conversion - create bytes32 from scratch using only hex characters
+    // This completely avoids any string manipulation that could introduce escape sequences
+    const ensureBytes32 = (hex: string): string => {
+      try {
+        // Step 1: Convert to string and extract ONLY hex characters (0-9, a-f)
+        // This is the most aggressive cleaning - removes everything except hex
+        let hexChars = '';
+        const inputStr = String(hex);
+        
+        for (let i = 0; i < inputStr.length; i++) {
+          const char = inputStr[i].toLowerCase();
+          // Only include characters that are valid hex (0-9, a-f)
+          if ((char >= '0' && char <= '9') || (char >= 'a' && char <= 'f')) {
+            hexChars += char;
+          }
+          // Skip 'x' from '0x' prefix and any other characters
+        }
+        
+        // Step 2: Ensure we have exactly 64 hex characters
+        if (hexChars.length === 0) {
+          throw new Error('No valid hex characters found in input');
+        }
+        
+        // Pad or truncate to exactly 64 characters
+        const padded = hexChars.padStart(64, '0').slice(0, 64);
+        
+        // Step 3: Validate it's pure hex
+        if (!/^[0-9a-f]{64}$/.test(padded)) {
+          throw new Error(`Invalid hex after cleaning: ${padded.substring(0, 20)}...`);
+        }
+        
+        // Step 4: Convert hex string to Uint8Array manually (byte by byte)
+        // This completely avoids any string manipulation that could introduce escape sequences
+        const bytes = new Uint8Array(32);
+        for (let i = 0; i < 32; i++) {
+          const hexByte = padded.substring(i * 2, i * 2 + 2);
+          const byteValue = parseInt(hexByte, 16);
+          if (isNaN(byteValue) || byteValue < 0 || byteValue > 255) {
+            throw new Error(`Invalid byte at position ${i}: ${hexByte}`);
+          }
+          bytes[i] = byteValue;
+        }
+        
+        // Step 5: Use ethers.hexlify() with the Uint8Array directly
+        // This ensures no escape sequences can be introduced
+        const result = ethers.hexlify(bytes);
+        
+        // Step 6: Final validation - ensure result is correct
+        if (result.length !== 66 || !/^0x[0-9a-f]{64}$/.test(result)) {
+          throw new Error(`Invalid result format: ${result}`);
+        }
+        
+        // Step 7: Double-check for any escape sequences (should never happen, but safety check)
+        if (result.includes('\\') || result.includes('\r') || result.includes('\n')) {
+          console.error('❌ CRITICAL: Result contains escape sequences:', {
+            result: JSON.stringify(result),
+            charCodes: Array.from(result).map((c: string) => c.charCodeAt(0))
+          });
+          // Reconstruct from bytes array again
+          const cleanResult = '0x' + Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+          return cleanResult;
+        }
+        
+        return result;
+      } catch (error: any) {
+        console.error('❌ Error ensuring bytes32 format:', { 
+          hex: JSON.stringify(hex),
+          hexLength: hex?.length,
+          error: error.message,
+          stack: error.stack
+        });
+        throw error;
+      }
+    };
+    
+    // Apply final bytes32 conversion with error handling for each parameter
+    let contractFrontId: string;
+    let contractBackId: string;
+    let contractProof: string;
+    let contractLive: string;
+    
+    try {
+      contractFrontId = ensureBytes32(finalFrontId);
+      console.log('✅ FrontId converted:', contractFrontId.substring(0, 20) + '...');
+    } catch (error: any) {
+      console.error('❌ Error converting frontId:', { finalFrontId, error: error.message });
+      throw new Error(`Failed to convert frontId to bytes32: ${error.message}`);
+    }
+    
+    try {
+      contractBackId = ensureBytes32(finalBackId);
+      console.log('✅ BackId converted:', contractBackId.substring(0, 20) + '...');
+    } catch (error: any) {
+      console.error('❌ Error converting backId:', { finalBackId, error: error.message });
+      throw new Error(`Failed to convert backId to bytes32: ${error.message}`);
+    }
+    
+    try {
+      contractProof = ensureBytes32(finalProof);
+      console.log('✅ Proof converted:', contractProof.substring(0, 20) + '...');
+    } catch (error: any) {
+      console.error('❌ Error converting proof:', { finalProof, error: error.message });
+      throw new Error(`Failed to convert proof to bytes32: ${error.message}`);
+    }
+    
+    try {
+      contractLive = ensureBytes32(finalLive);
+      console.log('✅ Live converted:', contractLive.substring(0, 20) + '...');
+    } catch (error: any) {
+      console.error('❌ Error converting live:', { finalLive, error: error.message });
+      throw new Error(`Failed to convert live to bytes32: ${error.message}`);
+    }
+    
+    // Final validation before contract call - check each parameter individually
+    const params = [
+      { name: 'frontId', value: contractFrontId },
+      { name: 'backId', value: contractBackId },
+      { name: 'proof', value: contractProof },
+      { name: 'live', value: contractLive }
+    ];
+    
+    for (const param of params) {
+      if (typeof param.value !== 'string') {
+        throw new Error(`${param.name} is not a string: ${typeof param.value}`);
+      }
+      if (!param.value.startsWith('0x')) {
+        throw new Error(`${param.name} does not start with 0x: ${param.value.substring(0, 20)}...`);
+      }
+      if (param.value.length !== 66) {
+        throw new Error(`${param.name} length is not 66: ${param.value.length}`);
+      }
+      if (!/^0x[0-9a-f]{64}$/.test(param.value)) {
+        throw new Error(`${param.name} is not valid hex: ${param.value.substring(0, 20)}...`);
+      }
+      if (param.value.includes('\r') || param.value.includes('\n') || param.value.includes('\\')) {
+        console.error(`❌ ${param.name} contains escape sequences:`, {
+          value: JSON.stringify(param.value),
+          hasCR: param.value.includes('\r'),
+          hasLF: param.value.includes('\n'),
+          hasBackslash: param.value.includes('\\')
+        });
+        throw new Error(`${param.name} contains invalid escape sequences`);
+      }
+    }
+    
+    console.log('✅ All contract parameters validated successfully');
     
     // CRITICAL: Clean userId to remove any newlines, control characters, or escaped sequences
     // This prevents the "invalid BytesLike value" error from ethers.js
@@ -514,14 +674,144 @@ export async function storeKYCOnBNBChain(
     
     console.log('✅ All parameters validated before contract call');
     
-    const tx = await contract.storeKYCVerification(
-      cleanedUserId, // Cleaned userId
-      finalFrontId, // Final cleaned bytes32 format
-      finalBackId,
-      finalProof,
-      finalLive,
+    // CRITICAL: Log all parameters right before contract call
+    console.log('🚀 Calling contract.storeKYCVerification with:', {
+      userId: cleanedUserId,
+      userIdLength: cleanedUserId.length,
+      frontId: contractFrontId.substring(0, 20) + '...',
+      backId: contractBackId.substring(0, 20) + '...',
+      proof: contractProof.substring(0, 20) + '...',
+      live: contractLive.substring(0, 20) + '...',
       approvalStatus
-    );
+    });
+    
+    // CRITICAL: Convert bytes32 strings to Uint8Array to avoid any string escape issues
+    // Then convert back using hexlify - this ensures clean encoding
+    const toCleanBytes32 = (hexString: string): string => {
+      // Extract only hex characters (0-9, a-f)
+      let hex = '';
+      for (let i = 0; i < hexString.length; i++) {
+        const char = hexString[i].toLowerCase();
+        if ((char >= '0' && char <= '9') || (char >= 'a' && char <= 'f')) {
+          hex += char;
+        }
+      }
+      
+      // Remove 0x if somehow present in the hex string
+      if (hex.startsWith('0x')) {
+        hex = hex.slice(2);
+      }
+      
+      // Pad to 64 characters
+      hex = hex.padStart(64, '0').slice(0, 64);
+      
+      // Convert to bytes array
+      const bytes = new Uint8Array(32);
+      for (let i = 0; i < 32; i++) {
+        bytes[i] = parseInt(hex.substring(i * 2, i * 2 + 2), 16);
+      }
+      
+      // Convert back to hex string using hexlify - this should be clean
+      return ethers.hexlify(bytes);
+    };
+    
+    // Apply final cleaning to all bytes32 values using Uint8Array conversion
+    const cleanBytes32ForCall = (hexString: string): string => {
+      // Extract only hex characters (0-9, a-f)
+      let hex = '';
+      for (let i = 0; i < hexString.length; i++) {
+        const char = hexString[i].toLowerCase();
+        if ((char >= '0' && char <= '9') || (char >= 'a' && char <= 'f')) {
+          hex += char;
+        }
+      }
+      
+      // Remove 0x if somehow present
+      if (hex.startsWith('0x')) {
+        hex = hex.slice(2);
+      }
+      
+      // Pad to 64 characters
+      hex = hex.padStart(64, '0').slice(0, 64);
+      
+      // Convert to bytes array
+      const bytes = new Uint8Array(32);
+      for (let i = 0; i < 32; i++) {
+        bytes[i] = parseInt(hex.substring(i * 2, i * 2 + 2), 16);
+      }
+      
+      // Convert back to hex string using hexlify - this should be clean
+      return ethers.hexlify(bytes);
+    };
+    
+    // Apply final cleaning
+    const callFrontId = cleanBytes32ForCall(contractFrontId);
+    const callBackId = cleanBytes32ForCall(contractBackId);
+    const callProof = cleanBytes32ForCall(contractProof);
+    const callLive = cleanBytes32ForCall(contractLive);
+    
+    // Validate final values
+    const callValues = [callFrontId, callBackId, callProof, callLive];
+    const callNames = ['frontId', 'backId', 'proof', 'live'];
+    for (let i = 0; i < callValues.length; i++) {
+      const val = callValues[i];
+      if (val.length !== 66 || !/^0x[0-9a-f]{64}$/.test(val)) {
+        throw new Error(`Invalid ${callNames[i]} format: ${val.substring(0, 20)}...`);
+      }
+      if (val.includes('\\') || val.includes('\r') || val.includes('\n')) {
+        console.error(`❌ ${callNames[i]} contains escape sequences:`, JSON.stringify(val));
+        throw new Error(`${callNames[i]} contains escape sequences`);
+      }
+    }
+    
+    console.log('✅ Final bytes32 values validated for contract call:', {
+      frontId: callFrontId.substring(0, 20) + '...',
+      backId: callBackId.substring(0, 20) + '...',
+      proof: callProof.substring(0, 20) + '...',
+      live: callLive.substring(0, 20) + '...'
+    });
+    
+    // CRITICAL: Use Interface to encode function call manually
+    // This gives us complete control over the encoding and avoids string serialization issues
+    const contractInterface = new ethers.Interface(KYC_ABI);
+    
+    // CRITICAL: Use try-catch to capture the exact parameter causing the error
+    let tx;
+    try {
+      // Encode the function call - this handles all parameter encoding internally
+      const functionData = contractInterface.encodeFunctionData('storeKYCVerification', [
+        cleanedUserId,
+        callFrontId,
+        callBackId,
+        callProof,
+        callLive,
+        approvalStatus
+      ]);
+      
+      // Send transaction directly using signer - this bypasses Contract object string handling
+      tx = await signer.sendTransaction({
+        to: contractAddress,
+        data: functionData
+      });
+    } catch (contractError: any) {
+      // Enhanced error logging to identify which parameter is causing the issue
+      console.error('❌ Contract call failed:', {
+        error: contractError.message,
+        code: contractError.code,
+        argument: contractError.argument,
+        value: contractError.value ? JSON.stringify(String(contractError.value).substring(0, 50)) : 'N/A',
+        userId: JSON.stringify(cleanedUserId),
+        frontId: JSON.stringify(callFrontId),
+        backId: JSON.stringify(callBackId),
+        proof: JSON.stringify(callProof),
+        live: JSON.stringify(callLive),
+        frontIdHasEscape: callFrontId.includes('\\') || callFrontId.includes('\r') || callFrontId.includes('\n'),
+        backIdHasEscape: callBackId.includes('\\') || callBackId.includes('\r') || callBackId.includes('\n'),
+        proofHasEscape: callProof.includes('\\') || callProof.includes('\r') || callProof.includes('\n'),
+        liveHasEscape: callLive.includes('\\') || callLive.includes('\r') || callLive.includes('\n')
+      });
+      throw contractError;
+    }
     await tx.wait();
     return tx.hash;
   } catch (error: any) {
@@ -693,18 +983,32 @@ export async function storeKYBOnBNBChain(
         bytes32Hex = '0x' + bytes32Hex.slice(2).replace(/[\r\n\\]/g, '').replace(/[^0-9a-fA-F]/g, '').padStart(64, '0').slice(0, 64);
       }
       
-      // CRITICAL: Use ethers.getBytes() to validate and convert to bytes, then hexlify back
-      // This ensures ethers.js recognizes it as a valid bytes32 value
+      // CRITICAL: Use ethers.hexZeroPad() to ensure proper bytes32 format
+      // This is safer than hexlify() and ensures no escape sequences are introduced
       try {
-        const validatedBytes = ethers.getBytes(bytes32Hex);
-        if (validatedBytes.length !== 32) {
-          throw new Error(`Invalid bytes length: ${validatedBytes.length}, expected 32`);
+        // Validate the hex string is correct format first
+        if (!/^0x[0-9a-fA-F]{64}$/.test(bytes32Hex)) {
+          throw new Error('Invalid hex format before zero pad');
         }
-        const finalBytes32 = ethers.hexlify(validatedBytes);
         
-        // Final validation
+        // Use zeroPadValue to ensure it's exactly 32 bytes (64 hex chars)
+        // This is the recommended way to create bytes32 values in ethers v6
+        const finalBytes32 = ethers.zeroPadValue(bytes32Hex, 32);
+        
+        // Final validation - ensure it's still clean
         if (finalBytes32.length !== 66 || !/^0x[0-9a-fA-F]{64}$/.test(finalBytes32)) {
-          throw new Error('Invalid final bytes32 format');
+          throw new Error('Invalid final bytes32 format after zero pad');
+        }
+        
+        // CRITICAL: Final check for any escape sequences or control characters
+        if (finalBytes32.includes('\r') || finalBytes32.includes('\n') || finalBytes32.includes('\\')) {
+          console.error('❌ Final bytes32 contains escape sequences:', {
+            bytes32: JSON.stringify(finalBytes32),
+            charCodes: Array.from(finalBytes32).map((c: string) => c.charCodeAt(0))
+          });
+          // Reconstruct from scratch using only hex characters
+          const hexOnly = finalBytes32.replace(/[^0-9a-fA-F]/g, '').toLowerCase();
+          return '0x' + hexOnly.padStart(64, '0').slice(0, 64);
         }
         
         return finalBytes32;
@@ -713,8 +1017,9 @@ export async function storeKYBOnBNBChain(
           bytes32Hex: JSON.stringify(bytes32Hex),
           error: validationError.message
         });
-        // Fallback to our manually constructed hex string
-        return bytes32Hex;
+        // Fallback: reconstruct from scratch to ensure it's clean
+        const hexOnly = bytes32Hex.replace(/[^0-9a-fA-F]/g, '').toLowerCase();
+        return '0x' + hexOnly.padStart(64, '0').slice(0, 64);
       }
     };
     

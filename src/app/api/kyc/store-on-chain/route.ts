@@ -294,12 +294,51 @@ export async function POST(request: NextRequest) {
     const provider = new ethers.JsonRpcProvider(getBNBChainRPC());
     const signer = new ethers.Wallet(adminPrivateKey, provider);
 
-    // Store on BNB Smart Chain with cleaned hashes and cleaned userId
+    // CRITICAL: Final validation - ensure all hash values are pure hex strings
+    // This prevents any escape sequences from being passed to the blockchain function
+    const validateHashString = (hash: string, name: string): string => {
+      // Convert to string and extract ONLY hex characters
+      let hexOnly = '';
+      for (let i = 0; i < hash.length; i++) {
+        const char = hash[i].toLowerCase();
+        if ((char >= '0' && char <= '9') || (char >= 'a' && char <= 'f')) {
+          hexOnly += char;
+        }
+      }
+      
+      if (hexOnly.length === 0) {
+        throw new Error(`${name} contains no valid hex characters`);
+      }
+      
+      // Ensure exactly 64 hex characters
+      const padded = hexOnly.padStart(64, '0').slice(0, 64);
+      
+      if (!/^[0-9a-f]{64}$/.test(padded)) {
+        throw new Error(`${name} is not valid hex after cleaning`);
+      }
+      
+      return padded;
+    };
+    
+    // Validate all hash strings one final time
+    const validatedFrontHash = validateHashString(cleanedFrontHash, 'frontIdHash');
+    const validatedBackHash = validateHashString(cleanedBackHash, 'backIdHash');
+    const validatedProofHash = validateHashString(cleanedProofHash, 'proofOfAddressHash');
+    const validatedSelfieHash = validateHashString(cleanedSelfieHash, 'selfieHash');
+    
+    console.log('✅ All hash strings validated - pure hex only:', {
+      frontId: validatedFrontHash.substring(0, 20) + '...',
+      backId: validatedBackHash.substring(0, 20) + '...',
+      proof: validatedProofHash.substring(0, 20) + '...',
+      selfie: validatedSelfieHash.substring(0, 20) + '...'
+    });
+    
+    // Store on BNB Smart Chain with validated hashes and cleaned userId
     const txHash = await storeKYCOnBNBChain(
-      cleanedFrontHash,
-      cleanedBackHash,
-      cleanedProofHash,
-      cleanedSelfieHash,
+      validatedFrontHash,
+      validatedBackHash,
+      validatedProofHash,
+      validatedSelfieHash,
       cleanedUserId, // Cleaned userId
       approvalStatus !== false, // Default to true if not specified
       signer
