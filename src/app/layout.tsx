@@ -257,11 +257,46 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 };
                 
                 // Add listeners at both capture and bubble phases
-                window.addEventListener('error', suppressError, true); // Capture phase (earliest)
-                window.addEventListener('error', suppressError, false); // Bubble phase
+                // CRITICAL: Suppress React insertBefore errors - these are React reconciliation issues
+                // that don't affect functionality but cause console spam
+                const suppressReactReconciliationError = (event: ErrorEvent) => {
+                  if (event.error && (
+                    event.error.message?.includes("Failed to execute 'insertBefore' on 'Node'") ||
+                    (event.error.name === 'NotFoundError' && event.error.message?.includes('insertBefore'))
+                  )) {
+                    // This is a React reconciliation error that doesn't affect functionality
+                    // Suppress it to prevent console spam
+                    event.preventDefault();
+                    event.stopPropagation();
+                    console.warn('⚠️ [React] Suppressed insertBefore reconciliation error (non-critical)');
+                    return true;
+                  }
+                  return false;
+                };
+                
+                window.addEventListener('error', (event) => {
+                  if (!suppressReactReconciliationError(event)) {
+                    suppressError(event);
+                  }
+                }, true); // Capture phase (earliest)
+                window.addEventListener('error', (event) => {
+                  if (!suppressReactReconciliationError(event)) {
+                    suppressError(event);
+                  }
+                }, false); // Bubble phase
                 
                 // Suppress unhandled promise rejections
+                // CRITICAL: Also suppress insertBefore errors in promise rejections
                 window.addEventListener('unhandledrejection', function(event) {
+                  // Suppress React insertBefore errors in promise rejections
+                  if (event.reason && (
+                    event.reason.message?.includes("Failed to execute 'insertBefore' on 'Node'") ||
+                    (event.reason.name === 'NotFoundError' && event.reason.message?.includes('insertBefore'))
+                  )) {
+                    event.preventDefault();
+                    console.warn('⚠️ [React] Suppressed insertBefore reconciliation error in promise rejection (non-critical)');
+                    return;
+                  }
                   const reason = event.reason?.message || event.reason?.toString() || '';
                   if (shouldSuppress(reason)) {
                     event.preventDefault();

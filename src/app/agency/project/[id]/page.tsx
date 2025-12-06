@@ -131,6 +131,8 @@ export default function AgencyProjectDetailPage() {
         body: JSON.stringify({ projectId })
       });
       
+      console.log('📋 [AGENCY-PROJECT] Accept pitch response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
         alert('Pitch accepted! Chat room created.');

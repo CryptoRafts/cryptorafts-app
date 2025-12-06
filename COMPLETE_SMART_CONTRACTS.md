@@ -8,9 +8,11 @@ This document contains all three smart contracts for the CryptoRafts platform, d
 
 ## 📋 Contract Overview
 
-1. **KYCVerification.sol** - Stores hashed KYC data for all user roles
-2. **KYBVerification.sol** - Stores hashed email addresses for VCs/influencers
+1. **KYCVerification.sol** - Stores hashed KYC data for all user roles with deletion support
+2. **KYBVerification.sol** - Stores hashed phone/email for business verification with deletion support
 3. **ProjectRegistry.sol** - Stores hashed project data after successful funding/launch
+
+**All contracts include deletion/invalidation functionality for user privacy and safety.**
 
 ---
 
@@ -653,4 +655,6 @@ npm run deploy:bsc
 **Primary Deployment Network**: BNB Smart Chain (BSC) - Chain ID 56
 
 *All contracts are ready for deployment and fully tested.*
+
+
 

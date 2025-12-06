@@ -55,3 +55,5 @@ NEXT_PUBLIC_BNB_PROJECT_REGISTRY_ADDRESS=0x...
 
 **Ready to deploy? Run: `npm run deploy:bsc-testnet`**
 
+
+

@@ -920,8 +920,91 @@ export default function AdminKYBPage() {
         console.error('❌ Error updating user document:', userUpdateError);
       }
       
+      // Automatically store on-chain after approval, then delete for user safety
+      if (newStatus === 'approved') {
+        try {
+          console.log('🔗 Storing KYB data on BNB Chain...');
+          const orgDoc = await getDoc(kybRef);
+          const orgData = orgDoc.exists() ? orgDoc.data() : {};
+          const userId = orgData.userId || orgData.user_id;
+          
+          // Get auth token for API authentication
+          const { auth } = await import('@/lib/firebase.client');
+          const { getIdToken } = await import('firebase/auth');
+          const authToken = user && auth?.currentUser ? await getIdToken(auth.currentUser) : null;
+          
+          const storeResponse = await fetch('/api/kyb/store-on-chain', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(authToken && { 'Authorization': `Bearer ${authToken}` }),
+            },
+            body: JSON.stringify({
+              userId: userId,
+              orgId: id,
+              approvalStatus: true,
+            }),
+          });
+
+          if (storeResponse.ok) {
+            const storeResult = await storeResponse.json();
+            console.log('✅ KYB data stored on-chain:', storeResult.txHash);
+            console.log('🔗 View transaction:', storeResult.explorerUrl);
+            
+            // Update document with on-chain info
+            await updateDoc(kybRef, {
+              onChainTxHash: storeResult.txHash,
+              onChainStoredAt: serverTimestamp(),
+            });
+
+            // SECURITY: Automatically delete on-chain data after approval for user privacy
+            try {
+              console.log('🗑️ Deleting KYB data from BNB Chain for user safety...');
+              const deleteResponse = await fetch('/api/kyb/delete-on-chain', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  ...(authToken && { 'Authorization': `Bearer ${authToken}` }),
+                },
+                body: JSON.stringify({
+                  userId: userId,
+                  orgId: id,
+                }),
+              });
+
+              if (deleteResponse.ok) {
+                const deleteResult = await deleteResponse.json();
+                console.log('✅ KYB data deleted from on-chain:', deleteResult.txHash);
+                console.log('🔗 View deletion transaction:', deleteResult.explorerUrl);
+                
+                // Update document with deletion info
+                await updateDoc(kybRef, {
+                  onChainDeleted: true,
+                  onChainDeleteTxHash: deleteResult.txHash,
+                  onChainDeletedAt: serverTimestamp(),
+                });
+              } else {
+                const errorData = await deleteResponse.json();
+                console.error('⚠️ Failed to delete KYB on-chain:', errorData);
+                // Don't fail the approval if deletion fails - data is already stored
+              }
+            } catch (deleteError: any) {
+              console.error('⚠️ Error deleting KYB on-chain (non-critical):', deleteError);
+              // Don't fail the approval if deletion fails
+            }
+          } else {
+            const errorData = await storeResponse.json();
+            console.error('⚠️ Failed to store KYB on-chain:', errorData);
+            // Don't fail the approval if on-chain storage fails
+          }
+        } catch (onChainError: any) {
+          console.error('⚠️ Error storing KYB on-chain (non-critical):', onChainError);
+          // Don't fail the approval if on-chain storage fails
+        }
+      }
+      
       console.log(`✅ KYB document ${id} status updated to ${newStatus}`);
-      alert(`KYB ${newStatus} successfully!`);
+      alert(`KYB ${newStatus} successfully!${newStatus === 'approved' ? ' Data stored on BNB Chain.' : ''}`);
       // Real-time listener will update the UI automatically
     } catch (error: any) {
       console.error(`❌ Error updating KYB document ${id} status:`, error);

@@ -234,6 +234,14 @@ function OnboardingGuard({ children }: { children: React.ReactNode }) {
         // Step 2: Check KYC status
         const kycStatus = (userData.kycStatus || userData.kyc?.status || 'not_submitted').toLowerCase();
 
+        // CRITICAL: If approved, allow access - don't redirect
+        if (kycStatus === 'approved') {
+          console.log('🛡️ KYC approved, allowing access');
+          setHasChecked(true);
+          setChecking(false);
+          return;
+        }
+
         // If not submitted, redirect to KYC page
         if (kycStatus === 'not_submitted' || !kycStatus) {
           console.log('🛡️ KYC not submitted, redirecting to KYC page');

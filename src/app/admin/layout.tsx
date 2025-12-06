@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import SystemStatus from '@/components/admin/SystemStatus';
 import { NeonCyanIcon } from '@/components/icons/NeonCyanIcon';
+import WalletMenuButton from '@/components/WalletMenuButton';
 
 // Force dynamic rendering - Client Component
 export const dynamic = 'force-dynamic';
@@ -21,6 +22,8 @@ export default function AdminLayout({
   const [user, setUser] = useState<any>(null);
   const [navigating, setNavigating] = useState<string | null>(null);
   const [headerStatus, setHeaderStatus] = useState<'active' | 'loading'>('active');
+  const [isWalletDropdownOpen, setIsWalletDropdownOpen] = useState(false);
+  const walletDropdownRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Add console command for easy admin access
@@ -150,6 +153,23 @@ export default function AdminLayout({
     checkAuth();
   }, [router]);
 
+  // Handle click outside wallet dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (walletDropdownRef.current && !walletDropdownRef.current.contains(event.target as Node)) {
+        setIsWalletDropdownOpen(false);
+      }
+    };
+
+    if (isWalletDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isWalletDropdownOpen]);
+
   // Handle redirect in useEffect to avoid router update during render
   // This must be called unconditionally (Rules of Hooks) - before any early returns
   useEffect(() => {
@@ -173,6 +193,7 @@ export default function AdminLayout({
     { name: 'Analytics', href: '/admin/analytics', iconType: 'analytics', current: pathname === '/admin/analytics' },
     { name: 'Departments', href: '/admin/departments', iconType: 'users', current: pathname === '/admin/departments' },
     { name: 'Audit', href: '/admin/audit', iconType: 'document', current: pathname === '/admin/audit' },
+    { name: 'Wallet', href: '#', iconType: 'credit-card', current: false, isWallet: true },
     { name: 'Settings', href: '/admin/settings', iconType: 'settings', current: pathname === '/admin/settings' },
     { name: 'Test', href: '/admin/test', iconType: 'shield', current: pathname === '/admin/test' },
   ];
@@ -226,22 +247,88 @@ export default function AdminLayout({
               {/* Center Section - Navigation Menu - PERFECTLY ALIGNED WITH FIXED WIDTH */}
               <div className="flex items-center justify-center flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide max-w-full px-2">
-                  {navigation.map((item, index) => (
-                    <button
-                      key={`header-nav-${item.name}-${index}`}
-                      onClick={() => handleNavigation(item.href, item.name)}
-                      disabled={navigating === item.name}
-                      className={`w-24 px-2 py-1.5 text-xs font-semibold transition-all duration-200 rounded-md disabled:opacity-50 whitespace-nowrap border flex items-center justify-center gap-1 flex-shrink-0 group h-8 ${
-                        item.current
-                          ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md border-blue-500'
-                          : 'text-cyan-400/70 hover:bg-black/60 hover:text-white hover:shadow-sm border-cyan-400/20 hover:border-cyan-400/50'
-                      }`}
-                      title={item.name}
-                    >
-                      <NeonCyanIcon type={item.iconType as any} size={14} className={`flex-shrink-0 transition-transform duration-200 ${item.current ? 'scale-110' : 'group-hover:scale-105'}`} />
-                      <span className="font-semibold truncate">{navigating === item.name ? '...' : item.name}</span>
-                    </button>
-                  ))}
+                  {navigation.map((item, index) => {
+                    // Special handling for Wallet menu item
+                    if ((item as any).isWallet) {
+                      return (
+                        <div
+                          key={`header-nav-${item.name}-${index}`}
+                          className="relative"
+                          ref={walletDropdownRef}
+                        >
+                          <button
+                            onClick={() => setIsWalletDropdownOpen(!isWalletDropdownOpen)}
+                            className={`w-24 px-2 py-1.5 text-xs font-semibold transition-all duration-200 rounded-md whitespace-nowrap border flex items-center justify-center gap-1 flex-shrink-0 h-8 ${
+                              isWalletDropdownOpen
+                                ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md border-blue-500'
+                                : 'text-cyan-400/70 hover:bg-black/60 hover:text-white hover:shadow-sm border-cyan-400/20 hover:border-cyan-400/50'
+                            }`}
+                            title={item.name}
+                          >
+                            <NeonCyanIcon type={item.iconType as any} size={14} className="flex-shrink-0" />
+                            <span className="font-semibold truncate">{item.name}</span>
+                          </button>
+                          {/* Wallet Dropdown */}
+                          {isWalletDropdownOpen && (
+                            <>
+                              {/* Backdrop */}
+                              <div 
+                                className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[100]"
+                                onClick={() => setIsWalletDropdownOpen(false)}
+                              />
+                              {/* Dropdown - Using fixed positioning to ensure it's visible */}
+                              <div 
+                                className="fixed right-4 top-20 w-80 max-w-[calc(100vw-2rem)] bg-black/95 backdrop-blur-md border border-cyan-400/20 rounded-lg shadow-xl z-[101]"
+                                style={{ 
+                                  position: 'fixed',
+                                  top: '80px',
+                                  right: '16px',
+                                  zIndex: 101
+                                }}
+                              >
+                                <div className="p-4">
+                                  <div className="flex items-center justify-between mb-3">
+                                    <div className="flex items-center space-x-3">
+                                      <NeonCyanIcon type={item.iconType as any} size={16} className="text-cyan-400" />
+                                      <span className="text-sm font-medium text-white">{item.name}</span>
+                                    </div>
+                                    <button
+                                      onClick={() => setIsWalletDropdownOpen(false)}
+                                      className="text-gray-400 hover:text-white transition-colors"
+                                      aria-label="Close wallet menu"
+                                    >
+                                      <NeonCyanIcon type="close" size={16} />
+                                    </button>
+                                  </div>
+                                  <div className="min-h-[200px]">
+                                    <WalletMenuButton />
+                                  </div>
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      );
+                    }
+                    
+                    // Regular navigation items
+                    return (
+                      <button
+                        key={`header-nav-${item.name}-${index}`}
+                        onClick={() => handleNavigation(item.href, item.name)}
+                        disabled={navigating === item.name}
+                        className={`w-24 px-2 py-1.5 text-xs font-semibold transition-all duration-200 rounded-md disabled:opacity-50 whitespace-nowrap border flex items-center justify-center gap-1 flex-shrink-0 group h-8 ${
+                          item.current
+                            ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md border-blue-500'
+                            : 'text-cyan-400/70 hover:bg-black/60 hover:text-white hover:shadow-sm border-cyan-400/20 hover:border-cyan-400/50'
+                        }`}
+                        title={item.name}
+                      >
+                        <NeonCyanIcon type={item.iconType as any} size={14} className={`flex-shrink-0 transition-transform duration-200 ${item.current ? 'scale-110' : 'group-hover:scale-105'}`} />
+                        <span className="font-semibold truncate">{navigating === item.name ? '...' : item.name}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 

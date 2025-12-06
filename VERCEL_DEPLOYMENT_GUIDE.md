@@ -1,220 +1,154 @@
-# 🚀 DEPLOY CRYPTORAFTS TO VERCEL - USE YOUR DOMAIN!
+# Vercel Deployment Guide
 
-## ✅ **THIS WILL WORK PERFECTLY!**
+## 🚀 Quick Deploy to Vercel
 
-Your www.cryptorafts.com will show your app from Vercel!
+### Option 1: Deploy via Vercel CLI (Recommended)
 
----
-
-## 📋 **STEP-BY-STEP DEPLOYMENT:**
-
-### **STEP 1: Create Vercel Account** (2 minutes)
-
-1. **Go to:** https://vercel.com
-2. **Click:** "Sign Up"
-3. **Sign up with:** GitHub (recommended) or Email
-4. **Verify** your email if needed
-5. **You're in the dashboard!**
-
----
-
-### **STEP 2: Deploy Your Project** (5 minutes)
-
-#### **Option A: Deploy from GitHub** (Recommended)
-
-1. **Push your code to GitHub:**
-   ```powershell
-   git init
-   git add .
-   git commit -m "Initial commit"
-   git branch -M main
-   git remote add origin YOUR_GITHUB_REPO_URL
-   git push -u origin main
-   ```
-
-2. **In Vercel Dashboard:**
-   - Click "Add New Project"
-   - Click "Import Git Repository"
-   - Select your GitHub repo
-   - Click "Import"
-   - Vercel auto-detects Next.js!
-   - Click "Deploy"
-   - **Done in 2 minutes!**
-
-#### **Option B: Deploy from Local Folder** (Easier!)
-
-1. **Install Vercel CLI:**
-   ```powershell
-   npm install -g vercel
-   ```
-
-2. **Login to Vercel:**
-   ```powershell
-   vercel login
-   ```
-   (Follow the prompts)
-
-3. **Deploy:**
-   ```powershell
-   vercel
-   ```
-   - Press Enter for all prompts
-   - Vercel deploys your app!
-   - You get a URL like: `cryptorafts.vercel.app`
-
-4. **Deploy to production:**
-   ```powershell
-   vercel --prod
-   ```
-
----
-
-### **STEP 3: Connect Your Domain** (5 minutes)
-
-#### **In Vercel Dashboard:**
-
-1. **Go to your project**
-2. **Click:** "Settings"
-3. **Click:** "Domains"
-4. **Add domain:** `cryptorafts.com`
-5. **Add domain:** `www.cryptorafts.com`
-
-#### **Vercel will show DNS records to add**
-
-Example:
-```
-Type: A
-Name: @
-Value: 76.76.21.21
-
-Type: CNAME  
-Name: www
-Value: cname.vercel-dns.com
+1. **Install Vercel CLI** (if not already installed):
+```bash
+npm i -g vercel
 ```
 
----
-
-### **STEP 4: Update Hostinger DNS** (3 minutes)
-
-#### **In Hostinger hPanel:**
-
-1. **Go to:** https://hpanel.hostinger.com
-2. **Click:** "Domains"
-3. **Click:** "cryptorafts.com"
-4. **Click:** "DNS / Name Servers"
-5. **Click:** "Manage DNS records"
-
-6. **Add the records Vercel gave you:**
-   - Delete old A records
-   - Add new A record (Vercel's IP)
-   - Add CNAME for www (Vercel's CNAME)
-
-7. **Click:** "Save"
-
----
-
-### **STEP 5: Wait for DNS** (5-30 minutes)
-
-- DNS propagation: 5-30 minutes
-- Visit: https://cryptorafts.com
-- **YOUR APP IS LIVE!** 🎉
-
----
-
-## 🔥 **CONNECT FIREBASE TO VERCEL DOMAIN:**
-
-1. **Go to:** https://console.firebase.google.com
-2. **Select:** cryptorafts-b9067
-3. **Authentication** → **Settings** → **Authorized domains**
-4. **Add:** `cryptorafts.com`
-5. **Add:** `www.cryptorafts.com`
-6. **Add:** Your Vercel URL (e.g., `cryptorafts.vercel.app`)
-
----
-
-## ⚡ **QUICK START - USE VERCEL CLI:**
-
-```powershell
-# Install Vercel CLI
-npm install -g vercel
-
-# Login
+2. **Login to Vercel**:
+```bash
 vercel login
+```
 
-# Deploy
+3. **Deploy**:
+```bash
 vercel
+```
 
-# Deploy to production
+4. **For Production**:
+```bash
 vercel --prod
 ```
 
-**That's it! 3 commands!**
+### Option 2: Deploy via GitHub Integration
 
----
-
-## ✅ **WHAT YOU GET WITH VERCEL:**
-
-- ✅ FREE hosting forever
-- ✅ All Next.js features work
-- ✅ All 104 API routes work
-- ✅ Auto SSL certificate
-- ✅ Global CDN (fast worldwide)
-- ✅ Auto deployments on git push
-- ✅ Preview deployments
-- ✅ Analytics
-- ✅ Your cryptorafts.com domain
-- ✅ Unlimited bandwidth
-- ✅ Professional hosting
-
----
-
-## 🎯 **YOUR TIMELINE:**
-
-```
-Now:        Create Vercel account (2 min)
-+3 min:     Install Vercel CLI (3 min)
-+2 min:     Deploy to Vercel (2 min)
-+5 min:     Connect domain (5 min)
-+15 min:    DNS propagation (wait)
-            LIVE ON CRYPTORAFTS.COM! 🎉
-────────────────────────────────────
-TOTAL:      ~30 minutes
+1. **Push to GitHub** (if not already):
+```bash
+git add .
+git commit -m "Prepare for Vercel deployment"
+git push origin main
 ```
 
----
+2. **Connect to Vercel**:
+   - Go to [vercel.com](https://vercel.com)
+   - Click "New Project"
+   - Import your GitHub repository
+   - Vercel will auto-detect Next.js settings
 
-## 📞 **NEED HELP?**
+3. **Configure Environment Variables**:
+   - Add all required env vars in Vercel dashboard
+   - Settings → Environment Variables
 
-**Tell me when you:**
-- Created Vercel account
-- Ready to deploy
-- Need help with any step
+### Option 3: Deploy via Vercel Dashboard
 
----
-
-## 🎊 **THIS IS THE SOLUTION!**
-
-**Vercel is:**
-- ✅ Made for Next.js (your app type)
-- ✅ FREE (costs $0)
-- ✅ Works with your domain
-- ✅ All features work
-- ✅ Professional hosting
-
-**Better than Hostinger Premium for your app!**
+1. Go to [vercel.com/dashboard](https://vercel.com/dashboard)
+2. Click "Add New Project"
+3. Import your repository
+4. Configure build settings (auto-detected for Next.js)
+5. Add environment variables
+6. Click "Deploy"
 
 ---
 
-## 🚀 **START NOW:**
+## ⚙️ Build Configuration
 
-1. **Go to:** https://vercel.com
-2. **Sign up** (2 minutes)
-3. **Tell me:** "I created Vercel account"
-4. **I'll guide you** through deployment!
+**Current Settings** (in `vercel.json`):
+- Framework: Next.js
+- Build Command: `npm run build`
+- Install Command: `npm install`
+- Output Directory: `.next` (auto)
 
 ---
 
-**LET'S GET YOUR CRYPTORAFTS LIVE ON VERCEL!** 🎉
+## 🔧 Environment Variables
 
-**Go create your account now!** 😊
+Add these in Vercel Dashboard → Settings → Environment Variables:
 
+### Required:
+- `NEXT_PUBLIC_FIREBASE_API_KEY`
+- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
+- `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
+- `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
+- `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+- `NEXT_PUBLIC_FIREBASE_APP_ID`
+- `NEXT_PUBLIC_BNB_CHAIN_ID` (97 for testnet)
+- `NEXT_PUBLIC_BNB_RPC_URL`
+
+### Optional:
+- `NEXT_PUBLIC_BNB_PROJECT_REGISTRY_ADDRESS`
+- `NEXT_PUBLIC_BNB_KYC_CONTRACT_ADDRESS`
+- Other API keys as needed
+
+---
+
+## 🐛 Current Build Issue
+
+**Status**: Build has syntax error in `WebRTCCallModal.tsx`
+
+**Workaround Options**:
+
+1. **Fix the syntax error** (recommended):
+   - Error at line 5196 in `src/components/WebRTCCallModal.tsx`
+   - Remove all `!important` from React inline styles
+   - Fix any missing brackets/braces
+
+2. **Temporarily exclude the component**:
+   - Comment out imports of `WebRTCCallModal`
+   - Deploy without it
+   - Fix later
+
+3. **Deploy with build errors** (not recommended):
+   - Vercel will show build failures
+   - Won't deploy successfully
+
+---
+
+## 📝 Pre-Deployment Checklist
+
+- [ ] Fix build errors
+- [ ] Test `npm run build` locally
+- [ ] Add all environment variables to Vercel
+- [ ] Verify `vercel.json` configuration
+- [ ] Check `.vercelignore` excludes unnecessary files
+- [ ] Test wallet connection on testnet
+- [ ] Verify all routes work
+
+---
+
+## 🧪 Testing After Deployment
+
+1. **Test Wallet Connection**:
+   - Navigate to: `https://your-app.vercel.app/founder/register`
+   - Complete registration
+   - Test wallet connection
+   - Verify network switches to BSC Testnet
+
+2. **Check Console**:
+   - Open browser DevTools
+   - Check for errors
+   - Verify wallet detection
+
+---
+
+## 🔄 Continuous Deployment
+
+Once connected to GitHub:
+- Every push to `main` branch auto-deploys
+- Preview deployments for PRs
+- Automatic rollback on errors
+
+---
+
+## 📊 Deployment Status
+
+**Current**: ❌ Build failing (syntax error)  
+**Next Step**: Fix `WebRTCCallModal.tsx` syntax error  
+**Target**: Deploy to Vercel for testing
+
+---
+
+**Note**: Fix the build error before deploying to Vercel. The deployment will fail if the build fails.

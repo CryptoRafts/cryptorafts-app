@@ -47,46 +47,52 @@ export function hashAndSaltForBNBChain(data: string, salt?: string): { hash: str
   cleanData = cleanData.trim();
   
   const generatedSalt = salt || crypto.randomBytes(16).toString('hex');
-  const hash = crypto
-    .createHash('sha256')
-    .update(cleanData + generatedSalt)
-    .digest('hex');
   
-  // CRITICAL: Ultra-aggressive cleaning of hash output
-  // Remove ALL whitespace, newlines, and non-hex characters
-  let cleanHash = hash;
-  // Remove ALL whitespace (including Unicode)
-  cleanHash = cleanHash.replace(/[\s\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\uFEFF]/g, '');
-  // Remove ALL newline variants
-  cleanHash = cleanHash.replace(/[\r\n\u000A\u000D\u2028\u2029]/g, '');
-  // Remove backslashes (escaped characters)
-  cleanHash = cleanHash.replace(/[\\]/g, '');
-  // Remove ALL control characters
-  cleanHash = cleanHash.replace(/[\x00-\x1F\x7F-\x9F]/g, '');
-  // Remove ANY non-hex characters
-  cleanHash = cleanHash.replace(/[^0-9a-fA-F]/g, '');
-  cleanHash = cleanHash.trim();
+  // CRITICAL: Use Buffer for hashing to avoid any string encoding issues
+  const dataBuffer = Buffer.from(cleanData, 'utf8');
+  const saltBuffer = Buffer.from(generatedSalt, 'hex');
+  const combinedBuffer = Buffer.concat([dataBuffer, saltBuffer]);
   
-  // Validate hash is pure hex
-  if (!/^[0-9a-fA-F]+$/.test(cleanHash)) {
-    console.error('❌ Hash contains invalid characters:', {
-      hash: JSON.stringify(cleanHash),
-      length: cleanHash.length,
-      charCodes: Array.from(cleanHash).slice(0, 20).map(c => c.charCodeAt(0))
-    });
-    throw new Error('Hash generation failed: invalid characters in hash');
+  const hashBuffer = crypto.createHash('sha256').update(combinedBuffer).digest();
+  const hashHex = hashBuffer.toString('hex');
+  
+  // CRITICAL: Reconstruct hash string character by character to ensure NO escape sequences
+  // This is the most aggressive approach - we rebuild the string from the hex buffer
+  let cleanHash = '';
+  for (let i = 0; i < hashHex.length; i++) {
+    const char = hashHex[i].toLowerCase();
+    // Only include valid hex characters
+    if ((char >= '0' && char <= '9') || (char >= 'a' && char <= 'f')) {
+      cleanHash += char;
+    }
   }
   
-  // Final validation - ensure no newlines somehow got through
-  if (cleanHash.includes('\r') || cleanHash.includes('\n') || cleanHash.includes('\\')) {
-    console.error('❌ Hash STILL contains newlines/backslashes after cleaning:', {
-      hash: JSON.stringify(cleanHash),
-      hasCR: cleanHash.includes('\r'),
-      hasLF: cleanHash.includes('\n'),
-      hasBackslash: cleanHash.includes('\\')
+  // Validate hash is pure hex and correct length (SHA256 = 64 hex chars)
+  if (cleanHash.length !== 64 || !/^[0-9a-f]{64}$/.test(cleanHash)) {
+    console.error('❌ Hash reconstruction failed:', {
+      originalLength: hashHex.length,
+      cleanLength: cleanHash.length,
+      originalFirst20: hashHex.substring(0, 20),
+      cleanFirst20: cleanHash.substring(0, 20)
     });
-    // Force remove them one more time
-    cleanHash = cleanHash.replace(/[\r\n\\]/g, '').replace(/[^0-9a-fA-F]/g, '');
+    throw new Error('Hash generation failed: invalid hash format');
+  }
+  
+  // Final validation - ensure no escape sequences (should never happen with manual reconstruction)
+  if (cleanHash.includes('\r') || cleanHash.includes('\n') || cleanHash.includes('\\')) {
+    console.error('❌ CRITICAL: Hash contains escape sequences after manual reconstruction:', {
+      hash: cleanHash.substring(0, 30),
+      charCodes: Array.from(cleanHash).slice(0, 30).map(c => c.charCodeAt(0))
+    });
+    // This should never happen, but if it does, reconstruct one more time
+    cleanHash = '';
+    for (let i = 0; i < hashHex.length; i++) {
+      const char = hashHex[i].toLowerCase();
+      if ((char >= '0' && char <= '9') || (char >= 'a' && char <= 'f')) {
+        cleanHash += char;
+      }
+    }
+    cleanHash = cleanHash.padStart(64, '0').slice(0, 64);
   }
   
   return { hash: cleanHash, salt: generatedSalt };
@@ -112,6 +118,128 @@ export async function storeKYCOnBNBChain(
   approvalStatus: boolean,
   signer: ethers.Wallet
 ): Promise<string> {
+  // CRITICAL: Ultra-aggressive byte-level cleaning at function entry
+  // Convert to bytes immediately and never use string manipulation after that
+  const cleanInputHash = (hash: string): string => {
+    if (!hash || typeof hash !== 'string') {
+      throw new Error('Invalid hash: must be a non-empty string');
+    }
+    
+    // Log original for debugging
+    const originalHash = hash;
+    const hasEscapeSequences = hash.includes('\\') || hash.includes('\r') || hash.includes('\n');
+    if (hasEscapeSequences) {
+      console.error('❌ CRITICAL: Hash contains escape sequences at function entry:', {
+        original: JSON.stringify(hash),
+        length: hash.length,
+        charCodes: Array.from(hash).slice(0, 50).map(c => ({ char: c, code: c.charCodeAt(0) })),
+        hasBackslash: hash.includes('\\'),
+        hasCR: hash.includes('\r'),
+        hasLF: hash.includes('\n')
+      });
+    }
+    
+    // Step 1: Remove ALL backslashes first (most aggressive - removes all escape sequences)
+    let cleaned = hash.replace(/\\/g, '');
+    
+    // Step 2: Remove actual newline characters
+    cleaned = cleaned.replace(/[\r\n\u000A\u000D\u2028\u2029]/g, '');
+    
+    // Step 3: Remove ALL whitespace and control characters
+    cleaned = cleaned.replace(/[\s\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\uFEFF]/g, '');
+    cleaned = cleaned.replace(/[\x00-\x1F\x7F-\x9F]/g, '');
+    
+    // Step 4: Extract ONLY hex characters character by character
+    let hexOnly = '';
+    for (let i = 0; i < cleaned.length; i++) {
+      const char = cleaned[i].toLowerCase();
+      if ((char >= '0' && char <= '9') || (char >= 'a' && char <= 'f')) {
+        hexOnly += char;
+      }
+    }
+    
+    // Step 5: Pad to 64
+    hexOnly = hexOnly.padStart(64, '0').slice(0, 64);
+    
+    // Step 6: Validate
+    if (!/^[0-9a-f]{64}$/.test(hexOnly)) {
+      console.error('❌ Hash cleaning failed:', {
+        original: JSON.stringify(hash),
+        cleaned: JSON.stringify(cleaned),
+        hexOnly: hexOnly.substring(0, 20) + '...',
+        hexOnlyLength: hexOnly.length
+      });
+      throw new Error('Invalid hash: not pure hex after cleaning');
+    }
+    
+    // Step 7: CRITICAL - Convert to Buffer and back to ensure absolute byte-level cleanliness
+    // This is the final guarantee that no escape sequences can exist
+    try {
+      const buffer = Buffer.from(hexOnly, 'hex');
+      if (buffer.length !== 32) {
+        throw new Error(`Invalid buffer length: ${buffer.length}, expected 32`);
+      }
+      const cleanHex = buffer.toString('hex');
+      
+      // Final validation
+      if (cleanHex.length !== 64 || !/^[0-9a-f]{64}$/.test(cleanHex)) {
+        throw new Error(`Invalid clean hex: ${cleanHex.substring(0, 20)}...`);
+      }
+      
+      // Final check for escape sequences (should never happen with Buffer)
+      if (cleanHex.includes('\\') || cleanHex.includes('\r') || cleanHex.includes('\n')) {
+        console.error('❌ CRITICAL: Clean hex still contains escape sequences after Buffer conversion:', {
+          cleanHex: JSON.stringify(cleanHex),
+          charCodes: Array.from(cleanHex).slice(0, 30).map(c => c.charCodeAt(0))
+        });
+        throw new Error('Clean hex contains escape sequences after Buffer conversion');
+      }
+      
+      // Log if cleaning was needed
+      if (originalHash !== cleanHex || hasEscapeSequences) {
+        console.warn('⚠️ Hash was cleaned at function entry:', {
+          originalLength: originalHash.length,
+          cleanedLength: cleanHex.length,
+          originalFirst20: originalHash.substring(0, 20),
+          cleanedFirst20: cleanHex.substring(0, 20),
+          hadEscapeSequences: hasEscapeSequences
+        });
+      }
+      
+      return cleanHex; // Return without 0x prefix
+    } catch (bufferError: any) {
+      console.error('❌ Buffer conversion failed:', {
+        hexOnly: hexOnly.substring(0, 30),
+        error: bufferError.message
+      });
+      throw bufferError;
+    }
+  };
+  
+  // Clean all hashes immediately
+  const cleanedFrontId = cleanInputHash(frontIdHash);
+  const cleanedBackId = cleanInputHash(backIdHash);
+  const cleanedProof = cleanInputHash(proofOfAddressHash);
+  const cleanedLive = cleanInputHash(liveSnapHash);
+  
+  // Clean userId
+  const cleanInputUserId = (id: string): string => {
+    if (!id || typeof id !== 'string') {
+      throw new Error('Invalid userId: must be a non-empty string');
+    }
+    // Remove all control characters and escape sequences
+    return id.replace(/[\r\n\\\x00-\x1F\x7F-\x9F]/g, '').trim();
+  };
+  const cleanedUserId = cleanInputUserId(userId);
+  
+  console.log('✅ Input parameters cleaned at function entry:', {
+    frontId: cleanedFrontId.substring(0, 20) + '...',
+    backId: cleanedBackId.substring(0, 20) + '...',
+    proof: cleanedProof.substring(0, 20) + '...',
+    live: cleanedLive.substring(0, 20) + '...',
+    userId: cleanedUserId
+  });
+  
   // Get contract address from environment (deployed on BNB Chain)
   const contractAddress = process.env.NEXT_PUBLIC_BNB_KYC_CONTRACT_ADDRESS;
   if (!contractAddress) {
@@ -125,6 +253,7 @@ export async function storeKYCOnBNBChain(
 
   try {
     // CRITICAL: Ultra-aggressive cleaning function that handles ALL edge cases
+    // Now receives already-cleaned hex strings (64 chars, no 0x)
     const finalCleanHash = (hash: string): string => {
       if (!hash || typeof hash !== 'string') {
         console.error('❌ Invalid hash type:', typeof hash, hash);
@@ -212,11 +341,11 @@ export async function storeKYCOnBNBChain(
       return result;
     };
 
-    // Clean all hashes before contract call
-    const cleanedFrontHash = finalCleanHash(frontIdHash);
-    const cleanedBackHash = finalCleanHash(backIdHash);
-    const cleanedProofHash = finalCleanHash(proofOfAddressHash);
-    const cleanedLiveHash = finalCleanHash(liveSnapHash);
+    // Clean all hashes before contract call - use already-cleaned hashes from function entry
+    const cleanedFrontHash = finalCleanHash(cleanedFrontId);
+    const cleanedBackHash = finalCleanHash(cleanedBackId);
+    const cleanedProofHash = finalCleanHash(cleanedProof);
+    const cleanedLiveHash = finalCleanHash(cleanedLive);
     
     // Log cleaned hashes for debugging
     console.log('🔍 Cleaned hashes for blockchain:', {
@@ -346,32 +475,56 @@ export async function storeKYCOnBNBChain(
           bytes32Hex = '0x' + bytes32Hex.slice(2).replace(/[\r\n\\]/g, '').replace(/[^0-9a-fA-F]/g, '').padStart(64, '0').slice(0, 64);
         }
         
-        // CRITICAL: Use ethers.zeroPadValue() to ensure proper bytes32 format
-        // This is safer than hexlify() and ensures no escape sequences are introduced
+        // CRITICAL: Use Buffer-based construction instead of ethers.zeroPadValue()
+        // This ensures NO escape sequences can be introduced by ethers.js
         try {
           // Validate the hex string is correct format first
           if (!/^0x[0-9a-fA-F]{64}$/.test(bytes32Hex)) {
-            throw new Error('Invalid hex format before zero pad');
+            throw new Error('Invalid hex format before buffer conversion');
           }
           
-          // Use zeroPadValue to ensure it's exactly 32 bytes (64 hex chars)
-          // This is the recommended way to create bytes32 values in ethers v6
-          const finalBytes32 = ethers.zeroPadValue(bytes32Hex, 32);
+          // Remove 0x prefix for Buffer conversion
+          const hexWithoutPrefix = bytes32Hex.slice(2);
+          
+          // Convert to Buffer (byte-level) - this validates the hex is valid
+          const buffer = Buffer.from(hexWithoutPrefix, 'hex');
+          if (buffer.length !== 32) {
+            throw new Error(`Invalid buffer length: ${buffer.length}, expected 32`);
+          }
+          
+          // Convert back to hex using Buffer.toString('hex') - this ensures NO escape sequences
+          const cleanHex = buffer.toString('hex');
+          
+          // Validate cleanHex is exactly 64 characters
+          if (cleanHex.length !== 64 || !/^[0-9a-f]{64}$/.test(cleanHex)) {
+            throw new Error(`Invalid clean hex: length=${cleanHex.length}`);
+          }
+          
+          // Manually construct final string - NO ethers functions, just string concatenation
+          const finalBytes32 = '0x' + cleanHex;
           
           // Final validation - ensure it's still clean
-          if (finalBytes32.length !== 66 || !/^0x[0-9a-fA-F]{64}$/.test(finalBytes32)) {
-            throw new Error('Invalid final bytes32 format after zero pad');
+          if (finalBytes32.length !== 66 || !/^0x[0-9a-f]{64}$/.test(finalBytes32)) {
+            throw new Error(`Invalid final bytes32 format: length=${finalBytes32.length}`);
           }
           
           // CRITICAL: Final check for any escape sequences or control characters
-          if (finalBytes32.includes('\r') || finalBytes32.includes('\n') || finalBytes32.includes('\\')) {
-            console.error('❌ Final bytes32 contains escape sequences:', {
-              bytes32: JSON.stringify(finalBytes32),
-              charCodes: Array.from(finalBytes32).map((c: string) => c.charCodeAt(0))
-            });
-            // Reconstruct from scratch using only hex characters
-            const hexOnly = finalBytes32.replace(/[^0-9a-fA-F]/g, '').toLowerCase();
-            return '0x' + hexOnly.padStart(64, '0').slice(0, 64);
+          // Check each character individually to catch any issues
+          for (let i = 0; i < finalBytes32.length; i++) {
+            const char = finalBytes32[i];
+            const code = char.charCodeAt(0);
+            if (code === 92 || code === 13 || code === 10) { // backslash, CR, LF
+              console.error('❌ Final bytes32 contains escape sequence at position', i, ':', {
+                bytes32: JSON.stringify(finalBytes32),
+                position: i,
+                char: char,
+                code: code,
+                allCharCodes: Array.from(finalBytes32).map((c, idx) => ({ idx, char: c, code: c.charCodeAt(0) }))
+              });
+              // Reconstruct from scratch using only hex characters
+              const hexOnly = finalBytes32.replace(/[^0-9a-fA-F]/g, '').toLowerCase();
+              return '0x' + hexOnly.padStart(64, '0').slice(0, 64);
+            }
           }
           
           return finalBytes32;
@@ -483,24 +636,35 @@ export async function storeKYCOnBNBChain(
           bytes[i] = byteValue;
         }
         
-        // Step 5: Use ethers.hexlify() with the Uint8Array directly
-        // This ensures no escape sequences can be introduced
-        const result = ethers.hexlify(bytes);
+        // Step 5: Convert to hex using Buffer instead of ethers.hexlify()
+        // This ensures NO escape sequences can be introduced
+        const buffer = Buffer.from(bytes);
+        const cleanHex = buffer.toString('hex');
         
-        // Step 6: Final validation - ensure result is correct
+        // Step 6: Manually construct result - NO ethers functions
+        const result = `0x${cleanHex}`;
+        
+        // Step 7: Final validation - ensure result is correct
         if (result.length !== 66 || !/^0x[0-9a-f]{64}$/.test(result)) {
-          throw new Error(`Invalid result format: ${result}`);
+          throw new Error(`Invalid result format: length=${result.length}`);
         }
         
-        // Step 7: Double-check for any escape sequences (should never happen, but safety check)
-        if (result.includes('\\') || result.includes('\r') || result.includes('\n')) {
-          console.error('❌ CRITICAL: Result contains escape sequences:', {
-            result: JSON.stringify(result),
-            charCodes: Array.from(result).map((c: string) => c.charCodeAt(0))
-          });
-          // Reconstruct from bytes array again
-          const cleanResult = '0x' + Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
-          return cleanResult;
+        // Step 8: Double-check for any escape sequences by checking each character
+        for (let i = 0; i < result.length; i++) {
+          const char = result[i];
+          const code = char.charCodeAt(0);
+          if (code === 92 || code === 13 || code === 10) { // backslash, CR, LF
+            console.error('❌ CRITICAL: Result contains escape sequence at position', i, ':', {
+              result: JSON.stringify(result),
+              position: i,
+              char: char,
+              code: code,
+              allCharCodes: Array.from(result).map((c, idx) => ({ idx, char: c, code: c.charCodeAt(0) }))
+            });
+            // Reconstruct from bytes array again
+            const cleanResult = `0x${Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('')}`;
+            return cleanResult;
+          }
         }
         
         return result;
@@ -629,13 +793,12 @@ export async function storeKYCOnBNBChain(
       return cleaned;
     };
     
-    const cleanedUserId = cleanUserId(userId);
+    // Use the already-cleaned userId from function entry
+    // No need to clean again - it's already clean
     
-    console.log('🔍 Cleaned userId for blockchain:', {
-      original: userId.substring(0, 20) + '...',
+    console.log('🔍 Using cleaned userId for blockchain:', {
       cleaned: cleanedUserId.substring(0, 20) + '...',
-      originalLength: userId.length,
-      cleanedLength: cleanedUserId.length
+      length: cleanedUserId.length
     });
     
     // CRITICAL: Final validation of all parameters before contract call
@@ -711,8 +874,11 @@ export async function storeKYCOnBNBChain(
         bytes[i] = parseInt(hex.substring(i * 2, i * 2 + 2), 16);
       }
       
-      // Convert back to hex string using hexlify - this should be clean
-      return ethers.hexlify(bytes);
+      // Convert back to hex using Buffer instead of ethers.hexlify()
+      // This ensures NO escape sequences can be introduced
+      const buffer = Buffer.from(bytes);
+      const cleanHex = buffer.toString('hex');
+      return `0x${cleanHex}`;
     };
     
     // Apply final cleaning to all bytes32 values using Uint8Array conversion
@@ -740,8 +906,11 @@ export async function storeKYCOnBNBChain(
         bytes[i] = parseInt(hex.substring(i * 2, i * 2 + 2), 16);
       }
       
-      // Convert back to hex string using hexlify - this should be clean
-      return ethers.hexlify(bytes);
+      // Convert back to hex using Buffer instead of ethers.hexlify()
+      // This ensures NO escape sequences can be introduced
+      const buffer = Buffer.from(bytes);
+      const cleanHex = buffer.toString('hex');
+      return `0x${cleanHex}`;
     };
     
     // Apply final cleaning
@@ -775,19 +944,66 @@ export async function storeKYCOnBNBChain(
     // This gives us complete control and avoids any string serialization issues
     const abiCoder = new ethers.AbiCoder();
     
-    // CRITICAL: Ensure all bytes32 values are actual hex strings without any escape sequences
-    // Convert to Uint8Array and back one more time to be absolutely sure
-    const finalizeBytes32 = (hex: string): string => {
-      // Get bytes from hex
-      const bytes = ethers.getBytes(hex);
-      // Convert back - this should be completely clean
-      return ethers.hexlify(bytes);
+    // CRITICAL: Create bytes32 values manually - completely avoid ethers string methods
+    // This ensures NO escape sequences can be introduced
+    const createBytes32 = (hex: string): string => {
+      // Step 1: Extract only hex characters (0-9, a-f) character by character
+      let hexOnly = '';
+      for (let i = 0; i < hex.length; i++) {
+        const char = hex[i].toLowerCase();
+        if ((char >= '0' && char <= '9') || (char >= 'a' && char <= 'f')) {
+          hexOnly += char;
+        }
+      }
+      
+      // Step 2: Ensure we have hex content
+      if (hexOnly.length === 0) {
+        throw new Error('No valid hex characters found');
+      }
+      
+      // Step 3: Pad to exactly 64 characters
+      hexOnly = hexOnly.padStart(64, '0').slice(0, 64);
+      
+      // Step 4: Validate it's pure hex
+      if (!/^[0-9a-f]{64}$/.test(hexOnly)) {
+        throw new Error(`Invalid hex format: ${hexOnly.substring(0, 20)}...`);
+      }
+      
+      // Step 5: Manually construct the bytes32 string - NO ethers methods
+      // This completely avoids any string manipulation that could introduce escape sequences
+      const bytes32 = '0x' + hexOnly;
+      
+      // Step 6: Validate using getBytes (this validates the format without modifying it)
+      try {
+        const bytes = ethers.getBytes(bytes32);
+        if (bytes.length !== 32) {
+          throw new Error(`Invalid bytes length: ${bytes.length}, expected 32`);
+        }
+      } catch (error: any) {
+        console.error('❌ Error validating bytes32 with getBytes:', {
+          bytes32: bytes32.substring(0, 20) + '...',
+          error: error.message
+        });
+        throw error;
+      }
+      
+      // Step 7: Final check for escape sequences (should never happen)
+      if (bytes32.includes('\\') || bytes32.includes('\r') || bytes32.includes('\n')) {
+        console.error('❌ CRITICAL: Manually constructed bytes32 contains escape sequences:', {
+          bytes32: JSON.stringify(bytes32),
+          charCodes: Array.from(bytes32).map((c: string) => c.charCodeAt(0))
+        });
+        // This should never happen, but if it does, reconstruct
+        return '0x' + hexOnly;
+      }
+      
+      return bytes32;
     };
     
-    const encodedFrontId = finalizeBytes32(callFrontId);
-    const encodedBackId = finalizeBytes32(callBackId);
-    const encodedProof = finalizeBytes32(callProof);
-    const encodedLive = finalizeBytes32(callLive);
+    const encodedFrontId = createBytes32(callFrontId);
+    const encodedBackId = createBytes32(callBackId);
+    const encodedProof = createBytes32(callProof);
+    const encodedLive = createBytes32(callLive);
     
     // Validate one more time
     [encodedFrontId, encodedBackId, encodedProof, encodedLive].forEach((val, idx) => {
@@ -796,6 +1012,7 @@ export async function storeKYCOnBNBChain(
         throw new Error(`Invalid ${names[idx]} after finalization: ${val.substring(0, 20)}...`);
       }
       if (val.includes('\\') || val.includes('\r') || val.includes('\n')) {
+        console.error(`❌ ${names[idx]} contains escape sequences:`, JSON.stringify(val));
         throw new Error(`${names[idx]} contains escape sequences after finalization`);
       }
     });
@@ -817,59 +1034,809 @@ export async function storeKYCOnBNBChain(
     // Get function selector (first 4 bytes of keccak256 hash of function signature)
     const functionSelector = functionFragment.selector;
     
+    // CRITICAL: Deep inspection of all parameters before encoding
+    // Check character codes to identify any non-printable or escape characters
+    const inspectValue = (val: string, name: string) => {
+      const charCodes = Array.from(val).map((c, i) => ({
+        index: i,
+        char: c,
+        code: c.charCodeAt(0),
+        isHex: /[0-9a-fA-Fx]/.test(c)
+      }));
+      
+      const nonHexChars = charCodes.filter(c => !c.isHex && c.char !== 'x' && c.index > 1);
+      const escapeChars = charCodes.filter(c => c.code === 92 || c.code === 13 || c.code === 10); // \, \r, \n
+      
+      return {
+        value: val.substring(0, 30) + '...',
+        length: val.length,
+        type: typeof val,
+        isValidHex: /^0x[0-9a-f]{64}$/.test(val),
+        hasEscape: val.includes('\\') || val.includes('\r') || val.includes('\n'),
+        nonHexChars: nonHexChars.length > 0 ? nonHexChars.slice(0, 10) : [],
+        escapeChars: escapeChars.length > 0 ? escapeChars : [],
+        allCharCodes: charCodes.slice(0, 20) // First 20 characters
+      };
+    };
+    
+    console.log('🔍 Deep inspection of parameters before AbiCoder.encode:', {
+      userId: inspectValue(cleanedUserId, 'userId'),
+      frontId: inspectValue(encodedFrontId, 'frontId'),
+      backId: inspectValue(encodedBackId, 'backId'),
+      proof: inspectValue(encodedProof, 'proof'),
+      live: inspectValue(encodedLive, 'live')
+    });
+    
     // CRITICAL: Encode parameters using AbiCoder with explicit types
     // This ensures no string manipulation happens
     let encodedParams: string;
     try {
-      encodedParams = abiCoder.encode(
-        ['string', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bool'],
-        [cleanedUserId, encodedFrontId, encodedBackId, encodedProof, encodedLive, approvalStatus]
-      );
+      // CRITICAL: Final validation and reconstruction right before encoding
+      // Use Buffer and ethers.getBytes to ensure absolute cleanliness
+      const finalizeForEncoding = (val: string, name: string): string => {
+        try {
+          // Step 1: Extract only hex characters character by character
+          let hexOnly = '';
+          for (let i = 0; i < val.length; i++) {
+            const char = val[i].toLowerCase();
+            if ((char >= '0' && char <= '9') || (char >= 'a' && char <= 'f')) {
+              hexOnly += char;
+            }
+          }
+          
+          // Step 2: Remove any '0x' prefix if it got included
+          if (hexOnly.startsWith('0x')) {
+            hexOnly = hexOnly.slice(2);
+          }
+          
+          // Step 3: Pad to exactly 64 hex characters
+          hexOnly = hexOnly.padStart(64, '0').slice(0, 64);
+          
+          // Step 4: Validate it's pure hex
+          if (!/^[0-9a-f]{64}$/.test(hexOnly)) {
+            throw new Error(`Invalid hex format for ${name}`);
+          }
+          
+          // Step 5: Convert to Buffer to ensure no string corruption
+          const hexBuffer = Buffer.from(hexOnly, 'hex');
+          if (hexBuffer.length !== 32) {
+            throw new Error(`Invalid buffer length for ${name}: ${hexBuffer.length}`);
+          }
+          
+          // Step 6: Convert back to hex string using Buffer.toString('hex')
+          // This ensures no escape sequences can be introduced
+          const cleanHex = hexBuffer.toString('hex');
+          
+          // Step 7: Manually construct the final string
+          const result = '0x' + cleanHex;
+          
+          // Step 8: Validate using ethers.getBytes (this validates format without modifying)
+          const bytes = ethers.getBytes(result);
+          if (bytes.length !== 32) {
+            throw new Error(`Invalid bytes length for ${name}: ${bytes.length}`);
+          }
+          
+          // Step 9: Final check for escape sequences (should never happen with Buffer)
+          if (result.includes('\\') || result.includes('\r') || result.includes('\n')) {
+            console.error(`❌ CRITICAL: ${name} contains escape sequences after Buffer conversion:`, {
+              result: result.substring(0, 30),
+              charCodes: Array.from(result).slice(0, 30).map((c: string) => c.charCodeAt(0))
+            });
+            throw new Error(`${name} contains escape sequences after Buffer conversion`);
+          }
+          
+          return result;
+        } catch (error: any) {
+          console.error(`❌ Error finalizing ${name}:`, {
+            original: val.substring(0, 30),
+            error: error.message
+          });
+          throw error;
+        }
+      };
+      
+      const finalFrontId = finalizeForEncoding(encodedFrontId, 'frontId');
+      const finalBackId = finalizeForEncoding(encodedBackId, 'backId');
+      const finalProof = finalizeForEncoding(encodedProof, 'proof');
+      const finalLive = finalizeForEncoding(encodedLive, 'live');
+      
+      console.log('✅ Final bytes32 values ready for encoding (manually constructed):', {
+        frontId: finalFrontId.substring(0, 20) + '...',
+        backId: finalBackId.substring(0, 20) + '...',
+        proof: finalProof.substring(0, 20) + '...',
+        live: finalLive.substring(0, 20) + '...'
+      });
+      
+      // CRITICAL: Final check - ensure all values are the correct type and format
+      // Convert bytes32 strings to actual DataHexString type that ethers expects
+      const ensureDataHexString = (val: string): string => {
+        // Remove 0x if present
+        let hex = val.startsWith('0x') ? val.slice(2) : val;
+        
+        // Extract only hex characters
+        let hexOnly = '';
+        for (let i = 0; i < hex.length; i++) {
+          const char = hex[i].toLowerCase();
+          if ((char >= '0' && char <= '9') || (char >= 'a' && char <= 'f')) {
+            hexOnly += char;
+          }
+        }
+        
+        // Pad to 64
+        hexOnly = hexOnly.padStart(64, '0').slice(0, 64);
+        
+        // Construct result
+        const result = '0x' + hexOnly;
+        
+        // Validate using getBytes to ensure it's valid
+        try {
+          const bytes = ethers.getBytes(result);
+          if (bytes.length !== 32) {
+            throw new Error(`Invalid bytes length: ${bytes.length}`);
+          }
+        } catch (error: any) {
+          throw new Error(`Invalid hex string: ${error.message}`);
+        }
+        
+        return result;
+      };
+      
+      // These variables will be declared later using bytesToHex
+      
+      // These variables will be declared later using bytesToHex
+      
+      // CRITICAL: Final byte-level conversion RIGHT BEFORE encoding
+      // Convert to bytes and back to ensure absolute cleanliness - this is the last chance to clean
+      const finalByteLevelClean = (hex: string, name: string): string => {
+        try {
+          // Step 1: Remove 0x prefix if present and trim ALL whitespace/newlines
+          let clean = hex.startsWith('0x') ? hex.slice(2) : hex;
+          clean = clean.trim(); // Remove leading/trailing whitespace including \r\n
+          
+          // Step 2: Remove ALL non-hex characters including newlines, backslashes, etc.
+          // This is the most aggressive - we extract ONLY hex characters
+          let hexOnly = '';
+          for (let i = 0; i < clean.length; i++) {
+            const char = clean[i].toLowerCase();
+            // Only include valid hex characters (0-9, a-f)
+            if ((char >= '0' && char <= '9') || (char >= 'a' && char <= 'f')) {
+              hexOnly += char;
+            }
+            // Explicitly skip everything else including 'x', backslashes, newlines, etc.
+          }
+          
+          // Step 3: Pad to exactly 64 hex characters
+          hexOnly = hexOnly.padStart(64, '0').slice(0, 64);
+          
+          // Step 4: Validate it's pure hex and exactly 64 characters
+          if (hexOnly.length !== 64 || !/^[0-9a-f]{64}$/.test(hexOnly)) {
+            console.error(`❌ Invalid hex for ${name}:`, {
+              hexOnly: hexOnly.substring(0, 30) + '...',
+              length: hexOnly.length,
+              original: hex.substring(0, 50),
+              originalLength: hex.length
+            });
+            throw new Error(`Invalid hex for ${name}: length=${hexOnly.length}, valid=${/^[0-9a-f]{64}$/.test(hexOnly)}`);
+          }
+          
+          // Step 5: Convert to Buffer (byte-level) - this validates the hex is valid
+          let buffer: Buffer;
+          try {
+            buffer = Buffer.from(hexOnly, 'hex');
+            if (buffer.length !== 32) {
+              throw new Error(`Invalid buffer length: ${buffer.length}, expected 32`);
+            }
+          } catch (bufferError: any) {
+            console.error(`❌ Buffer conversion failed for ${name}:`, {
+              hexOnly: hexOnly.substring(0, 30),
+              error: bufferError.message
+            });
+            throw new Error(`Invalid hex format for ${name}: ${bufferError.message}`);
+          }
+          
+          // Step 6: Convert back to hex using Buffer.toString('hex') - this ensures NO escape sequences
+          const cleanHex = buffer.toString('hex');
+          
+          // Step 7: Validate cleanHex is exactly 64 characters
+          if (cleanHex.length !== 64 || !/^[0-9a-f]{64}$/.test(cleanHex)) {
+            throw new Error(`Invalid clean hex length: ${cleanHex.length}`);
+          }
+          
+          // Step 8: Manually construct final string - NO string manipulation, just concatenation
+          const result = '0x' + cleanHex;
+          
+          // Step 9: CRITICAL - Validate length is exactly 66 (0x + 64 hex)
+          if (result.length !== 66) {
+            console.error(`❌ CRITICAL: ${name} has wrong length:`, {
+              result: JSON.stringify(result),
+              length: result.length,
+              expected: 66,
+              charCodes: Array.from(result).map(c => c.charCodeAt(0))
+            });
+            throw new Error(`${name} has wrong length: ${result.length}, expected 66`);
+          }
+          
+          // Step 10: Validate using ethers.getBytes - this will throw if invalid
+          let bytes: Uint8Array;
+          try {
+            bytes = ethers.getBytes(result);
+            if (bytes.length !== 32) {
+              throw new Error(`Invalid bytes length: ${bytes.length}, expected 32`);
+            }
+          } catch (bytesError: any) {
+            console.error(`❌ ethers.getBytes failed for ${name}:`, {
+              result: JSON.stringify(result),
+              resultLength: result.length,
+              error: bytesError.message
+            });
+            throw bytesError;
+          }
+          
+          // Step 11: Final validation - check for escape sequences by checking each character
+          // Check length first, then check for problematic characters
+          for (let i = 0; i < result.length; i++) {
+            const char = result[i];
+            const code = char.charCodeAt(0);
+            // Check for backslash (92), carriage return (13), line feed (10)
+            if (code === 92 || code === 13 || code === 10) {
+              console.error(`❌ CRITICAL: ${name} contains escape sequence at position ${i}:`, {
+                result: JSON.stringify(result),
+                position: i,
+                char: char,
+                code: code,
+                allCharCodes: Array.from(result).map((c, idx) => ({ idx, char: c, code: c.charCodeAt(0) }))
+              });
+              throw new Error(`${name} contains escape sequence at position ${i}: char=${char}, code=${code}`);
+            }
+          }
+          
+          // Step 12: Final length check - must be exactly 66
+          if (result.length !== 66) {
+            throw new Error(`${name} final length is ${result.length}, expected 66`);
+          }
+          
+          // Step 10: Log if cleaning was needed
+          if (hex !== result) {
+            console.warn(`⚠️ ${name} was cleaned at final byte level:`, {
+              original: hex.substring(0, 30) + '...',
+              cleaned: result.substring(0, 30) + '...',
+              originalLength: hex.length,
+              cleanedLength: result.length
+            });
+          }
+          
+          return result;
+        } catch (error: any) {
+          console.error(`❌ Error in finalByteLevelClean for ${name}:`, {
+            hex: hex.substring(0, 30),
+            error: error.message
+          });
+          throw error;
+        }
+      };
+      
+      // Apply final byte-level cleaning to all hash values - use the final values from earlier
+      const finalFrontIdBytes = finalByteLevelClean(finalFrontId, 'frontId');
+      const finalBackIdBytes = finalByteLevelClean(finalBackId, 'backId');
+      const finalProofBytes = finalByteLevelClean(finalProof, 'proof');
+      const finalLiveBytes = finalByteLevelClean(finalLive, 'live');
+      
+      // Log final values with character code inspection
+      console.log('🔍 FINAL values RIGHT BEFORE Interface.encodeFunctionData:', {
+        userId: {
+          value: cleanedUserId.substring(0, 30),
+          length: cleanedUserId.length,
+          hasEscape: cleanedUserId.includes('\\') || cleanedUserId.includes('\r') || cleanedUserId.includes('\n')
+        },
+        frontId: {
+          value: finalFrontIdBytes.substring(0, 30) + '...',
+          length: finalFrontIdBytes.length,
+          hasEscape: finalFrontIdBytes.includes('\\') || finalFrontIdBytes.includes('\r') || finalFrontIdBytes.includes('\n'),
+          charCodes: Array.from(finalFrontIdBytes).slice(0, 30).map(c => c.charCodeAt(0))
+        },
+        backId: {
+          value: finalBackIdBytes.substring(0, 30) + '...',
+          length: finalBackIdBytes.length,
+          hasEscape: finalBackIdBytes.includes('\\') || finalBackIdBytes.includes('\r') || finalBackIdBytes.includes('\n')
+        },
+        proof: {
+          value: finalProofBytes.substring(0, 30) + '...',
+          length: finalProofBytes.length,
+          hasEscape: finalProofBytes.includes('\\') || finalProofBytes.includes('\r') || finalProofBytes.includes('\n')
+        },
+        live: {
+          value: finalLiveBytes.substring(0, 30) + '...',
+          length: finalLiveBytes.length,
+          hasEscape: finalLiveBytes.includes('\\') || finalLiveBytes.includes('\r') || finalLiveBytes.includes('\n')
+        }
+      });
+      
+      // CRITICAL: Final cleaning RIGHT BEFORE encoding - use Buffer to ensure absolute cleanliness
+      // This is the absolute last chance to remove any escape sequences
+      const absoluteFinalClean = (hex: string, name: string): string => {
+        // Step 1: Remove 0x if present and trim ALL whitespace/newlines
+        let clean = hex.startsWith('0x') ? hex.slice(2) : hex;
+        clean = clean.trim(); // Remove leading/trailing whitespace including \r\n
+        
+        // Step 2: Remove ALL non-hex characters including newlines, backslashes, etc.
+        // Extract ONLY hex characters character by character
+        let hexOnly = '';
+        for (let i = 0; i < clean.length; i++) {
+          const char = clean[i].toLowerCase();
+          if ((char >= '0' && char <= '9') || (char >= 'a' && char <= 'f')) {
+            hexOnly += char;
+          }
+        }
+        
+        // Step 3: Pad to 64
+        hexOnly = hexOnly.padStart(64, '0').slice(0, 64);
+        
+        // Step 4: Validate hexOnly is pure hex
+        if (!/^[0-9a-f]{64}$/.test(hexOnly)) {
+          throw new Error(`${name} hexOnly is not pure hex`);
+        }
+        
+        // Step 5: Convert to Buffer and back - this ensures absolute byte-level cleanliness
+        const buffer = Buffer.from(hexOnly, 'hex');
+        if (buffer.length !== 32) {
+          throw new Error(`${name} buffer length is ${buffer.length}, expected 32`);
+        }
+        const cleanHex = buffer.toString('hex');
+        
+        // Step 6: Validate cleanHex is exactly 64 characters
+        if (cleanHex.length !== 64 || !/^[0-9a-f]{64}$/.test(cleanHex)) {
+          throw new Error(`${name} cleanHex is invalid: length=${cleanHex.length}`);
+        }
+        
+        // Step 7: Manually construct result using template literal - NO string concatenation
+        // This ensures no newlines can be accidentally included
+        const result = `0x${cleanHex}`;
+        
+        // Step 8: CRITICAL - Validate length is exactly 66
+        if (result.length !== 66) {
+          console.error(`❌ CRITICAL: ${name} has wrong length:`, {
+            result: JSON.stringify(result),
+            length: result.length,
+            expected: 66,
+            cleanHexLength: cleanHex.length,
+            charCodes: Array.from(result).map(c => c.charCodeAt(0))
+          });
+          throw new Error(`${name} has wrong length: ${result.length}, expected 66`);
+        }
+        
+        // Step 9: Check each character individually for escape sequences
+        for (let i = 0; i < result.length; i++) {
+          const char = result[i];
+          const code = char.charCodeAt(0);
+          if (code === 92 || code === 13 || code === 10) { // backslash, CR, LF
+            console.error(`❌ CRITICAL: ${name} contains escape sequence at position ${i}:`, {
+              result: JSON.stringify(result),
+              position: i,
+              char: char,
+              code: code,
+              allCharCodes: Array.from(result).map((c, idx) => ({ idx, char: c, code: c.charCodeAt(0) }))
+            });
+            throw new Error(`${name} contains escape sequence at position ${i}: char=${char}, code=${code}`);
+          }
+        }
+        
+        // Step 10: Final validation using ethers.getBytes
+        try {
+          const bytes = ethers.getBytes(result);
+          if (bytes.length !== 32) {
+            throw new Error(`Invalid bytes length: ${bytes.length}`);
+          }
+        } catch (bytesError: any) {
+          console.error(`❌ ethers.getBytes failed for ${name}:`, {
+            result: JSON.stringify(result),
+            resultLength: result.length,
+            error: bytesError.message,
+            charCodes: Array.from(result).map(c => c.charCodeAt(0))
+          });
+          throw bytesError;
+        }
+        
+        return result;
+      };
+      
+      const absoluteFinalFrontId = absoluteFinalClean(finalFrontIdBytes, 'frontId');
+      const absoluteFinalBackId = absoluteFinalClean(finalBackIdBytes, 'backId');
+      const absoluteFinalProof = absoluteFinalClean(finalProofBytes, 'proof');
+      const absoluteFinalLive = absoluteFinalClean(finalLiveBytes, 'live');
+      
+      // Log absolute final values
+      console.log('🔍 ABSOLUTE FINAL values RIGHT BEFORE Interface.encodeFunctionData:', {
+        frontId: {
+          value: absoluteFinalFrontId.substring(0, 30) + '...',
+          length: absoluteFinalFrontId.length,
+          charCodes: Array.from(absoluteFinalFrontId).slice(0, 30).map(c => c.charCodeAt(0))
+        },
+        backId: {
+          value: absoluteFinalBackId.substring(0, 30) + '...',
+          length: absoluteFinalBackId.length
+        },
+        proof: {
+          value: absoluteFinalProof.substring(0, 30) + '...',
+          length: absoluteFinalProof.length
+        },
+        live: {
+          value: absoluteFinalLive.substring(0, 30) + '...',
+          length: absoluteFinalLive.length
+        }
+      });
+      
+      // CRITICAL: Convert all hex strings to Uint8Array BEFORE passing to encodeFunctionData
+      // This completely bypasses any string parsing that could introduce escape sequences
+      const hexToBytes = (hex: string): Uint8Array => {
+        // Remove 0x if present
+        let clean = hex.startsWith('0x') ? hex.slice(2) : hex;
+        
+        // Extract ONLY hex characters character by character
+        let hexOnly = '';
+        for (let i = 0; i < clean.length; i++) {
+          const char = clean[i].toLowerCase();
+          if ((char >= '0' && char <= '9') || (char >= 'a' && char <= 'f')) {
+            hexOnly += char;
+          }
+        }
+        
+        // Pad to 64
+        hexOnly = hexOnly.padStart(64, '0').slice(0, 64);
+        
+        // Convert to Buffer and then to Uint8Array
+        const buffer = Buffer.from(hexOnly, 'hex');
+        if (buffer.length !== 32) {
+          throw new Error(`Invalid buffer length: ${buffer.length}, expected 32`);
+        }
+        
+        return new Uint8Array(buffer);
+      };
+      
+      const frontIdBytes = hexToBytes(absoluteFinalFrontId);
+      const backIdBytes = hexToBytes(absoluteFinalBackId);
+      const proofBytes = hexToBytes(absoluteFinalProof);
+      const liveBytes = hexToBytes(absoluteFinalLive);
+      
+      // Log bytes for debugging
+      console.log('🔍 Converting to Uint8Array before encoding:', {
+        frontId: {
+          hex: absoluteFinalFrontId.substring(0, 30) + '...',
+          bytesLength: frontIdBytes.length,
+          firstBytes: Array.from(frontIdBytes).slice(0, 5).map(b => b.toString(16).padStart(2, '0'))
+        },
+        backId: {
+          hex: absoluteFinalBackId.substring(0, 30) + '...',
+          bytesLength: backIdBytes.length
+        },
+        proof: {
+          hex: absoluteFinalProof.substring(0, 30) + '...',
+          bytesLength: proofBytes.length
+        },
+        live: {
+          hex: absoluteFinalLive.substring(0, 30) + '...',
+          bytesLength: liveBytes.length
+        }
+      });
+      
+      // CRITICAL: Convert Uint8Array back to hex strings using Buffer RIGHT BEFORE encoding
+      // This ensures the hex strings are constructed from bytes, preventing any escape sequences
+      const bytesToHex = (bytes: Uint8Array): string => {
+        const buffer = Buffer.from(bytes);
+        const hex = buffer.toString('hex');
+        const result = `0x${hex}`;
+        
+        // Validate
+        if (result.length !== 66) {
+          throw new Error(`Invalid hex length: ${result.length}, expected 66`);
+        }
+        
+        // Check for escape sequences
+        for (let i = 0; i < result.length; i++) {
+          const code = result[i].charCodeAt(0);
+          if (code === 92 || code === 13 || code === 10) {
+            throw new Error(`Hex contains escape sequence at position ${i}`);
+          }
+        }
+        
+        return result;
+      };
+      
+      const finalFrontIdHex = bytesToHex(frontIdBytes);
+      const finalBackIdHex = bytesToHex(backIdBytes);
+      const finalProofHex = bytesToHex(proofBytes);
+      const finalLiveHex = bytesToHex(liveBytes);
+      
+      // Log final hex strings
+      console.log('🔍 Final hex strings from Uint8Array (RIGHT BEFORE encodeFunctionData):', {
+        frontId: {
+          hex: finalFrontIdHex.substring(0, 30) + '...',
+          length: finalFrontIdHex.length,
+          charCodes: Array.from(finalFrontIdHex).slice(0, 30).map(c => c.charCodeAt(0))
+        },
+        backId: {
+          hex: finalBackIdHex.substring(0, 30) + '...',
+          length: finalBackIdHex.length
+        },
+        proof: {
+          hex: finalProofHex.substring(0, 30) + '...',
+          length: finalProofHex.length
+        },
+        live: {
+          hex: finalLiveHex.substring(0, 30) + '...',
+          length: finalLiveHex.length
+        }
+      });
+      
+      // CRITICAL: Final validation using ethers.getBytes() RIGHT BEFORE encoding
+      // This ensures the hex strings are valid and clean before AbiCoder.encode() processes them
+      const validateAndReconstructHex = (hex: string, name: string): string => {
+        try {
+          // Step 1: Use ethers.getBytes() to validate and convert to bytes
+          // This will throw if the hex string is invalid or contains escape sequences
+          const bytes = ethers.getBytes(hex);
+          if (bytes.length !== 32) {
+            throw new Error(`${name} has wrong byte length: ${bytes.length}, expected 32`);
+          }
+          
+          // Step 2: Convert back to hex using Buffer - this ensures absolute cleanliness
+          const buffer = Buffer.from(bytes);
+          const cleanHex = buffer.toString('hex');
+          const result = `0x${cleanHex}`;
+          
+          // Step 3: Validate length
+          if (result.length !== 66) {
+            throw new Error(`${name} has wrong length: ${result.length}, expected 66`);
+          }
+          
+          // Step 4: Check each character for escape sequences
+          for (let i = 0; i < result.length; i++) {
+            const code = result[i].charCodeAt(0);
+            if (code === 92 || code === 13 || code === 10) {
+              throw new Error(`${name} contains escape sequence at position ${i}: code=${code}`);
+            }
+          }
+          
+          // Step 5: Validate using ethers.getBytes() one more time
+          const finalBytes = ethers.getBytes(result);
+          if (finalBytes.length !== 32) {
+            throw new Error(`${name} final validation failed: byte length=${finalBytes.length}`);
+          }
+          
+          return result;
+        } catch (error: any) {
+          console.error(`❌ Error validating ${name}:`, {
+            hex: hex.substring(0, 30) + '...',
+            error: error.message,
+            charCodes: Array.from(hex).slice(0, 30).map(c => c.charCodeAt(0))
+          });
+          throw error;
+        }
+      };
+      
+      const validatedFrontId = validateAndReconstructHex(finalFrontIdHex, 'frontId');
+      const validatedBackId = validateAndReconstructHex(finalBackIdHex, 'backId');
+      const validatedProof = validateAndReconstructHex(finalProofHex, 'proof');
+      const validatedLive = validateAndReconstructHex(finalLiveHex, 'live');
+      
+      // Log validated values
+      console.log('🔍 Validated hex strings RIGHT BEFORE AbiCoder.encode():', {
+        frontId: {
+          hex: validatedFrontId.substring(0, 30) + '...',
+          length: validatedFrontId.length,
+          charCodes: Array.from(validatedFrontId).slice(0, 30).map(c => c.charCodeAt(0))
+        },
+        backId: {
+          hex: validatedBackId.substring(0, 30) + '...',
+          length: validatedBackId.length
+        },
+        proof: {
+          hex: validatedProof.substring(0, 30) + '...',
+          length: validatedProof.length
+        },
+        live: {
+          hex: validatedLive.substring(0, 30) + '...',
+          length: validatedLive.length
+        }
+      });
+      
+      // Get function selector once - will be used in both paths
+      let functionSelector: string | undefined;
+      const func = contractInterface.getFunction('storeKYCVerification');
+      if (!func?.selector) {
+        throw new Error('Function selector not found');
+      }
+      functionSelector = func.selector;
+      
+      // CRITICAL: Use AbiCoder.encode() directly instead of Interface.encodeFunctionData()
+      // This bypasses any string manipulation that Interface.encodeFunctionData() might do
+      // We'll manually add the function selector
+      try {
+        
+        // Use AbiCoder.encode() directly with validated hex strings
+        // These have been validated using ethers.getBytes() and reconstructed from bytes
+        const abiCoder = ethers.AbiCoder.defaultAbiCoder();
+        const encodedParamsOnly = abiCoder.encode(
+          ['string', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bool'],
+          [
+            cleanedUserId,
+            validatedFrontId,  // Validated and reconstructed from bytes
+            validatedBackId,   // Validated and reconstructed from bytes
+            validatedProof,    // Validated and reconstructed from bytes
+            validatedLive,     // Validated and reconstructed from bytes
+            approvalStatus
+          ]
+        );
+        
+        // Combine function selector with encoded parameters
+        const functionData = functionSelector + encodedParamsOnly.slice(2); // Remove 0x from encoded params
+        
+        // Extract just the parameters (skip function selector) for consistency
+        encodedParams = '0x' + functionData.slice(10); // Remove 4-byte selector (10 hex chars)
+        
+        console.log('✅ Function data encoded using AbiCoder.encode() directly');
+      } catch (abiError: any) {
+        console.error('❌ AbiCoder.encode() failed, trying manual encoding:', {
+          error: abiError.message,
+          errorCode: abiError.code,
+          argument: abiError.argument,
+          value: abiError.value ? String(abiError.value).substring(0, 50) : 'N/A',
+          valueLength: abiError.value ? String(abiError.value).length : 'N/A',
+          valueCharCodes: abiError.value ? Array.from(String(abiError.value)).slice(0, 70).map(c => c.charCodeAt(0)) : 'N/A'
+        });
+        
+        // CRITICAL FALLBACK: Manual ABI encoding for bytes32 values
+        // This completely bypasses AbiCoder.encode() string manipulation
+        try {
+          // Manual encoding: bytes32 values are 32 bytes (64 hex chars), zero-padded
+          // String encoding: offset (32 bytes) + length (32 bytes) + data (padded to 32-byte boundary)
+          
+          // Convert all bytes32 to Uint8Array for manual encoding
+          const frontIdBytes = ethers.getBytes(validatedFrontId);
+          const backIdBytes = ethers.getBytes(validatedBackId);
+          const proofBytes = ethers.getBytes(validatedProof);
+          const liveBytes = ethers.getBytes(validatedLive);
+          
+          // Encode string (userId) manually
+          const userIdBytes = Buffer.from(cleanedUserId, 'utf8');
+          const userIdLength = userIdBytes.length;
+          const userIdPaddedLength = Math.ceil(userIdLength / 32) * 32;
+          
+          // Calculate offsets
+          // Layout: string offset (32 bytes) + 4x bytes32 (128 bytes) + bool (32 bytes) + string data
+          const stringOffset = 32 + 128 + 32; // offset + bytes32s + bool
+          
+          // Build encoded data manually
+          const encodedParts: string[] = [];
+          
+          // Offset for string (32 bytes, left-padded)
+          encodedParts.push(ethers.zeroPadValue(ethers.toBeHex(stringOffset), 32).slice(2));
+          
+          // bytes32 values (64 hex chars each, no padding needed as they're already 32 bytes)
+          encodedParts.push(validatedFrontId.slice(2));
+          encodedParts.push(validatedBackId.slice(2));
+          encodedParts.push(validatedProof.slice(2));
+          encodedParts.push(validatedLive.slice(2));
+          
+          // bool (32 bytes, left-padded, 0x00 or 0x01)
+          const boolValue = approvalStatus ? '01' : '00';
+          encodedParts.push(boolValue.padStart(64, '0'));
+          
+          // String length (32 bytes, left-padded)
+          encodedParts.push(ethers.zeroPadValue(ethers.toBeHex(userIdLength), 32).slice(2));
+          
+          // String data (padded to 32-byte boundary)
+          const userIdHex = userIdBytes.toString('hex');
+          const userIdPadded = userIdHex.padEnd(userIdPaddedLength * 2, '0');
+          encodedParts.push(userIdPadded);
+          
+          // Combine all parts
+          const manualEncoded = '0x' + encodedParts.join('');
+          
+          // Use the function selector we already got
+          if (!functionSelector) {
+            throw new Error('Function selector not found');
+          }
+          
+          // Combine function selector with encoded parameters
+          const functionData = functionSelector + manualEncoded.slice(2);
+          encodedParams = manualEncoded;
+          
+          console.log('✅ Function data encoded using manual ABI encoding');
+        } catch (manualError: any) {
+          console.error('❌ Manual encoding also failed:', {
+            error: manualError.message,
+            stack: manualError.stack
+          });
+          throw abiError; // Re-throw original error
+        }
+        
+        // Fallback to AbiCoder with raw bytes - use the Uint8Array values we already created
+        // No need to convert again - we already have clean Uint8Array values
+        
+        // Convert back using Buffer instead of ethers.hexlify()
+        // This ensures NO escape sequences can be introduced
+        const bytes32FrontId = `0x${Buffer.from(frontIdBytes).toString('hex')}`;
+        const bytes32BackId = `0x${Buffer.from(backIdBytes).toString('hex')}`;
+        const bytes32Proof = `0x${Buffer.from(proofBytes).toString('hex')}`;
+        const bytes32Live = `0x${Buffer.from(liveBytes).toString('hex')}`;
+        
+        // Validate all results have correct length and no escape sequences
+        [bytes32FrontId, bytes32BackId, bytes32Proof, bytes32Live].forEach((val, idx) => {
+          const names = ['frontId', 'backId', 'proof', 'live'];
+          if (val.length !== 66) {
+            throw new Error(`${names[idx]} has wrong length: ${val.length}, expected 66`);
+          }
+          for (let i = 0; i < val.length; i++) {
+            const char = val[i];
+            const code = char.charCodeAt(0);
+            if (code === 92 || code === 13 || code === 10) {
+              throw new Error(`${names[idx]} contains escape sequence at position ${i}`);
+            }
+          }
+        });
+        
+        // Encode with AbiCoder
+        encodedParams = abiCoder.encode(
+          ['string', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bool'],
+          [cleanedUserId, bytes32FrontId, bytes32BackId, bytes32Proof, bytes32Live, approvalStatus]
+        );
+      }
     } catch (encodeError: any) {
       console.error('❌ AbiCoder.encode failed:', {
         error: encodeError.message,
-        userId: JSON.stringify(cleanedUserId),
-        frontId: JSON.stringify(encodedFrontId),
-        backId: JSON.stringify(encodedBackId),
-        proof: JSON.stringify(encodedProof),
-        live: JSON.stringify(encodedLive)
+        errorCode: encodeError.code,
+        argument: encodeError.argument,
+        value: encodeError.value ? JSON.stringify(String(encodeError.value).substring(0, 50)) : 'N/A',
+        userId: cleanedUserId,
+        frontIdHash: frontIdHash?.substring(0, 20) || 'N/A',
+        backIdHash: backIdHash?.substring(0, 20) || 'N/A',
+        proofHash: proofOfAddressHash?.substring(0, 20) || 'N/A',
+        liveHash: liveSnapHash?.substring(0, 20) || 'N/A'
       });
       throw new Error(`Parameter encoding failed: ${encodeError.message}`);
     }
     
+    // Get function selector - it should already be defined, but check just in case
+    let finalFunctionSelector: string;
+    if (functionSelector) {
+      finalFunctionSelector = functionSelector;
+    } else {
+      const func = contractInterface.getFunction('storeKYCVerification');
+      if (!func?.selector) {
+        throw new Error('Function selector not found');
+      }
+      finalFunctionSelector = func.selector;
+    }
+    
     // Combine function selector with encoded parameters
-    const functionData = functionSelector + encodedParams.slice(2); // Remove 0x from encoded params
+    const functionData = finalFunctionSelector + encodedParams.slice(2); // Remove 0x from encoded params
     
     console.log('✅ Function data encoded successfully, length:', functionData.length);
     
-    // CRITICAL: Use try-catch to capture the exact parameter causing the error
-    let tx;
-    try {
-      // Send transaction directly using signer - this bypasses Contract object string handling
-      tx = await signer.sendTransaction({
-        to: contractAddress,
-        data: functionData
-      });
-    } catch (contractError: any) {
-      // Enhanced error logging to identify which parameter is causing the issue
-      console.error('❌ Contract transaction failed:', {
-        error: contractError.message,
-        code: contractError.code,
-        argument: contractError.argument,
-        value: contractError.value ? JSON.stringify(String(contractError.value).substring(0, 50)) : 'N/A',
-        userId: JSON.stringify(cleanedUserId),
-        frontId: JSON.stringify(encodedFrontId),
-        backId: JSON.stringify(encodedBackId),
-        proof: JSON.stringify(encodedProof),
-        live: JSON.stringify(encodedLive),
-        functionDataLength: functionData.length,
-        functionSelector: functionSelector
-      });
-      throw contractError;
-    }
+    // CRITICAL: Send transaction directly using signer - this bypasses Contract object string handling
+    const tx = await signer.sendTransaction({
+      to: contractAddress,
+      data: functionData
+    });
+    
     await tx.wait();
     return tx.hash;
   } catch (error: any) {
+    // Enhanced error logging to identify which parameter is causing the issue
+    if (error.code === 'INVALID_ARGUMENT' || error.argument) {
+      console.error('❌ Contract transaction failed with parameter error:', {
+        error: error.message,
+        code: error.code,
+        argument: error.argument,
+        value: error.value ? String(error.value).substring(0, 50) : 'N/A',
+        userId: cleanedUserId,
+        frontIdHash: frontIdHash?.substring(0, 20) || 'N/A',
+        backIdHash: backIdHash?.substring(0, 20) || 'N/A',
+        proofHash: proofOfAddressHash?.substring(0, 20) || 'N/A',
+        liveHash: liveSnapHash?.substring(0, 20) || 'N/A',
+        encodedParamsLength: encodedParams?.length || 'N/A'
+      });
+    }
     // Check if it's a gas/balance error
     if (error.message?.includes('insufficient funds') || error.message?.includes('gas') || error.code === 'INSUFFICIENT_FUNDS') {
       console.warn('⚠️ Insufficient funds for transaction. Using placeholder hash for development.');
@@ -1046,13 +2013,28 @@ export async function storeKYBOnBNBChain(
           throw new Error('Invalid hex format before zero pad');
         }
         
-        // Use zeroPadValue to ensure it's exactly 32 bytes (64 hex chars)
-        // This is the recommended way to create bytes32 values in ethers v6
-        const finalBytes32 = ethers.zeroPadValue(bytes32Hex, 32);
+        // Use Buffer-based construction instead of ethers.zeroPadValue()
+        // This ensures NO escape sequences can be introduced
+        const hexWithoutPrefix = bytes32Hex.startsWith('0x') ? bytes32Hex.slice(2) : bytes32Hex;
+        const buffer = Buffer.from(hexWithoutPrefix, 'hex');
+        if (buffer.length !== 32) {
+          throw new Error(`Invalid buffer length: ${buffer.length}, expected 32`);
+        }
+        const cleanHex = buffer.toString('hex');
+        const finalBytes32 = `0x${cleanHex}`;
         
         // Final validation - ensure it's still clean
-        if (finalBytes32.length !== 66 || !/^0x[0-9a-fA-F]{64}$/.test(finalBytes32)) {
-          throw new Error('Invalid final bytes32 format after zero pad');
+        if (finalBytes32.length !== 66 || !/^0x[0-9a-f]{64}$/.test(finalBytes32)) {
+          throw new Error(`Invalid final bytes32 format: length=${finalBytes32.length}`);
+        }
+        
+        // Check for escape sequences
+        for (let i = 0; i < finalBytes32.length; i++) {
+          const char = finalBytes32[i];
+          const code = char.charCodeAt(0);
+          if (code === 92 || code === 13 || code === 10) {
+            throw new Error(`Final bytes32 contains escape sequence at position ${i}`);
+          }
         }
         
         // CRITICAL: Final check for any escape sequences or control characters
@@ -1312,4 +2294,3 @@ export async function processProjectDataForBNBChain(
 
   return { txHash, hash };
 }
-

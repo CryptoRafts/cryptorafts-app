@@ -1,0 +1,849 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ==================== HELPER FUNCTIONS ====================
+    
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Get current user ID
+    function currentUser() {
+      return request.auth.uid;
+    }
+    
+    // Check if user is admin (requires read, so use carefully)
+    function isAdmin() {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(currentUser())) &&
+             get(/databases/$(database)/documents/users/$(currentUser())).data.role == 'admin';
+    }
+    
+    // Check if user owns the resource
+    function isOwner(ownerId) {
+      return isAuthenticated() && currentUser() == ownerId;
+    }
+    
+    // Check if user is a participant in array
+    function isParticipant(participants) {
+      return isAuthenticated() && 
+             participants != null && 
+             currentUser() in participants;
+    }
+    
+    // Check if user is in members array
+    function isMember(members) {
+      return isAuthenticated() && 
+             members != null && 
+             currentUser() in members;
+    }
+    
+    // ==================== USER DATA ====================
+    
+    // User profiles - public read for stats, owner/admin write
+    match /users/{userId} {
+      allow read: if true;  // Public read for homepage stats
+      allow create: if isAuthenticated() && isOwner(userId);
+      allow update: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      allow delete: if isAdmin();
+      
+      // User subcollections
+      match /kyc/{kycId} {
+        allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+        allow write: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      }
+      
+      match /kyb/{kybId} {
+        allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+        allow write: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      }
+      
+      match /projects/{projectId} {
+        allow read: if isAuthenticated();
+        allow write: if isAuthenticated() && isOwner(userId);
+      }
+      
+      match /messages/{messageId} {
+        allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+        allow write: if isAuthenticated() && isOwner(userId);
+      }
+      
+      match /notifications/{notificationId} {
+        allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+        allow write: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      }
+    }
+    
+    // ==================== PROJECTS ====================
+    
+    // Projects - public read, authenticated write
+    match /projects/{projectId} {
+      allow read: if true;  // Public read for homepage/dealflow
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+    
+    // ==================== CAMPAIGNS ====================
+    
+    // Campaigns - authenticated access
+    match /campaigns/{campaignId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+    
+    // Campaign acceptances
+    match /campaignAcceptances/{acceptanceId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+    
+    // ==================== CHAT SYSTEM ====================
+    
+    // Group chats - members can access
+    match /groupChats/{roomId} {
+      allow read: if isAuthenticated() && (
+        isMember(resource.data.members) || 
+        isAdmin() ||
+        !exists(/databases/$(database)/documents/groupChats/$(roomId))
+      );
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (
+        isMember(resource.data.members) || 
+        isAdmin()
+      );
+      allow delete: if isAuthenticated() && (
+        resource.data.createdBy == currentUser() ||
+        isAdmin()
+      );
+      
+      // Messages in group chats
+      match /messages/{messageId} {
+        allow read: if isAuthenticated() && (
+          isMember(get(/databases/$(database)/documents/groupChats/$(roomId)).data.members) ||
+          isAdmin()
+        );
+        allow create: if isAuthenticated() && (
+          isMember(get(/databases/$(database)/documents/groupChats/$(roomId)).data.members) ||
+          currentUser() == 'raftai'
+        );
+        allow update: if isAuthenticated() && (
+          resource.data.senderId == currentUser() ||
+          isAdmin()
+        );
+        allow delete: if isAuthenticated() && (
+          resource.data.senderId == currentUser() ||
+          isAdmin()
+        );
+      }
+    }
+    
+    // Campaign rooms (legacy support)
+    match /campaignRooms/{roomId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+      
+      match /messages/{messageId} {
+        allow read: if isAuthenticated();
+        allow write: if isAuthenticated();
+      }
+    }
+    
+    // Chat rooms (alternative collection)
+    match /chatRooms/{roomId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+      
+      match /messages/{messageId} {
+        allow read: if isAuthenticated();
+        allow write: if isAuthenticated();
+      }
+    }
+    
+    // Rooms (standalone chat rooms)
+    match /rooms/{roomId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    // Messages (standalone collection)
+    match /messages/{messageId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    // Chat notifications
+    match /chat_notifications/{notificationId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    // Chat preferences
+    match /chat_preferences/{userId} {
+      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      allow write: if isAuthenticated() && (isOwner(userId) || isAdmin());
+    }
+    
+    // Call rooms
+    match /call_rooms/{roomId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    // Calls (video/voice call sessions)
+    match /calls/{callId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+    
+    // Video call recordings
+    match /video_recordings/{recordingId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+    
+    // Video call analysis
+    match /video_call_analysis/{analysisId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    
+    // ==================== NOTIFICATIONS ====================
+    
+    // Notifications - user can read their own
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && (
+        resource.data.userId == currentUser() || 
+        isAdmin()
+      );
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (
+        resource.data.userId == currentUser() ||
+        isAdmin()
+      );
+      allow delete: if isAuthenticated() && (
+        resource.data.userId == currentUser() ||
+        isAdmin()
+      );
+    }
+    
+    // ==================== KYC/KYB ====================
+    
+    // KYC documents - user can read their own
+    match /kyc/{userId} {
+      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      allow write: if isAuthenticated() && (isOwner(userId) || isAdmin());
+    }
+    
+    // KYC documents (alternative collection)
+    // SECURITY: Enforce data isolation and deletion policies
+    match /kyc_documents/{userId} {
+      // Read: Only owner or admin can read
+      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      
+      // Create: Only owner can create their own KYC documents
+      allow create: if isAuthenticated() && isOwner(userId) &&
+                    request.resource.data.userId == userId;
+      
+      // Update: Only admin can update (for approval/deletion status)
+      // Prevent modification of sensitive fields after on-chain deletion
+      allow update: if isAdmin() && (
+        // Allow updates for on-chain deletion status
+        'onChainDeleted' in request.resource.data ||
+        'onChainDeleteTxHash' in request.resource.data ||
+        'onChainDeletedAt' in request.resource.data ||
+        // Allow status updates (approval/rejection)
+        'status' in request.resource.data ||
+        // Prevent modification of sensitive data if already deleted on-chain
+        !('onChainDeleted' in resource.data) || !resource.data.onChainDeleted
+      );
+      
+      // Delete: Only admin can delete
+      allow delete: if isAdmin();
+    }
+    
+    // KYB documents - authenticated access
+    match /kyb/{orgId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    // KYB submissions
+    match /kybSubmissions/{userId} {
+      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      allow write: if isAuthenticated() && (isOwner(userId) || isAdmin());
+    }
+    
+    // ==================== ORGANIZATIONS ====================
+    
+    // Organizations - authenticated access
+    // SECURITY: Enforce data isolation and deletion policies
+    match /organizations/{orgId} {
+      // Read: Authenticated users can read
+      allow read: if isAuthenticated();
+      
+      // Create: Authenticated users can create
+      allow create: if isAuthenticated();
+      
+      // Update: Only org members or admin can update
+      // Prevent modification of sensitive fields after on-chain deletion
+      allow update: if isAuthenticated() && (
+        // Allow updates for on-chain deletion status
+        'onChainDeleted' in request.resource.data ||
+        'onChainDeleteTxHash' in request.resource.data ||
+        'onChainDeletedAt' in request.resource.data ||
+        // Allow status updates (approval/rejection)
+        'status' in request.resource.data ||
+        // Prevent modification of sensitive data if already deleted on-chain
+        !('onChainDeleted' in resource.data) || !resource.data.onChainDeleted ||
+        isAdmin()
+      );
+      
+      // Delete: Only admin can delete
+      allow delete: if isAdmin();
+    }
+    
+    // ==================== VC PIPELINE ====================
+    
+    // VC pipelines
+    match /vcPipelines/{orgId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+      
+      match /items/{itemId} {
+        allow read: if isAuthenticated();
+        allow write: if isAuthenticated();
+      }
+    }
+    
+    // VC metrics
+    match /vcMetrics/{orgId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    // ==================== PITCHES ====================
+    
+    // Pitches - authenticated access
+    match /pitches/{pitchId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+    
+    // ==================== SPOTLIGHT ====================
+    
+    // Spotlights - public read, authenticated write
+    match /spotlights/{spotlightId} {
+      allow read: if true;  // Public read for homepage
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+    
+    // Spotlight card layouts
+    match /spotlightCardLayouts/{layoutId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    // Spotlight applications
+    match /spotlightApplications/{appId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+    
+    // ==================== TEAM & RELATIONS ====================
+    
+    // Team invitations
+    match /team_invitations/{inviteId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    // Team invites (alternative)
+    match /teamInvites/{inviteId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    // VC team members
+    match /vc_team_members/{memberId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    // Relations (founder-VC, founder-exchange, etc.)
+    match /relations/{relationId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    // ==================== ADMIN COLLECTIONS ====================
+    
+    // UI Control
+    match /uiControl/{document=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    // Department members
+    match /department_members/{memberId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    // Departments
+    match /departments/{deptId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    // Department invites
+    match /department_invites/{inviteId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    // Admin oversight requests
+    match /oversight/{document=**} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+      
+      // Oversight requests subcollection
+      match /requests/{requestId} {
+        allow read: if isAdmin();
+        allow write: if isAdmin();
+        
+        // Oversight items subcollection
+        match /items/{itemId} {
+          allow read: if isAdmin();
+          allow write: if isAdmin();
+        }
+      }
+    }
+    
+    // ==================== AUDIT LOGS ====================
+    
+    // Audit logs
+    match /audit/{auditId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if false;  // Immutable
+      allow delete: if false;  // Never delete
+    }
+    
+    // Admin audit logs
+    match /admin_audit_logs/{logId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if false;
+      allow delete: if false;
+    }
+    
+    // KYC audit logs
+    match /kyc_audit_logs/{logId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if false;
+      allow delete: if false;
+    }
+    
+    // KYB audit logs
+    match /kyb_audit_logs/{logId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if false;
+      allow delete: if false;
+    }
+    
+    // Project audit logs
+    match /project_audit_logs/{logId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if false;
+      allow delete: if false;
+    }
+    
+    // Moderation actions
+    match /moderation_actions/{actionId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    // ==================== AI & ANALYSIS ====================
+    
+    // AI analysis cache
+    match /ai_analysis/{analysisId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    // ==================== RAFTAI COLLECTIONS ====================
+    
+    // RaftAI KYC requests
+    match /raftai_kyc_requests/{requestId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    
+    // RaftAI KYC results
+    match /raftai_kyc_results/{resultId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    
+    // RaftAI KYB requests
+    match /raftai_kyb_requests/{requestId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    
+    // RaftAI KYB results
+    match /raftai_kyb_results/{resultId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    
+    // RaftAI pitch analyses
+    match /raftai_pitch_analyses/{analysisId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    
+    // RaftAI chat interactions
+    match /raftai_chat_interactions/{interactionId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    
+    // RaftAI chat moderations
+    match /raftai_chat_moderations/{moderationId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    
+    // RaftAI video verifications
+    match /raftai_video_verifications/{verificationId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    
+    // RaftAI compliance checks
+    match /raftai_compliance_checks/{checkId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    
+    // RaftAI audit logs
+    match /raftai_audit_logs/{logId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if false;  // Immutable
+      allow delete: if false;  // Never delete
+    }
+    
+    // RaftAI counterparty scores
+    match /raftai_counterparty_scores/{scoreId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    
+    // RaftAI anomaly detections
+    match /raftai_anomaly_detections/{detectionId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    
+    // RaftAI system health
+    match /raftai_system_health/{healthId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    
+    // RaftAI analytics
+    match /raftai_analytics/{analyticId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    
+    // RaftAI requests (alternative)
+    match /raftai_requests/{requestId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    
+    // RaftAI results (alternative)
+    match /raftai_results/{resultId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    
+    // ==================== FINANCIAL ====================
+    
+    // Payments
+    match /payments/{paymentId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    // Tranches
+    match /tranches/{trancheId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    // ==================== BLOG SYSTEM ====================
+    
+    // Blog posts - public read, authenticated write
+    match /blog_posts/{postId} {
+      allow read: if true;  // Public read for blog page
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+    
+    // Scheduled posts - authenticated access
+    match /scheduled_posts/{postId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+    
+    // Blog settings
+    match /blog_settings/{settingId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    // Blog platforms
+    match /blog_platforms/{platformId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    // Blog team members
+    match /blog_team_members/{memberId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    // ==================== CONFIG ====================
+    
+    // Platform config
+    match /config/{configId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    // ==================== DEALS ====================
+    
+    // Deals
+    match /deals/{dealId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    // ==================== WATCHLIST ====================
+    
+    // Watchlist - user's own items
+    match /watchlist/{itemId} {
+      allow read: if isAuthenticated() && (
+        resource.data.userId == currentUser() || 
+        isAdmin()
+      );
+      allow create: if isAuthenticated() && 
+                      request.resource.data.userId == currentUser();
+      allow update: if isAuthenticated() && (
+        resource.data.userId == currentUser() ||
+        isAdmin()
+      );
+      allow delete: if isAuthenticated() && (
+        resource.data.userId == currentUser() ||
+        isAdmin()
+      );
+    }
+    
+    // ==================== PARTNERS ====================
+    
+    // Partners
+    match /partners/{partnerId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+    
+    // Partner lists
+    match /partnerLists/{listType} {
+      allow read: if true;  // Public read for homepage partner display
+      allow write: if isAdmin();
+    }
+    
+    // ==================== EMAIL & SUBSCRIPTIONS ====================
+    
+    // Email subscribers
+    match /subscribers/{subscriberId} {
+      allow read: if isAuthenticated();
+      allow create: if true;  // Public subscribe
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+    
+    // ==================== WALLET & BLOCKCHAIN ====================
+    
+    // Wallet connections
+    match /wallets/{walletId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+    
+    // Wallet transactions
+    match /wallet_transactions/{transactionId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    
+    // Blockchain records
+    match /blockchain_records/{recordId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if false;  // Immutable once on-chain
+      allow delete: if false;  // Never delete on-chain records
+    }
+    
+    // ==================== KYC/KYB SESSIONS ====================
+    
+    // KYC sessions
+    match /kyc_sessions/{sessionId} {
+      allow read: if isAuthenticated() && (
+        resource.data.userId == currentUser() ||
+        isAdmin()
+      );
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (
+        resource.data.userId == currentUser() ||
+        isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+    
+    // KYB sessions
+    match /kyb_sessions/{sessionId} {
+      allow read: if isAuthenticated() && (
+        resource.data.userId == currentUser() ||
+        resource.data.orgId == currentUser() ||
+        isAdmin()
+      );
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (
+        resource.data.userId == currentUser() ||
+        resource.data.orgId == currentUser() ||
+        isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+    
+    // ==================== RATE LIMITING ====================
+    
+    // Rate limits
+    match /rate_limits/{limitId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+      
+      // Rate limit requests subcollection
+      match /requests/{requestId} {
+        allow read: if isAdmin();
+        allow write: if isAuthenticated();  // System writes
+      }
+    }
+    
+    // Rate limits (alternative name - used in code)
+    match /rateLimits/{limitId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+      
+      // Rate limit requests subcollection
+      match /requests/{requestId} {
+        allow read: if isAdmin();
+        allow write: if isAuthenticated();  // System writes
+      }
+    }
+    
+    // ==================== ADDITIONAL AUDIT LOGS ====================
+    
+    // Audit logs (alternative collection name)
+    match /audit_logs/{logId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if false;  // Immutable
+      allow delete: if false;  // Never delete
+    }
+    
+    // Audit logs (alternative name - used in code)
+    match /auditLogs/{logId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if false;  // Immutable
+      allow delete: if false;  // Never delete
+    }
+    
+    // ==================== FALLBACK ====================
+    
+    // Allow authenticated access to any other collections
+    match /{document=**} {
+      allow read, write: if isAuthenticated();
+    }
+  }
+}
+

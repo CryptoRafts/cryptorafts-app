@@ -235,6 +235,14 @@ function OnboardingGuard({ children }: { children: React.ReactNode }) {
         // Step 2: Check KYB status
         const kybStatus = (userData.kybStatus || userData.kyb?.status || 'not_submitted').toLowerCase();
 
+        // CRITICAL: If approved, allow access - don't redirect
+        if (kybStatus === 'approved') {
+          console.log('🛡️ KYB approved, allowing access');
+          setHasChecked(true);
+          setChecking(false);
+          return;
+        }
+
         // If not submitted, redirect to KYB page
         if (kybStatus === 'not_submitted' || !kybStatus) {
           console.log('🛡️ KYB not submitted, redirecting to KYB page');

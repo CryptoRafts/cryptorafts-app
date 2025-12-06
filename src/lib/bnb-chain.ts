@@ -83,9 +83,18 @@ export const PRIMARY_BNB_CHAIN = BNB_CHAIN_NETWORKS.bsc;
 
 /**
  * Get BNB Chain RPC URL
- * Returns the primary RPC endpoint for BNB Smart Chain
+ * Returns the RPC endpoint based on environment configuration
+ * Supports both mainnet and testnet
  */
 export function getBNBChainRPC(): string {
+  // Check if we should use testnet (for development/testing)
+  const useTestnet = process.env.NEXT_PUBLIC_USE_BNB_TESTNET === 'true' || 
+                     process.env.USE_BNB_TESTNET === 'true';
+  
+  if (useTestnet) {
+    return BNB_CHAIN_NETWORKS.bscTestnet.rpcUrls[0];
+  }
+  
   return PRIMARY_BNB_CHAIN.rpcUrls[0];
 }
 
@@ -160,6 +169,47 @@ export async function switchToBNBChain(): Promise<void> {
         });
       } catch (addError) {
         throw new Error('Failed to add BNB Chain to wallet');
+      }
+    } else {
+      throw switchError;
+    }
+  }
+}
+
+/**
+ * Switch wallet to BNB Smart Chain Testnet
+ * This function helps users connect to BSC Testnet for testing
+ */
+export async function switchToBNBTestnet(): Promise<void> {
+  if (typeof window === 'undefined' || !window.ethereum) {
+    throw new Error('MetaMask or compatible wallet not found');
+  }
+
+  const testnet = BNB_CHAIN_NETWORKS.bscTestnet;
+
+  try {
+    await window.ethereum.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: `0x${testnet.chainId.toString(16)}` }],
+    });
+  } catch (switchError: any) {
+    // If chain doesn't exist, add it
+    if (switchError.code === 4902) {
+      try {
+        await window.ethereum.request({
+          method: 'wallet_addEthereumChain',
+          params: [
+            {
+              chainId: `0x${testnet.chainId.toString(16)}`,
+              chainName: testnet.name,
+              nativeCurrency: testnet.nativeCurrency,
+              rpcUrls: testnet.rpcUrls,
+              blockExplorerUrls: testnet.blockExplorerUrls,
+            },
+          ],
+        });
+      } catch (addError) {
+        throw new Error('Failed to add BNB Testnet to wallet');
       }
     } else {
       throw switchError;

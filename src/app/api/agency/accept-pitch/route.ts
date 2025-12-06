@@ -270,6 +270,24 @@ export async function POST(req: NextRequest){
           [uid]: agencyName,
           'raftai': 'RaftAI'
         },
+        memberAvatars: {
+          [proj.founderId]: founderLogo,
+          [uid]: agencyLogo,
+          'raftai': null
+        },
+        
+        unreadCount: {
+          [proj.founderId]: 0,
+          [uid]: 0,
+          'raftai': 0
+        },
+        
+        lastMessage: {
+          senderId: "raftai",
+          senderName: "RaftAI",
+          text: `🎯 RaftAI created this collaboration room for ${founderName} / ${agencyName}.`,
+          createdAt: Date.now()
+        },
         
         settings: {
           filesAllowed: true,
@@ -352,7 +370,8 @@ export async function POST(req: NextRequest){
     return NextResponse.json({ 
       success: true,
       chatId,
-      roomUrl: `/messages?room=${chatId}`,
+      roomId: chatId,
+      roomUrl: `/agency/messages?room=${chatId}`,
       isNew: !existingChat.exists
     });
     

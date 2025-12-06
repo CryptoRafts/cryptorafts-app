@@ -8,6 +8,7 @@ import { useNotifications } from '@/providers/NotificationsProvider';
 import { doc, getDoc, query, collection, where, getDocs } from 'firebase/firestore';
 import { db, getDb } from '@/lib/firebase.client';
 import { NeonCyanIcon } from '@/components/icons/NeonCyanIcon';
+import WalletMenuButton from '@/components/WalletMenuButton';
 
 export default function PerfectHeader() {
   const { user, claims, isLoading } = useAuth();
@@ -192,6 +193,7 @@ export default function PerfectHeader() {
           { name: 'My Projects', href: '/founder/projects', icon: 'document', color: 'blue' },
           { name: 'Messages', href: '/founder/messages', icon: 'messages', color: 'cyan' },
           { name: 'Spotlight', href: '/spotlight/apply', icon: 'rocket', color: 'yellow' },
+          { name: 'Wallet', href: '#', icon: 'credit-card', color: 'cyan', isWallet: true },
           { name: 'Settings', href: '/founder/settings', icon: 'settings', color: 'gray' }
         ];
       
@@ -203,6 +205,7 @@ export default function PerfectHeader() {
           { name: 'Pipeline', href: '/vc/pipeline', icon: 'pipeline', color: 'orange' },
           { name: 'Messages', href: '/messages', icon: 'messages', color: 'cyan' },
           { name: 'Team', href: '/vc/team', icon: 'team', color: 'cyan' },
+          { name: 'Wallet', href: '#', icon: 'credit-card', color: 'cyan', isWallet: true },
           { name: 'Settings', href: '/vc/settings', icon: 'settings', color: 'gray' }
         ];
       
@@ -214,6 +217,7 @@ export default function PerfectHeader() {
           { name: 'Messages', href: '/exchange/messages', icon: 'messages', color: 'cyan' },
           { name: 'Team', href: '/exchange/team', icon: 'team', color: 'cyan' },
           { name: 'Analytics', href: '/exchange/analytics', icon: 'analytics', color: 'orange' },
+          { name: 'Wallet', href: '#', icon: 'credit-card', color: 'cyan', isWallet: true },
           { name: 'Settings', href: '/exchange/settings', icon: 'settings', color: 'gray' }
         ];
       
@@ -224,6 +228,7 @@ export default function PerfectHeader() {
           { name: 'Launchpad', href: '/ido/launchpad', icon: 'launchpad', color: 'pink' },
           { name: 'Messages', href: '/ido/messages', icon: 'messages', color: 'cyan' },
           { name: 'Analytics', href: '/ido/analytics', icon: 'analytics', color: 'purple' },
+          { name: 'Wallet', href: '#', icon: 'credit-card', color: 'cyan', isWallet: true },
           { name: 'Settings', href: '/ido/settings', icon: 'settings', color: 'gray' }
         ];
       
@@ -235,6 +240,7 @@ export default function PerfectHeader() {
           { name: 'Messages', href: '/influencer/messages', icon: 'messages', color: 'cyan' },
           { name: 'Analytics', href: '/influencer/analytics', icon: 'analytics', color: 'orange' },
           { name: 'Earnings', href: '/influencer/earnings', icon: 'earnings', color: 'green' },
+          { name: 'Wallet', href: '#', icon: 'credit-card', color: 'cyan', isWallet: true },
           { name: 'Settings', href: '/influencer/settings', icon: 'settings', color: 'gray' }
         ];
       
@@ -245,7 +251,19 @@ export default function PerfectHeader() {
           { name: 'Clients', href: '/agency/clients', icon: 'clients', color: 'blue' },
           { name: 'Messages', href: '/agency/messages', icon: 'messages', color: 'cyan' },
           { name: 'Analytics', href: '/agency/analytics', icon: 'analytics', color: 'green' },
+          { name: 'Wallet', href: '#', icon: 'credit-card', color: 'cyan', isWallet: true },
           { name: 'Settings', href: '/agency/settings', icon: 'settings', color: 'gray' }
+        ];
+      
+      case 'admin':
+        return [
+          { name: 'Dashboard', href: '/admin/dashboard', icon: 'dashboard', color: 'blue' },
+          { name: 'KYC', href: '/admin/kyc', icon: 'shield', color: 'green' },
+          { name: 'KYB', href: '/admin/kyb', icon: 'shield', color: 'green' },
+          { name: 'Users', href: '/admin/users', icon: 'users', color: 'purple' },
+          { name: 'Projects', href: '/admin/projects', icon: 'document', color: 'orange' },
+          { name: 'Wallet', href: '#', icon: 'credit-card', color: 'cyan', isWallet: true },
+          { name: 'Settings', href: '/admin/settings', icon: 'settings', color: 'gray' }
         ];
       
       default:
@@ -554,19 +572,38 @@ export default function PerfectHeader() {
 
                   {/* Dropdown Menu */}
                   {isDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-black/95 backdrop-blur-md border border-gray-700 rounded-lg shadow-xl z-50">
+                    <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] bg-black/95 backdrop-blur-md border border-gray-700 rounded-lg shadow-xl z-50 max-h-[80vh] overflow-y-auto">
                       <div className="py-2">
-                        {roleNavigation.map((item) => (
-                          <Link
-                            key={item.name}
-                            href={item.href}
-                            className="flex items-center space-x-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-gray-800/50 transition-colors duration-200"
-                            onClick={() => setIsDropdownOpen(false)}
-                          >
-                            <NeonCyanIcon type={item.icon as any} size={16} className="text-current" />
-                            <span className="text-sm">{item.name}</span>
-                          </Link>
-                        ))}
+                        {roleNavigation.map((item) => {
+                          // Special handling for Wallet menu item
+                          if ((item as any).isWallet) {
+                            return (
+                              <div
+                                key={item.name}
+                                className="px-4 py-3 border-b border-gray-700/50"
+                              >
+                                <div className="flex items-center space-x-3 mb-3">
+                                  <NeonCyanIcon type={item.icon as any} size={16} className="text-current" />
+                                  <span className="text-sm font-medium text-gray-300">{item.name}</span>
+                                </div>
+                                <WalletMenuButton />
+                              </div>
+                            );
+                          }
+                          
+                          // Regular navigation items
+                          return (
+                            <Link
+                              key={item.name}
+                              href={item.href}
+                              className="flex items-center space-x-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-gray-800/50 transition-colors duration-200"
+                              onClick={() => setIsDropdownOpen(false)}
+                            >
+                              <NeonCyanIcon type={item.icon as any} size={16} className="text-current" />
+                              <span className="text-sm">{item.name}</span>
+                            </Link>
+                          );
+                        })}
                         <div className="border-t border-gray-700 my-2"></div>
                         <Link
                           href="/logout"
@@ -685,17 +722,36 @@ export default function PerfectHeader() {
                     
                     {/* Role Navigation */}
                     <div className="space-y-1">
-                      {roleNavigation.map((item) => (
-                        <Link
-                          key={item.name}
-                          href={item.href}
-                          className="flex items-center space-x-3 p-3 text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-all duration-200"
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          <NeonCyanIcon type={item.icon as any} size={20} className="text-current" />
-                          <span>{item.name}</span>
-                        </Link>
-                      ))}
+                      {roleNavigation.map((item) => {
+                        // Special handling for Wallet menu item
+                        if ((item as any).isWallet) {
+                          return (
+                            <div
+                              key={item.name}
+                              className="flex items-start space-x-3 p-3 text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-all duration-200"
+                            >
+                              <NeonCyanIcon type={item.icon as any} size={20} className="text-current mt-0.5" />
+                              <div className="flex-1 min-w-0">
+                                <span className="block mb-2">{item.name}</span>
+                                <WalletMenuButton />
+                              </div>
+                            </div>
+                          );
+                        }
+                        
+                        // Regular navigation items
+                        return (
+                          <Link
+                            key={item.name}
+                            href={item.href}
+                            className="flex items-center space-x-3 p-3 text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-all duration-200"
+                            onClick={() => setIsMenuOpen(false)}
+                          >
+                            <NeonCyanIcon type={item.icon as any} size={20} className="text-current" />
+                            <span>{item.name}</span>
+                          </Link>
+                        );
+                      })}
                     </div>
                     
                     {/* Notifications */}

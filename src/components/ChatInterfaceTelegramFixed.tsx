@@ -83,6 +83,7 @@ export default function ChatInterfaceTelegramFixed({ room, currentUserId, onBack
   const emptyReplyCallback = useCallback(() => {}, []);
   
   // CRITICAL: Fetch remote user role from Firestore for ALL roles
+  // ENHANCED: Better role detection for all role types (founder, vc, exchange, ido, influencer, agency, admin)
   useEffect(() => {
     if (!room || !currentUserId || !db) return;
     
@@ -98,6 +99,7 @@ export default function ChatInterfaceTelegramFixed({ room, currentUserId, onBack
           const roleFromRoom = room.founderId === currentUserId 
             ? (room.counterpartRole || 'participant')
             : (room.founderRole || 'founder');
+          console.log(`✅ [CHAT] Using room data for remote role: ${roleFromRoom}`);
           setRemoteUserRole(roleFromRoom);
           return;
         }
@@ -108,7 +110,20 @@ export default function ChatInterfaceTelegramFixed({ room, currentUserId, onBack
         
         if (userDoc.exists()) {
           const userData = userDoc.data();
-          const role = userData.role || userData.role_type || 'participant';
+          // ENHANCED: Check multiple possible role fields for all role types
+          const role = userData.role 
+            || userData.role_type 
+            || userData.userRole
+            || userData.user_role
+            || (userData.isAdmin ? 'admin' : null)
+            || (userData.isVC ? 'vc' : null)
+            || (userData.isFounder ? 'founder' : null)
+            || (userData.isExchange ? 'exchange' : null)
+            || (userData.isIDO ? 'ido' : null)
+            || (userData.isInfluencer ? 'influencer' : null)
+            || (userData.isAgency ? 'agency' : null)
+            || 'participant'; // Final fallback
+          
           console.log(`✅ [CHAT] Fetched remote user role: ${role} for user: ${remoteUserId}`);
           setRemoteUserRole(role);
         } else {
@@ -125,6 +140,7 @@ export default function ChatInterfaceTelegramFixed({ room, currentUserId, onBack
         const roleFromRoom = room.founderId === currentUserId 
           ? (room.counterpartRole || 'participant')
           : (room.founderRole || 'founder');
+        console.log(`✅ [CHAT] Using fallback role after error: ${roleFromRoom}`);
         setRemoteUserRole(roleFromRoom);
       }
     };
@@ -840,237 +856,187 @@ export default function ChatInterfaceTelegramFixed({ room, currentUserId, onBack
       
       // ENHANCED: Comprehensive UI restoration including alignment fix
       const restoreUI = () => {
-        // CRITICAL: Restore chat header with complete style reset
-        const chatHeaders = document.querySelectorAll('[class*="neo-glass-header"], [class*="chat-header"], [class*="ChatHeader"]');
-        chatHeaders.forEach((header) => {
-          const htmlEl = header as HTMLElement;
-          if (htmlEl) {
-            // Remove all inline styles completely
-            htmlEl.removeAttribute('style');
-            htmlEl.style.cssText = '';
-            // Force visible with default styles
-            htmlEl.style.display = 'flex';
-            htmlEl.style.visibility = 'visible';
-            htmlEl.style.opacity = '1';
-            htmlEl.style.zIndex = '';
-            htmlEl.style.position = '';
-            htmlEl.style.top = '';
-            htmlEl.style.left = '';
-            htmlEl.style.right = '';
-            htmlEl.style.bottom = '';
-            htmlEl.style.width = '';
-            htmlEl.style.height = '';
-            htmlEl.style.margin = '';
-            htmlEl.style.padding = '';
-            htmlEl.style.transform = '';
-            htmlEl.style.translate = '';
-            htmlEl.classList.remove('hidden', 'invisible', 'opacity-0');
-            // Force reflow
-            void htmlEl.offsetHeight;
-          }
-        });
+        // CRITICAL: Check if document is available and elements exist before manipulation
+        if (typeof document === 'undefined') return;
         
-        // CRITICAL: Restore main header with complete style reset - MORE AGGRESSIVE
-        const mainHeaders = document.querySelectorAll('header, [class*="PerfectHeader"], nav, [role="navigation"], [class*="header"], [class*="Header"]');
-        mainHeaders.forEach((header) => {
-          const htmlEl = header as HTMLElement;
-          if (htmlEl) {
-            // Remove ALL inline styles first
-            htmlEl.removeAttribute('style');
-            htmlEl.style.cssText = '';
-            // Force visible with explicit styles
-            htmlEl.style.display = htmlEl.tagName === 'NAV' ? 'flex' : 'block';
-            htmlEl.style.visibility = 'visible';
-            htmlEl.style.opacity = '1';
-            htmlEl.style.position = '';
-            htmlEl.style.top = '';
-            htmlEl.style.left = '';
-            htmlEl.style.right = '';
-            htmlEl.style.bottom = '';
-            htmlEl.style.width = '';
-            htmlEl.style.height = '';
-            htmlEl.style.margin = '';
-            htmlEl.style.padding = '';
-            htmlEl.style.zIndex = '';
-            htmlEl.style.transform = '';
-            htmlEl.style.translate = '';
-            htmlEl.style.pointerEvents = 'auto';
-            htmlEl.classList.remove('hidden', 'invisible', 'opacity-0', 'video-call-active');
-            // Force reflow
-            void htmlEl.offsetHeight;
-          }
-        });
-        
-        // CRITICAL: Also restore any elements that might be hiding headers (overlays, modals, etc.)
-        const potentialOverlays = document.querySelectorAll('[class*="overlay"], [class*="modal"], [class*="backdrop"]');
-        potentialOverlays.forEach((overlay) => {
-          const htmlEl = overlay as HTMLElement;
-          if (htmlEl && htmlEl.id !== 'webrtc-call-modal') {
-            const rect = htmlEl.getBoundingClientRect();
-            // If overlay is covering the top of the page (likely covering header)
-            if (rect.top <= 100 && rect.height > 50) {
-              const computedZ = parseInt(window.getComputedStyle(htmlEl).zIndex) || 0;
-              // If it has a high z-index and is at the top, lower it
-              if (computedZ > 50) {
-                htmlEl.style.zIndex = '1';
+        // CRITICAL: Defer all DOM manipulation to avoid conflicts with React reconciliation
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            try {
+              // CRITICAL: Restore chat header with complete style reset
+              const chatHeaders = document.querySelectorAll('[class*="neo-glass-header"], [class*="chat-header"], [class*="ChatHeader"]');
+              chatHeaders.forEach((header) => {
+                const htmlEl = header as HTMLElement;
+                // CRITICAL: Check if element exists in DOM and is still connected before manipulation
+                if (htmlEl && htmlEl.isConnected && htmlEl.parentNode && document.body.contains(htmlEl)) {
+                  try {
+                    // Defer style changes to avoid React conflicts
+                    requestAnimationFrame(() => {
+                      if (htmlEl.isConnected && htmlEl.parentNode) {
+                        htmlEl.removeAttribute('style');
+                        htmlEl.style.cssText = '';
+                        htmlEl.style.display = 'flex';
+                        htmlEl.style.visibility = 'visible';
+                        htmlEl.style.opacity = '1';
+                        htmlEl.style.zIndex = '';
+                        htmlEl.style.position = '';
+                        htmlEl.style.top = '';
+                        htmlEl.style.left = '';
+                        htmlEl.style.right = '';
+                        htmlEl.style.bottom = '';
+                        htmlEl.style.width = '';
+                        htmlEl.style.height = '';
+                        htmlEl.style.margin = '';
+                        htmlEl.style.padding = '';
+                        htmlEl.style.transform = '';
+                        htmlEl.style.translate = '';
+                        htmlEl.classList.remove('hidden', 'invisible', 'opacity-0');
+                        void htmlEl.offsetHeight;
+                      }
+                    });
+                  } catch (e) {
+                    console.warn('Error restoring chat header:', e);
+                  }
+                }
+              });
+              
+              // CRITICAL: Restore main header with complete style reset
+              const mainHeaders = document.querySelectorAll('header, [class*="PerfectHeader"], nav, [role="navigation"], [class*="header"], [class*="Header"]');
+              mainHeaders.forEach((header) => {
+                const htmlEl = header as HTMLElement;
+                if (htmlEl && htmlEl.isConnected && htmlEl.parentNode && document.body.contains(htmlEl)) {
+                  try {
+                    requestAnimationFrame(() => {
+                      if (htmlEl.isConnected && htmlEl.parentNode) {
+                        htmlEl.removeAttribute('style');
+                        htmlEl.style.cssText = '';
+                        htmlEl.style.display = htmlEl.tagName === 'NAV' ? 'flex' : 'block';
+                        htmlEl.style.visibility = 'visible';
+                        htmlEl.style.opacity = '1';
+                        htmlEl.style.position = '';
+                        htmlEl.style.top = '';
+                        htmlEl.style.left = '';
+                        htmlEl.style.right = '';
+                        htmlEl.style.bottom = '';
+                        htmlEl.style.width = '';
+                        htmlEl.style.height = '';
+                        htmlEl.style.margin = '';
+                        htmlEl.style.padding = '';
+                        htmlEl.style.zIndex = '';
+                        htmlEl.style.transform = '';
+                        htmlEl.style.translate = '';
+                        htmlEl.style.pointerEvents = 'auto';
+                        htmlEl.classList.remove('hidden', 'invisible', 'opacity-0', 'video-call-active');
+                        void htmlEl.offsetHeight;
+                      }
+                    });
+                  } catch (e) {
+                    console.warn('Error restoring main header:', e);
+                  }
+                }
+              });
+              
+              // CRITICAL: Also restore any elements that might be hiding headers (overlays, modals, etc.)
+              const potentialOverlays = document.querySelectorAll('[class*="overlay"], [class*="modal"], [class*="backdrop"]');
+              potentialOverlays.forEach((overlay) => {
+                const htmlEl = overlay as HTMLElement;
+                if (htmlEl && htmlEl.id !== 'webrtc-call-modal' && htmlEl.isConnected && htmlEl.parentNode && document.body.contains(htmlEl)) {
+                  try {
+                    const rect = htmlEl.getBoundingClientRect();
+                    if (rect.top <= 100 && rect.height > 50) {
+                      const computedZ = parseInt(window.getComputedStyle(htmlEl).zIndex) || 0;
+                      if (computedZ > 50) {
+                        htmlEl.style.zIndex = '1';
+                      }
+                    }
+                  } catch (e) {
+                    // Silently ignore DOM errors
+                  }
+                }
+              });
+              
+              // CRITICAL: Also restore ALL buttons in headers
+              const allHeaderButtons = document.querySelectorAll('header button, nav button, [class*="Header"] button, [class*="header"] button');
+              allHeaderButtons.forEach((btn) => {
+                const htmlEl = btn as HTMLElement;
+                if (htmlEl && htmlEl.isConnected && htmlEl.parentNode && document.body.contains(htmlEl)) {
+                  try {
+                    requestAnimationFrame(() => {
+                      if (htmlEl.isConnected && htmlEl.parentNode) {
+                        htmlEl.removeAttribute('style');
+                        htmlEl.style.cssText = '';
+                        htmlEl.style.display = '';
+                        htmlEl.style.visibility = 'visible';
+                        htmlEl.style.opacity = '1';
+                        htmlEl.style.pointerEvents = 'auto';
+                        htmlEl.style.position = '';
+                        htmlEl.style.zIndex = '';
+                        htmlEl.classList.remove('hidden', 'invisible', 'opacity-0');
+                        void htmlEl.offsetHeight;
+                      }
+                    });
+                  } catch (e) {
+                    // Silently ignore DOM errors
+                  }
+                }
+              });
+              
+              // ENHANCED: Restore body and html alignment
+              document.body.style.cssText = '';
+              document.body.style.overflow = '';
+              document.body.style.position = '';
+              document.body.style.width = '';
+              document.body.style.height = '';
+              document.body.style.margin = '';
+              document.body.style.padding = '';
+              if (document.documentElement) {
+                document.documentElement.style.cssText = '';
+                document.documentElement.style.overflow = '';
+                document.documentElement.style.position = '';
+                document.documentElement.style.width = '';
+                document.documentElement.style.height = '';
               }
+              
+              // Force reflow
+              void document.body.offsetHeight;
+            } catch (e) {
+              console.warn('Error in restoreUI inner:', e);
             }
-          }
+          });
         });
-        
-        // CRITICAL: Also restore ALL buttons in headers
-        const allHeaderButtons = document.querySelectorAll('header button, nav button, [class*="Header"] button, [class*="header"] button');
-        allHeaderButtons.forEach((btn) => {
-          const htmlEl = btn as HTMLElement;
-          if (htmlEl) {
-            htmlEl.removeAttribute('style');
-            htmlEl.style.cssText = '';
-            htmlEl.style.display = '';
-            htmlEl.style.visibility = 'visible';
-            htmlEl.style.opacity = '1';
-            htmlEl.style.pointerEvents = 'auto';
-            htmlEl.style.position = '';
-            htmlEl.style.zIndex = '';
-            htmlEl.classList.remove('hidden', 'invisible', 'opacity-0');
-            void htmlEl.offsetHeight;
-          }
-        });
-        
-        // ENHANCED: Restore chat container alignment
-        const chatContainers = document.querySelectorAll('[class*="chat"], [class*="message"], [class*="flex"][class*="flex-col"]');
-        chatContainers.forEach((container) => {
-          const htmlEl = container as HTMLElement;
-          if (htmlEl && htmlEl.closest('[class*="chat"]')) {
-            htmlEl.style.cssText = '';
-            htmlEl.style.display = '';
-            htmlEl.style.visibility = '';
-            htmlEl.style.opacity = '';
-            htmlEl.style.position = '';
-            htmlEl.style.top = '';
-            htmlEl.style.left = '';
-            htmlEl.style.right = '';
-            htmlEl.style.bottom = '';
-            htmlEl.style.width = '';
-            htmlEl.style.height = '';
-            htmlEl.style.margin = '';
-            htmlEl.style.padding = '';
-            htmlEl.style.transform = '';
-            htmlEl.style.translate = '';
-          }
-        });
-        
-        // CRITICAL: Restore chat input area and typing area specifically
-        const chatInputs = document.querySelectorAll('textarea[placeholder*="Message"], input[placeholder*="Message"], textarea[placeholder*="message"], input[placeholder*="message"], [class*="message-input"], [class*="MessageInput"], textarea, input[type="text"]');
-        const chatInputContainers = document.querySelectorAll('[class*="chat-input"], [class*="message-input-container"], [class*="ChatInput"], [class*="border-t"][class*="p-"], form[class*="flex"], [class*="flex"][class*="items-center"][class*="gap-"]');
-        const headerButtons = document.querySelectorAll('header button, nav button, [class*="Header"] button, [class*="neo-glass-header"] button');
-        
-        [...chatInputs, ...chatInputContainers, ...headerButtons].forEach((el) => {
-          const htmlEl = el as HTMLElement;
-          if (htmlEl) {
-            htmlEl.removeAttribute('style');
-            htmlEl.style.cssText = '';
-            htmlEl.style.display = '';
-            htmlEl.style.visibility = 'visible';
-            htmlEl.style.opacity = '1';
-            htmlEl.style.pointerEvents = 'auto';
-            htmlEl.style.position = '';
-            htmlEl.style.top = '';
-            htmlEl.style.left = '';
-            htmlEl.style.right = '';
-            htmlEl.style.bottom = '';
-            htmlEl.style.zIndex = '';
-            htmlEl.style.transform = '';
-            htmlEl.style.translate = '';
-            htmlEl.classList.remove('hidden', 'invisible', 'opacity-0');
-            void htmlEl.offsetHeight;
-          }
-        });
-        
-        // ENHANCED: Restore body and html alignment
-        document.body.style.cssText = '';
-        document.body.style.overflow = '';
-        document.body.style.position = '';
-        document.body.style.width = '';
-        document.body.style.height = '';
-        document.body.style.margin = '';
-        document.body.style.padding = '';
-        if (document.documentElement) {
-          document.documentElement.style.cssText = '';
-          document.documentElement.style.overflow = '';
-          document.documentElement.style.position = '';
-          document.documentElement.style.width = '';
-          document.documentElement.style.height = '';
-        }
-        
-        // Force reflow
-        void document.body.offsetHeight;
       };
       
-      // Immediate restoration (synchronous)
-      restoreUI();
-      
-      // CRITICAL: Force immediate reflow and layout recalculation
+      // CRITICAL: Defer restoration to avoid React reconciliation conflicts
+      // Use multiple requestAnimationFrame calls to ensure it happens after React's render cycle
       requestAnimationFrame(() => {
-        restoreUI();
-        // Force all elements to recalculate
-        window.dispatchEvent(new Event('resize'));
-        window.dispatchEvent(new Event('orientationchange'));
+        requestAnimationFrame(() => {
+          restoreUI();
+          // Force all elements to recalculate
+          window.dispatchEvent(new Event('resize'));
+          
+          // Single delayed retry to ensure everything is restored
+          setTimeout(() => {
+            requestAnimationFrame(() => {
+              restoreUI();
+              // Ensure modal is hidden (don't remove - React handles it)
+              const modal = document.getElementById('webrtc-call-modal');
+              if (modal) {
+                modal.style.display = 'none';
+                modal.style.visibility = 'hidden';
+                modal.style.opacity = '0';
+                modal.style.pointerEvents = 'none';
+              }
+            });
+          }, 300);
+        });
       });
       
-      // Retry after short delays to ensure visibility and alignment
-      setTimeout(restoreUI, 10);
-      setTimeout(restoreUI, 50);
-      setTimeout(restoreUI, 100);
-      setTimeout(restoreUI, 200);
-      setTimeout(restoreUI, 500);
-      setTimeout(restoreUI, 1000);
-      setTimeout(restoreUI, 2000); // Additional retry for stubborn headers
-      setTimeout(restoreUI, 3000); // Final retry
-      setTimeout(restoreUI, 5000); // Extra retry for very stubborn headers
-      
-      // CRITICAL: Also restore on every visibility change to catch any missed cases
-      const handleVisibilityChange = () => {
-        if (document.visibilityState === 'visible') {
+      // Store timeout for cleanup - deferred to avoid React conflicts
+      (handleCallEnded as any).timeout = setTimeout(() => {
+        requestAnimationFrame(() => {
           restoreUI();
-        }
-      };
-      document.addEventListener('visibilitychange', handleVisibilityChange);
-      
-      // Cleanup visibility listener after 10 seconds
-      setTimeout(() => {
-        document.removeEventListener('visibilitychange', handleVisibilityChange);
-      }, 10000);
-      
-      // CRITICAL: Force a page reflow by accessing offsetHeight on all headers
-      setTimeout(() => {
-        const allHeaders = document.querySelectorAll('header, nav, [class*="Header"], [class*="header"], [class*="PerfectHeader"]');
-        allHeaders.forEach((header) => {
-          const htmlEl = header as HTMLElement;
-          if (htmlEl) {
-            void htmlEl.offsetHeight; // Force reflow
-            htmlEl.style.display = htmlEl.tagName === 'NAV' ? 'flex' : 'block';
-            htmlEl.style.visibility = 'visible';
-            htmlEl.style.opacity = '1';
-            htmlEl.style.pointerEvents = 'auto';
-          }
         });
-        // Also dispatch events to trigger any React re-renders
-        window.dispatchEvent(new Event('resize'));
-        window.dispatchEvent(new Event('orientationchange'));
-      }, 100);
-      
-      // Final check after 2 seconds
-      setTimeout(() => {
-        restoreUI();
-        // Ensure modal is hidden (don't remove - React handles it)
-        const modal = document.getElementById('webrtc-call-modal');
-        if (modal) {
-          modal.style.display = 'none';
-          modal.style.visibility = 'hidden';
-          modal.style.opacity = '0';
-          modal.style.pointerEvents = 'none';
-        }
-      }, 2000);
+      }, 500);
     };
     
     window.addEventListener('call-ended', handleCallEnded);
@@ -1092,6 +1058,10 @@ export default function ChatInterfaceTelegramFixed({ room, currentUserId, onBack
     return () => {
       window.removeEventListener('call-ended', handleCallEnded);
       window.removeEventListener('resize', handleResize);
+      // Cleanup any pending timeout
+      if ((handleCallEnded as any).timeout) {
+        clearTimeout((handleCallEnded as any).timeout);
+      }
     };
   }, []);
 
@@ -1228,9 +1198,14 @@ export default function ChatInterfaceTelegramFixed({ room, currentUserId, onBack
       {/* Messages - FIXED: OLD UP, NEW DOWN */}
       <div 
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto p-4 space-y-2 bg-black"
+        className="flex-1 overflow-y-auto p-4 space-y-2 bg-black custom-scrollbar"
         style={{
-          backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%2306b6d4\' fill-opacity=\'0.03\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")'
+          backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%2306b6d4\' fill-opacity=\'0.03\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
+          // Custom scrollbar styling - ensure it's visible
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'rgba(6, 182, 212, 0.3) transparent',
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch'
         }}
       >
         {isMountedRef.current && !isNavigatingBackRef.current && room?.id === roomIdRef.current ? (

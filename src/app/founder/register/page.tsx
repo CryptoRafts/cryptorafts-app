@@ -8,7 +8,13 @@ import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { UserIcon, EnvelopeIcon, PhoneIcon, BriefcaseIcon, PhotoIcon } from '@heroicons/react/24/outline';
 import Image from 'next/image';
-import BinanceWalletConnect from '@/components/BinanceWalletConnect';
+import dynamic from 'next/dynamic';
+
+// Dynamically import wallet component to avoid SSR issues
+const BinanceWalletConnect = dynamic(
+  () => import('@/components/BinanceWalletConnect'),
+  { ssr: false }
+);
 
 export default function FounderRegisterPage() {
   const { user, isLoading } = useAuth();
@@ -576,13 +582,13 @@ export default function FounderRegisterPage() {
 
             {/* Submit Button */}
             {!showWalletConnect && (
-              <button
-                type="submit"
-                disabled={submitting}
-                className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white py-3 px-6 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-              >
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white py-3 px-6 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            >
                 {submitting ? 'Saving...' : walletAddress ? 'Continue to KYC Verification' : 'Save Profile & Connect Wallet'}
-              </button>
+            </button>
             )}
           </form>
         </div>

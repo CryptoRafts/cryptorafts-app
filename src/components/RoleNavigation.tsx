@@ -2,6 +2,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { NeonCyanIcon } from '@/components/icons/NeonCyanIcon';
+import WalletMenuButton from '@/components/WalletMenuButton';
 
 interface RoleNavigationProps {
   user?: { 
@@ -56,6 +57,13 @@ export default function RoleNavigation({ user, onClose }: RoleNavigationProps) {
             href: '/founder/settings',
             icon: 'settings',
             description: 'Profile and account settings'
+          },
+          {
+            name: 'Wallet',
+            href: '#',
+            icon: 'credit-card',
+            description: 'Connect and manage your wallet',
+            isWallet: true
           }
         ];
 
@@ -94,6 +102,13 @@ export default function RoleNavigation({ user, onClose }: RoleNavigationProps) {
             href: '/vc/settings',
             icon: 'settings',
             description: 'Organization and account settings'
+          },
+          {
+            name: 'Wallet',
+            href: '#',
+            icon: 'credit-card',
+            description: 'Connect and manage your wallet',
+            isWallet: true
           }
         ];
 
@@ -137,6 +152,13 @@ export default function RoleNavigation({ user, onClose }: RoleNavigationProps) {
             href: '/influencer/settings',
             icon: 'settings',
             description: 'Account settings and preferences'
+          },
+          {
+            name: 'Wallet',
+            href: '#',
+            icon: 'credit-card',
+            description: 'Connect and manage your wallet',
+            isWallet: true
           }
         ];
 
@@ -182,6 +204,13 @@ export default function RoleNavigation({ user, onClose }: RoleNavigationProps) {
             href: '/ido/settings',
             icon: 'settings',
             description: 'Platform settings and team'
+          },
+          {
+            name: 'Wallet',
+            href: '#',
+            icon: 'credit-card',
+            description: 'Connect and manage your wallet',
+            isWallet: true
           }
         ];
 
@@ -222,13 +251,103 @@ export default function RoleNavigation({ user, onClose }: RoleNavigationProps) {
             href: '/exchange/settings',
             icon: 'settings',
             description: 'Organization and account settings'
+          },
+          {
+            name: 'Wallet',
+            href: '#',
+            icon: 'credit-card',
+            description: 'Connect and manage your wallet',
+            isWallet: true
           }
         ];
 
       case 'agency':
+        return [
+          {
+            name: 'Dashboard',
+            href: '/agency/dashboard',
+            icon: 'dashboard',
+            description: 'Overview and statistics'
+          },
+          {
+            name: 'Campaigns',
+            href: '/agency/campaigns',
+            icon: 'campaigns',
+            description: 'Manage your campaigns'
+          },
+          {
+            name: 'Clients',
+            href: '/agency/clients',
+            icon: 'clients',
+            description: 'Manage your clients'
+          },
+          {
+            name: 'Messages',
+            href: '/agency/messages',
+            icon: 'messages',
+            description: 'Communication and collaboration'
+          },
+          {
+            name: 'Settings',
+            href: '/agency/settings',
+            icon: 'settings',
+            description: 'Account settings and preferences'
+          },
+          {
+            name: 'Wallet',
+            href: '#',
+            icon: 'credit-card',
+            description: 'Connect and manage your wallet',
+            isWallet: true
+          }
+        ];
+      
       case 'admin':
-        // These roles have their own navigation defined elsewhere or use BaseRoleDashboard
-        return [];
+        return [
+          {
+            name: 'Dashboard',
+            href: '/admin/dashboard',
+            icon: 'dashboard',
+            description: 'Admin dashboard and overview'
+          },
+          {
+            name: 'KYC',
+            href: '/admin/kyc',
+            icon: 'shield',
+            description: 'Review KYC documents'
+          },
+          {
+            name: 'KYB',
+            href: '/admin/kyb',
+            icon: 'shield',
+            description: 'Review KYB documents'
+          },
+          {
+            name: 'Users',
+            href: '/admin/users',
+            icon: 'users',
+            description: 'Manage users'
+          },
+          {
+            name: 'Projects',
+            href: '/admin/projects',
+            icon: 'document',
+            description: 'Manage projects'
+          },
+          {
+            name: 'Settings',
+            href: '/admin/settings',
+            icon: 'settings',
+            description: 'Admin settings'
+          },
+          {
+            name: 'Wallet',
+            href: '#',
+            icon: 'credit-card',
+            description: 'Connect and manage your wallet',
+            isWallet: true
+          }
+        ];
 
       default:
         return [];
@@ -240,7 +359,27 @@ export default function RoleNavigation({ user, onClose }: RoleNavigationProps) {
   return (
     <div className="space-y-1">
       {navigationItems.map((item) => {
-      return (
+        // Special handling for Wallet menu item
+        if ((item as any).isWallet) {
+          return (
+            <div
+              key={item.name}
+              className="flex items-start gap-3 w-full text-left p-3 rounded-lg transition-colors group hover:bg-white/5"
+              title={item.description}
+            >
+              <NeonCyanIcon type={item.icon as any} size={20} className="flex-shrink-0 text-slate-400 group-hover:text-white mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="font-medium text-slate-200 group-hover:text-white">{item.name}</span>
+                </div>
+                <WalletMenuButton className="w-full" />
+              </div>
+            </div>
+          );
+        }
+
+        // Regular navigation items
+        return (
           <Link
             key={item.name}
             href={item.disabled ? "#" : item.href}

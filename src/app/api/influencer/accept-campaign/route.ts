@@ -277,6 +277,14 @@ export async function POST(req: NextRequest) {
           "raftai": null
         },
         
+        // Last message
+        lastMessage: {
+          senderId: "raftai",
+          senderName: "RaftAI",
+          text: `🎉 Deal room created! ${influencerName} has accepted the project "${projectName}".`,
+          createdAt: Date.now()
+        },
+        
         // Room settings
         settings: {
           filesAllowed: true,
@@ -315,16 +323,101 @@ export async function POST(req: NextRequest) {
         senderName: "RaftAI",
         senderAvatar: null,
         type: "system",
-        text: `🎉 Deal room created! ${influencerName} has accepted the project "${projectName}". You can now discuss the project details, next steps, and collaboration opportunities.`,
+        text: `🎉 Deal room created! ${influencerName} has accepted the project "${projectName}". You can now discuss the project details, next steps, and collaboration opportunities.\n\nI'm RaftAI, your AI assistant. I can help you with:\n• Project coordination\n• Task management\n• Document sharing\n• Meeting scheduling\n• Progress tracking\n\nFeel free to ask me anything about the project!`,
         reactions: {},
         readBy: [],
+        mentions: [],
         isPinned: false,
         isEdited: false,
         isDeleted: false,
-        createdAt: Date.now()
+        createdAt: Date.now(),
+        timestamp: Date.now()
       });
       
-      console.log(`✅ [INFLUENCER API] Created chat room in groupChats: ${roomId}`);
+      console.log(`✅ [INFLUENCER API] Created chat room in groupChats: ${roomId} with RaftAI welcome message`);
+      
+      // Create RaftAI collaboration group (similar to VC role)
+      try {
+        const collaborationGroupId = `collab_${projectId || campaignId}_${uid}_${Date.now()}`;
+        const collaborationGroupData = {
+          id: collaborationGroupId,
+          name: `${projectName} - Collaboration`,
+          projectId: projectId || campaignId,
+          projectName: projectName,
+          influencerId: uid,
+          influencerName: influencerName,
+          founderId: founderId,
+          founderName: founderName,
+          members: [
+            {
+              id: founderId,
+              name: founderName,
+              email: founderData?.email || '',
+              role: 'founder_admin',
+              isOnline: true,
+              addedBy: 'raftai',
+              addedAt: new Date(),
+              permissions: {
+                canChat: true,
+                canShareFiles: true,
+                canManageMilestones: true,
+                canViewReports: true,
+                canInviteMembers: false
+              }
+            },
+            {
+              id: uid,
+              name: influencerName,
+              email: influencerData?.email || decodedToken.email || '',
+              role: 'influencer_admin',
+              isOnline: true,
+              addedBy: 'raftai',
+              addedAt: new Date(),
+              permissions: {
+                canChat: true,
+                canShareFiles: true,
+                canManageMilestones: false,
+                canViewReports: true,
+                canInviteMembers: false
+              }
+            },
+            {
+              id: 'raftai',
+              name: 'RaftAI Assistant',
+              email: 'assistant@raftai.com',
+              role: 'ai_assistant',
+              isOnline: true,
+              addedBy: 'raftai',
+              addedAt: new Date(),
+              permissions: {
+                canChat: true,
+                canShareFiles: false,
+                canManageMilestones: true,
+                canViewReports: true,
+                canInviteMembers: false
+              }
+            }
+          ],
+          createdBy: 'raftai',
+          createdAt: Date.now(),
+          isActive: true,
+          settings: {
+            allowFileUpload: true,
+            allowVoiceMessages: true,
+            allowVoiceCalls: true,
+            allowPinnedMessages: true,
+            encryptionEnabled: true
+          },
+          milestones: [],
+          raftaiReports: []
+        };
+        
+        await db.collection("collaborationGroups").doc(collaborationGroupId).set(collaborationGroupData);
+        console.log(`✅ [INFLUENCER API] Created RaftAI collaboration group: ${collaborationGroupId}`);
+      } catch (collabError: any) {
+        console.warn(`⚠️ [INFLUENCER API] Failed to create collaboration group (non-critical):`, collabError?.message);
+        // Don't throw - collaboration group is nice to have but not critical
+      }
     } else {
       console.log(`✅ [INFLUENCER API] Chat room already exists: ${roomId}`);
     }

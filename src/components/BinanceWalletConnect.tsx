@@ -20,7 +20,7 @@ interface BinanceWalletConnectProps {
   required?: boolean;
 }
 
-// Extend Window interface for Binance Wallet
+// Extend Window interface for Binance Wallet and MetaMask
 declare global {
   interface Window {
     BinanceChain?: {
@@ -31,6 +31,9 @@ declare global {
       request: (args: { method: string; params?: any[] }) => Promise<any>;
       isMetaMask?: boolean;
       isBinance?: boolean;
+      on?: (event: string, callback: (...args: any[]) => void) => void;
+      removeListener?: (event: string, callback: (...args: any[]) => void) => void;
+      removeAllListeners?: (event?: string) => void;
     };
   }
 }
@@ -48,12 +51,12 @@ export default function BinanceWalletConnect({
   const [walletType, setWalletType] = useState<'binance' | 'metamask' | 'other' | null>(null);
 
   useEffect(() => {
-    // Check for existing connection
+    // Check for existing connection and detect wallet type
     const checkConnection = async () => {
       try {
         if (typeof window === 'undefined') return;
 
-        // Check for Binance Wallet first
+        // Check for Binance Wallet first (it has its own namespace)
         if (window.BinanceChain) {
           setWalletType('binance');
           try {
@@ -67,12 +70,20 @@ export default function BinanceWalletConnect({
               setChainId(parseInt(chainIdHex, 16));
             }
           } catch (err) {
-            console.log('Binance Wallet not connected');
+            console.log('Binance Wallet not connected:', err);
           }
         }
         // Check for MetaMask or other EIP-1193 wallets
         else if (window.ethereum) {
-          setWalletType(window.ethereum.isBinance ? 'binance' : window.ethereum.isMetaMask ? 'metamask' : 'other');
+          // Determine wallet type
+          if (window.ethereum.isBinance) {
+            setWalletType('binance');
+          } else if (window.ethereum.isMetaMask) {
+            setWalletType('metamask');
+          } else {
+            setWalletType('other');
+          }
+          
           try {
             const provider = new ethers.BrowserProvider(window.ethereum);
             setProvider(provider);
@@ -87,7 +98,7 @@ export default function BinanceWalletConnect({
               setChainId(Number(network.chainId));
             }
           } catch (err) {
-            console.log('Wallet not connected');
+            console.log('Wallet not connected:', err);
           }
         }
       } catch (err: any) {
@@ -97,28 +108,37 @@ export default function BinanceWalletConnect({
 
     checkConnection();
 
-    // Listen for account changes
+    // Listen for account changes (MetaMask and other EIP-1193 wallets)
     if (window.ethereum) {
-      window.ethereum.on('accountsChanged', (accounts: string[]) => {
+      const handleAccountsChanged = (accounts: string[]) => {
         if (accounts.length > 0) {
           setAddress(accounts[0]);
           onWalletConnected(accounts[0]);
         } else {
           setAddress('');
         }
-      });
+      };
 
-      window.ethereum.on('chainChanged', (chainIdHex: string) => {
+      const handleChainChanged = (chainIdHex: string) => {
         setChainId(parseInt(chainIdHex, 16));
-      });
-    }
+      };
 
-    return () => {
-      if (window.ethereum) {
-        window.ethereum.removeAllListeners?.('accountsChanged');
-        window.ethereum.removeAllListeners?.('chainChanged');
+      // Add listeners if supported
+      if (window.ethereum.on) {
+        window.ethereum.on('accountsChanged', handleAccountsChanged);
+        window.ethereum.on('chainChanged', handleChainChanged);
       }
-    };
+
+      return () => {
+        if (window.ethereum?.removeListener) {
+          window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
+          window.ethereum.removeListener('chainChanged', handleChainChanged);
+        } else if (window.ethereum?.removeAllListeners) {
+          window.ethereum.removeAllListeners('accountsChanged');
+          window.ethereum.removeAllListeners('chainChanged');
+        }
+      };
+    }
   }, [onWalletConnected]);
 
   const handleConnect = async () => {
@@ -129,19 +149,33 @@ export default function BinanceWalletConnect({
       let accounts: string[] = [];
       let currentChainId: number;
 
-      // Try Binance Wallet first
+      // Try Binance Wallet first (it has its own namespace)
       if (window.BinanceChain) {
         setWalletType('binance');
+        console.log('🔗 Connecting to Binance Wallet...');
         accounts = await window.BinanceChain.request({ method: 'eth_requestAccounts' });
         const chainIdHex = await window.BinanceChain.request({ method: 'eth_chainId' });
         currentChainId = parseInt(chainIdHex, 16);
+        console.log('✅ Binance Wallet connected:', accounts[0], 'Chain ID:', currentChainId);
       }
       // Try MetaMask or other EIP-1193 wallets
       else if (window.ethereum) {
-        setWalletType(window.ethereum.isBinance ? 'binance' : window.ethereum.isMetaMask ? 'metamask' : 'other');
+        // Determine wallet type
+        if (window.ethereum.isBinance) {
+          setWalletType('binance');
+          console.log('🔗 Connecting to Binance Wallet (via ethereum)...');
+        } else if (window.ethereum.isMetaMask) {
+          setWalletType('metamask');
+          console.log('🔗 Connecting to MetaMask...');
+        } else {
+          setWalletType('other');
+          console.log('🔗 Connecting to wallet...');
+        }
+        
         accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         const chainIdHex = await window.ethereum.request({ method: 'eth_chainId' });
         currentChainId = parseInt(chainIdHex, 16);
+        console.log('✅ Wallet connected:', accounts[0], 'Chain ID:', currentChainId);
         
         // Set up ethers provider
         const ethersProvider = new ethers.BrowserProvider(window.ethereum);
@@ -176,7 +210,17 @@ export default function BinanceWalletConnect({
       }
     } catch (err: any) {
       console.error('Error connecting wallet:', err);
-      const errorMessage = err?.message || 'Failed to connect wallet';
+      
+      // Provide user-friendly error messages
+      let errorMessage = 'Failed to connect wallet';
+      if (err?.code === 4001) {
+        errorMessage = 'Connection rejected. Please approve the connection in your wallet.';
+      } else if (err?.code === -32002) {
+        errorMessage = 'Connection request already pending. Please check your wallet.';
+      } else if (err?.message) {
+        errorMessage = err.message;
+      }
+      
       setError(errorMessage);
       if (onError) {
         onError(errorMessage);
@@ -207,10 +251,10 @@ export default function BinanceWalletConnect({
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-xl font-bold text-white mb-1">
-              Connect Binance Wallet
+              Connect Wallet
             </h3>
             <p className="text-white/70 text-sm">
-              Connect your Binance Wallet to complete registration on BNB Smart Chain
+              Connect your wallet (Binance Wallet or MetaMask) to complete registration on BNB Smart Chain
             </p>
           </div>
           <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
@@ -238,9 +282,20 @@ export default function BinanceWalletConnect({
 
         {!address ? (
           <div className="space-y-4">
+            {/* Show detected wallet type */}
+            {walletType && (
+              <div className="p-3 bg-blue-500/20 border border-blue-500/50 rounded-lg">
+                <p className="text-blue-300 text-sm">
+                  {walletType === 'binance' && '🟡 Binance Wallet detected'}
+                  {walletType === 'metamask' && '🦊 MetaMask detected'}
+                  {walletType === 'other' && '💼 Wallet detected'}
+                </p>
+              </div>
+            )}
+
             <button
               onClick={handleConnect}
-              disabled={connecting || !wallet}
+              disabled={connecting || (!window.BinanceChain && !window.ethereum)}
               className="w-full bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {connecting ? (
@@ -282,7 +337,7 @@ export default function BinanceWalletConnect({
                       d="M13 10V3L4 14h7v7l9-11h-7z"
                     />
                   </svg>
-                  Connect Binance Wallet
+                  {walletType === 'metamask' ? 'Connect MetaMask' : walletType === 'binance' ? 'Connect Binance Wallet' : 'Connect Wallet'}
                 </>
               )}
             </button>
@@ -353,8 +408,14 @@ export default function BinanceWalletConnect({
                 onClick={async () => {
                   try {
                     await switchToBNBChain();
-                    const newChainId = await wallet?.getChainId();
-                    setChainId(newChainId || null);
+                    // Get updated chain ID
+                    if (window.BinanceChain) {
+                      const chainIdHex = await window.BinanceChain.request({ method: 'eth_chainId' });
+                      setChainId(parseInt(chainIdHex, 16));
+                    } else if (window.ethereum) {
+                      const chainIdHex = await window.ethereum.request({ method: 'eth_chainId' });
+                      setChainId(parseInt(chainIdHex, 16));
+                    }
                   } catch (err: any) {
                     setError('Failed to switch network. Please switch manually.');
                   }

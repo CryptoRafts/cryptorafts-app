@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/providers/SimpleAuthProvider';
 import { NeonCyanIcon } from '@/components/icons/NeonCyanIcon';
+import WalletMenuButton from '@/components/WalletMenuButton';
 
 export default function CompleteNavigation() {
   const { user, claims, isLoading } = useAuth();
@@ -19,6 +20,7 @@ export default function CompleteNavigation() {
           { name: 'Pitch Project', href: '/founder/pitch', icon: 'rocket' },
           { name: 'My Projects', href: '/founder/projects', icon: 'document' },
           { name: 'Messages', href: '/founder/messages', icon: 'chat' },
+          { name: 'Wallet', href: '#', icon: 'credit-card', isWallet: true },
           { name: 'Settings', href: '/founder/settings', icon: 'settings' }
         ];
       
@@ -29,6 +31,7 @@ export default function CompleteNavigation() {
           { name: 'Portfolio', href: '/vc/portfolio', icon: 'portfolio' },
           { name: 'Pipeline', href: '/vc/pipeline', icon: 'pipeline' },
           { name: 'Team', href: '/vc/team', icon: 'team' },
+          { name: 'Wallet', href: '#', icon: 'credit-card', isWallet: true },
           { name: 'Settings', href: '/vc/settings', icon: 'settings' }
         ];
       
@@ -38,6 +41,7 @@ export default function CompleteNavigation() {
           { name: 'Dealflow', href: '/exchange/dealflow', icon: 'dealflow' },
           { name: 'Listings', href: '/exchange/listings', icon: 'listings' },
           { name: 'Messages', href: '/exchange/messages', icon: 'messages' },
+          { name: 'Wallet', href: '#', icon: 'credit-card', isWallet: true },
           { name: 'Settings', href: '/exchange/settings', icon: 'settings' }
         ];
       
@@ -47,6 +51,7 @@ export default function CompleteNavigation() {
           { name: 'Dealflow', href: '/ido/dealflow', icon: 'dealflow' },
           { name: 'Launchpad', href: '/ido/launchpad', icon: 'launchpad' },
           { name: 'Messages', href: '/ido/messages', icon: 'messages' },
+          { name: 'Wallet', href: '#', icon: 'credit-card', isWallet: true },
           { name: 'Settings', href: '/ido/settings', icon: 'settings' }
         ];
       
@@ -56,6 +61,7 @@ export default function CompleteNavigation() {
           { name: 'Campaigns', href: '/influencer/campaigns', icon: 'campaigns' },
           { name: 'Messages', href: '/influencer/messages', icon: 'messages' },
           { name: 'Analytics', href: '/influencer/analytics', icon: 'analytics' },
+          { name: 'Wallet', href: '#', icon: 'credit-card', isWallet: true },
           { name: 'Settings', href: '/influencer/settings', icon: 'settings' }
         ];
       
@@ -65,7 +71,19 @@ export default function CompleteNavigation() {
           { name: 'Campaigns', href: '/agency/campaigns', icon: 'campaigns' },
           { name: 'Clients', href: '/agency/clients', icon: 'clients' },
           { name: 'Messages', href: '/agency/messages', icon: 'messages' },
+          { name: 'Wallet', href: '#', icon: 'credit-card', isWallet: true },
           { name: 'Settings', href: '/agency/settings', icon: 'settings' }
+        ];
+      
+      case 'admin':
+        return [
+          { name: 'Dashboard', href: '/admin/dashboard', icon: 'dashboard' },
+          { name: 'KYC', href: '/admin/kyc', icon: 'shield' },
+          { name: 'KYB', href: '/admin/kyb', icon: 'shield' },
+          { name: 'Users', href: '/admin/users', icon: 'users' },
+          { name: 'Projects', href: '/admin/projects', icon: 'document' },
+          { name: 'Wallet', href: '#', icon: 'credit-card', isWallet: true },
+          { name: 'Settings', href: '/admin/settings', icon: 'settings' }
         ];
       
       default:
@@ -108,16 +126,32 @@ export default function CompleteNavigation() {
             {user && claims?.role ? (
               <>
                 {/* Role-specific navigation */}
-                {roleNavigation.map((item) => (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className="flex items-center space-x-1 text-white/80 hover:text-white transition-colors"
-                  >
-                    <NeonCyanIcon type={item.icon as any} size={16} className="text-current" />
-                    <span className="text-sm font-medium">{item.name}</span>
-                  </Link>
-                ))}
+                {roleNavigation.map((item) => {
+                  // Special handling for Wallet menu item
+                  if ((item as any).isWallet) {
+                    return (
+                      <div key={item.name} className="flex items-center space-x-1 text-white/80 hover:text-white transition-colors relative group">
+                        <NeonCyanIcon type={item.icon as any} size={16} className="text-current" />
+                        <span className="text-sm font-medium">{item.name}</span>
+                        <div className="absolute top-full left-0 mt-2 bg-black/95 backdrop-blur-lg border border-gray-700 rounded-lg p-3 shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 min-w-[200px]">
+                          <WalletMenuButton />
+                        </div>
+                      </div>
+                    );
+                  }
+                  
+                  // Regular navigation items
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      className="flex items-center space-x-1 text-white/80 hover:text-white transition-colors"
+                    >
+                      <NeonCyanIcon type={item.icon as any} size={16} className="text-current" />
+                      <span className="text-sm font-medium">{item.name}</span>
+                    </Link>
+                  );
+                })}
                 
                 {/* User info and logout */}
                 <div className="flex items-center space-x-4 pl-4 border-l border-gray-700">
@@ -178,24 +212,43 @@ export default function CompleteNavigation() {
               {user && claims?.role ? (
                 <>
                   {/* Role-specific navigation */}
-                  {roleNavigation.map((item) => (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      className="flex items-center space-x-3 text-white/80 hover:text-white transition-colors py-2"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      <NeonCyanIcon type={item.icon as any} size={20} className="text-current" />
-                      <span className="font-medium">{item.name}</span>
-                    </Link>
-                  ))}
+                  {roleNavigation.map((item) => {
+                    // Special handling for Wallet menu item
+                    if ((item as any).isWallet) {
+                      return (
+                        <div
+                          key={item.name}
+                          className="flex items-center space-x-3 text-white/80 hover:text-white transition-colors py-2"
+                        >
+                          <NeonCyanIcon type={item.icon as any} size={20} className="text-current" />
+                          <div className="flex-1">
+                            <span className="font-medium block mb-2">{item.name}</span>
+                            <WalletMenuButton />
+                          </div>
+                        </div>
+                      );
+                    }
+                    
+                    // Regular navigation items
+                    return (
+                      <Link
+                        key={item.name}
+                        href={item.href}
+                        className="flex items-center space-x-3 text-white/80 hover:text-white transition-colors py-2"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <NeonCyanIcon type={item.icon as any} size={20} className="text-current" />
+                        <span className="font-medium">{item.name}</span>
+                      </Link>
+                    );
+                  })}
                   
                   {/* User info */}
-                  <div className="pt-3 border-t border-gray-700">
-                    <p className="text-white/80 text-sm mb-2">{user.email}</p>
+                  <div className="pt-3 border-t border-gray-700 space-y-3">
+                    <p className="text-white/80 text-sm">{user.email}</p>
                     <Link 
                       href="/logout"
-                      className="text-white/80 hover:text-white text-sm transition-colors"
+                      className="text-white/80 hover:text-white text-sm transition-colors block"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       Logout

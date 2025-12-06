@@ -6,9 +6,18 @@ import { ensureDb, waitForFirebase, createSnapshotErrorHandler } from '@/lib/fir
 import { collection, getDocs, doc, updateDoc, deleteDoc, query, where, orderBy } from 'firebase/firestore';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { NeonCyanIcon } from '@/components/icons/NeonCyanIcon';
+import { XCircleIcon } from '@heroicons/react/24/outline';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
+
+// Helper type for document objects that might have downloadURL, url, or path
+type DocumentObject = {
+  downloadURL?: string;
+  url?: string;
+  path?: string;
+  [key: string]: any;
+};
 
 interface KYCDocument {
   id: string;
@@ -26,10 +35,10 @@ interface KYCDocument {
   confidence?: number;
   verificationId?: string;
   documents: {
-    idFront?: string;
-    idBack?: string;
-    selfie?: string;
-    proofOfAddress?: string;
+    idFront?: string | null;
+    idBack?: string | null;
+    selfie?: string | null;
+    proofOfAddress?: string | null;
     additionalDocs?: string[];
   };
   personalInfo: {
@@ -98,7 +107,8 @@ export default function AdminKYCPage() {
       
       // Check each document field for objects
       for (const key in docs) {
-        const value = docs[key];
+        if (!(key in docs)) continue;
+        const value = docs[key as keyof typeof docs];
         if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
           // Found an object - extract URL or set to null
           console.error(`⚠️ [SELECTED-DOC] CRITICAL: Found object in selectedDoc.documents.${key}!`, value);
@@ -106,16 +116,17 @@ export default function AdminKYCPage() {
           
           // Try to extract URL from object
           let extractedUrl: string | null = null;
-          if (value.downloadURL && typeof value.downloadURL === 'string' && value.downloadURL.trim().length > 0) {
-            extractedUrl = value.downloadURL.trim();
-          } else if (value.url && typeof value.url === 'string' && value.url.trim().length > 0) {
-            extractedUrl = value.url.trim();
-          } else if (value.path && typeof value.path === 'string' && value.path.trim().length > 0) {
-            extractedUrl = value.path.trim();
+          const valueObj = value as DocumentObject;
+          if (valueObj.downloadURL && typeof valueObj.downloadURL === 'string' && valueObj.downloadURL.trim().length > 0) {
+            extractedUrl = valueObj.downloadURL.trim();
+          } else if (valueObj.url && typeof valueObj.url === 'string' && valueObj.url.trim().length > 0) {
+            extractedUrl = valueObj.url.trim();
+          } else if (valueObj.path && typeof valueObj.path === 'string' && valueObj.path.trim().length > 0) {
+            extractedUrl = valueObj.path.trim();
           } else {
             // Try to find any string property that looks like a URL
-            for (const objKey of Object.keys(value)) {
-              const objValue = value[objKey];
+            for (const objKey of Object.keys(valueObj)) {
+              const objValue = valueObj[objKey];
               if (typeof objValue === 'string' && (objValue.startsWith('http') || objValue.startsWith('uploads/') || objValue.startsWith('kyc/') || objValue.startsWith('kyc-documents/'))) {
                 extractedUrl = objValue.trim();
                 break;
@@ -734,6 +745,16 @@ export default function AdminKYCPage() {
           
           // Enhanced normalization that handles all possible formats
           const normalizeDocumentEnhanced = async (doc: any, docType: string = 'unknown'): Promise<string | null> => {
+            type DocObject = {
+              downloadURL?: string;
+              url?: string;
+              path?: string;
+              value?: any;
+              _delegate?: any;
+              toDate?: any;
+              seconds?: any;
+              [key: string]: any;
+            };
             if (!doc) {
               console.log(`📄 [NORMALIZE-ENHANCED] ${docType} is null/undefined`);
               return null;
@@ -748,53 +769,54 @@ export default function AdminKYCPage() {
             } 
             // If it's an object, extract downloadURL or url
             else if (typeof doc === 'object' && doc !== null) {
+              const docObj = doc as DocObject;
               // Check for downloadURL (most common)
-              if (doc.downloadURL && typeof doc.downloadURL === 'string' && doc.downloadURL.trim().length > 0) {
-                url = doc.downloadURL.trim();
-                console.log(`📄 [NORMALIZE-ENHANCED] ${docType} extracted from downloadURL:`, url.substring(0, 50));
+              if (docObj.downloadURL && typeof docObj.downloadURL === 'string' && docObj.downloadURL.trim().length > 0) {
+                url = docObj.downloadURL.trim();
+                console.log(`📄 [NORMALIZE-ENHANCED] ${docType} extracted from downloadURL:`, url?.substring(0, 50) || '');
               } 
               // Check for url property
-              else if (doc.url && typeof doc.url === 'string' && doc.url.trim().length > 0) {
-                url = doc.url.trim();
-                console.log(`📄 [NORMALIZE-ENHANCED] ${docType} extracted from url:`, url.substring(0, 50));
+              else if (docObj.url && typeof docObj.url === 'string' && docObj.url.trim().length > 0) {
+                url = docObj.url.trim();
+                console.log(`📄 [NORMALIZE-ENHANCED] ${docType} extracted from url:`, url?.substring(0, 50) || '');
               }
               // Check if it's a Firestore reference or other structure
-              else if (doc.path && typeof doc.path === 'string' && doc.path.trim().length > 0) {
+              else if (docObj.path && typeof docObj.path === 'string' && docObj.path.trim().length > 0) {
                 // This might be a storage reference path
-                url = doc.path.trim();
-                console.log(`📄 [NORMALIZE-ENHANCED] ${docType} extracted from path:`, url.substring(0, 50));
+                url = docObj.path.trim();
+                console.log(`📄 [NORMALIZE-ENHANCED] ${docType} extracted from path:`, url?.substring(0, 50) || '');
               }
               // Check for nested structures (e.g., { value: { downloadURL: ... } })
-              else if (doc.value && typeof doc.value === 'object') {
-                const nested = await normalizeDocumentEnhanced(doc.value, `${docType} (nested)`);
+              else if (docObj.value && typeof docObj.value === 'object') {
+                const nested = await normalizeDocumentEnhanced(docObj.value, `${docType} (nested)`);
                 if (nested) {
                   url = nested;
-                  console.log(`📄 [NORMALIZE-ENHANCED] ${docType} extracted from nested value:`, url.substring(0, 50));
+                  console.log(`📄 [NORMALIZE-ENHANCED] ${docType} extracted from nested value:`, url?.substring(0, 50) || '');
                 }
               }
               // Check for Firebase Storage reference object
-              else if (doc._delegate && doc._delegate._location) {
+              else if (docObj._delegate && docObj._delegate._location) {
                 // This is a Firebase Storage Reference object
-                const path = doc._delegate._location.path_;
+                const path = docObj._delegate._location.path_;
                 if (path && typeof path === 'string') {
                   url = path;
-                  console.log(`📄 [NORMALIZE-ENHANCED] ${docType} extracted from Storage Reference path:`, url.substring(0, 50));
+                  console.log(`📄 [NORMALIZE-ENHANCED] ${docType} extracted from Storage Reference path:`, url?.substring(0, 50) || '');
                 }
               }
               // Check for Firestore Timestamp or other Firebase types
-              else if (doc.toDate || doc.seconds) {
+              else if (docObj.toDate || docObj.seconds) {
                 // This is not a document URL, it's a timestamp - skip it
                 console.log(`📄 [NORMALIZE-ENHANCED] ${docType} is a timestamp, not a document URL`);
                 return null;
               }
               // Try to stringify and parse if it's a complex object
-              else if (Object.keys(doc).length > 0) {
+              else if (Object.keys(docObj).length > 0) {
                 // Last resort: try to find any string property that looks like a URL
-                for (const key of Object.keys(doc)) {
-                  const value = doc[key];
+                for (const key of Object.keys(docObj)) {
+                  const value = docObj[key];
                   if (typeof value === 'string' && (value.startsWith('http') || value.startsWith('uploads/') || value.startsWith('kyc/') || value.startsWith('kyc-documents/'))) {
                     url = value.trim();
-                    console.log(`📄 [NORMALIZE-ENHANCED] ${docType} extracted from object property "${key}":`, url.substring(0, 50));
+                    console.log(`📄 [NORMALIZE-ENHANCED] ${docType} extracted from object property "${key}":`, url?.substring(0, 50) || '');
                     break;
                   }
                 }
@@ -1930,6 +1952,109 @@ export default function AdminKYCPage() {
         }
       }
       
+      // Automatically store on-chain after approval, then delete for user safety
+      try {
+        console.log('🔗 Storing KYC data on BNB Chain...');
+        
+        // Get auth token for API authentication
+        const { auth } = await import('@/lib/firebase.client');
+        const { getIdToken } = await import('firebase/auth');
+        const authToken = user && auth?.currentUser ? await getIdToken(auth.currentUser) : null;
+        
+        const storeResponse = await fetch('/api/kyc/store-on-chain', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(authToken && { 'Authorization': `Bearer ${authToken}` }),
+          },
+          body: JSON.stringify({
+            userId: docId,
+            approvalStatus: true,
+          }),
+        });
+
+        if (storeResponse.ok) {
+          const storeResult = await storeResponse.json();
+          console.log('✅ KYC data stored on-chain:', storeResult.txHash);
+          console.log('🔗 View transaction:', storeResult.explorerUrl);
+          
+          // Update document with on-chain info
+          await updateDoc(docRef, {
+            onChainTxHash: storeResult.txHash,
+            onChainStoredAt: serverTimestamp(),
+          });
+
+          // SECURITY: Automatically delete on-chain data after approval for user privacy
+          try {
+            console.log('🗑️ Deleting KYC data from BNB Chain for user safety...');
+            const deleteResponse = await fetch('/api/kyc/delete-on-chain', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                ...(authToken && { 'Authorization': `Bearer ${authToken}` }),
+              },
+              body: JSON.stringify({
+                userId: docId,
+              }),
+            });
+
+            if (deleteResponse.ok) {
+              const deleteResult = await deleteResponse.json();
+              console.log('✅ KYC data deleted from on-chain:', deleteResult.txHash);
+              console.log('🔗 View deletion transaction:', deleteResult.explorerUrl);
+              
+              // Update document with deletion info
+              await updateDoc(docRef, {
+                onChainDeleted: true,
+                onChainDeleteTxHash: deleteResult.txHash,
+                onChainDeletedAt: serverTimestamp(),
+              });
+            } else {
+              const errorData = await deleteResponse.json();
+              console.error('⚠️ Failed to delete KYC on-chain:', errorData);
+              // Don't fail the approval if deletion fails - data is already stored
+            }
+          } catch (deleteError: any) {
+            console.error('⚠️ Error deleting KYC on-chain (non-critical):', deleteError);
+            // Don't fail the approval if deletion fails
+          }
+        } else {
+          // Enhanced error logging for API errors
+          let errorData;
+          try {
+            errorData = await storeResponse.json();
+          } catch (parseError) {
+            errorData = {
+              error: 'Failed to parse error response',
+              status: storeResponse.status,
+              statusText: storeResponse.statusText,
+              parseError: parseError instanceof Error ? parseError.message : String(parseError)
+            };
+          }
+          console.error('⚠️ Failed to store KYC on-chain:', {
+            status: storeResponse.status,
+            statusText: storeResponse.statusText,
+            error: errorData.error || 'Unknown error',
+            details: errorData.details || errorData.message || 'No details provided',
+            fullError: errorData
+          });
+          // Don't fail the approval if on-chain storage fails
+        }
+      } catch (onChainError: any) {
+        // Enhanced error logging to capture full error details
+        const errorDetails = {
+          message: onChainError?.message || 'Unknown error',
+          error: onChainError?.error || onChainError,
+          stack: onChainError?.stack,
+          name: onChainError?.name,
+          code: onChainError?.code,
+          details: onChainError?.details,
+          stringified: JSON.stringify(onChainError, Object.getOwnPropertyNames(onChainError))
+        };
+        console.error('⚠️ Error storing KYC on-chain (non-critical):', errorDetails);
+        // Don't fail the approval if on-chain storage fails
+      }
+      
       // Update local state
       setKycDocs(prev => prev.map(d => 
         d.id === docId 
@@ -1938,7 +2063,7 @@ export default function AdminKYCPage() {
       ));
       
       console.log('✅ KYC approved/re-approved successfully');
-      alert('KYC approved successfully!');
+      alert('KYC approved successfully! Data stored on BNB Chain.');
     } catch (error: any) {
       console.error('❌ Error approving KYC:', error);
       alert(`Error approving KYC: ${error?.message || 'Unknown error'}`);
@@ -3365,12 +3490,13 @@ export default function AdminKYCPage() {
                             // CRITICAL: This should never happen after our normalization, but handle it defensively
                             console.error('⚠️ [DISPLAY] CRITICAL: ID Front is still an object! This should never happen after normalization:', idFront);
                             // Try to extract URL from object as fallback
-                            if (idFront.downloadURL && typeof idFront.downloadURL === 'string' && idFront.downloadURL.trim() !== '') {
-                              idFrontUrl = idFront.downloadURL.trim();
-                            } else if (idFront.url && typeof idFront.url === 'string' && idFront.url.trim() !== '') {
-                              idFrontUrl = idFront.url.trim();
-                            } else if (idFront.path && typeof idFront.path === 'string' && idFront.path.trim() !== '') {
-                              idFrontUrl = idFront.path.trim();
+                            const idFrontObj = idFront as { downloadURL?: string; url?: string; path?: string; [key: string]: any };
+                            if (idFrontObj.downloadURL && typeof idFrontObj.downloadURL === 'string' && idFrontObj.downloadURL.trim() !== '') {
+                              idFrontUrl = idFrontObj.downloadURL.trim();
+                            } else if (idFrontObj.url && typeof idFrontObj.url === 'string' && idFrontObj.url.trim() !== '') {
+                              idFrontUrl = idFrontObj.url.trim();
+                            } else if (idFrontObj.path && typeof idFrontObj.path === 'string' && idFrontObj.path.trim() !== '') {
+                              idFrontUrl = idFrontObj.path.trim();
                             } else {
                               // Object has no extractable URL
                               console.error('⚠️ [DISPLAY] ID Front object has no extractable URL:', idFront);
@@ -3410,14 +3536,15 @@ export default function AdminKYCPage() {
                                 }
                                 // Fallback: extract from object if normalization didn't run
                                 if (idFront && typeof idFront === 'object') {
-                                  if (idFront.downloadURL && typeof idFront.downloadURL === 'string') {
-                                    return idFront.downloadURL.trim();
+                                  const idFrontObj = idFront as { downloadURL?: string; url?: string; path?: string; [key: string]: any };
+                                  if (idFrontObj.downloadURL && typeof idFrontObj.downloadURL === 'string') {
+                                    return idFrontObj.downloadURL.trim();
                                   }
-                                  if (idFront.url && typeof idFront.url === 'string') {
-                                    return idFront.url.trim();
+                                  if (idFrontObj.url && typeof idFrontObj.url === 'string') {
+                                    return idFrontObj.url.trim();
                                   }
-                                  if (idFront.path && typeof idFront.path === 'string') {
-                                    return idFront.path.trim();
+                                  if (idFrontObj.path && typeof idFrontObj.path === 'string') {
+                                    return idFrontObj.path.trim();
                                   }
                                 }
                                 return '';
@@ -3429,12 +3556,15 @@ export default function AdminKYCPage() {
                                 let url = '';
                                 if (typeof idFront === 'string') {
                                   url = idFront;
-                                } else if (idFront?.downloadURL) {
-                                  url = idFront.downloadURL;
-                                } else if (idFront?.url) {
-                                  url = idFront.url;
-                                } else if (idFront?.path) {
-                                  url = idFront.path;
+                                } else if (idFront && typeof idFront === 'object') {
+                                  const idFrontObj = idFront as { downloadURL?: string; url?: string; path?: string; [key: string]: any };
+                                  if (idFrontObj.downloadURL) {
+                                    url = idFrontObj.downloadURL;
+                                  } else if (idFrontObj.url) {
+                                    url = idFrontObj.url;
+                                  } else if (idFrontObj.path) {
+                                    url = idFrontObj.path;
+                                  }
                                 }
                                 
                                 // If it's a relative path, try to convert it
@@ -3461,12 +3591,13 @@ export default function AdminKYCPage() {
                                 if (typeof idFront === 'string') {
                                   url = idFront;
                                 } else if (idFront && typeof idFront === 'object') {
-                                  if (idFront.downloadURL && typeof idFront.downloadURL === 'string') {
-                                    url = idFront.downloadURL;
-                                  } else if (idFront.url && typeof idFront.url === 'string') {
-                                    url = idFront.url;
-                                  } else if (idFront.path && typeof idFront.path === 'string') {
-                                    url = idFront.path;
+                                  const idFrontObj = idFront as { downloadURL?: string; url?: string; path?: string; [key: string]: any };
+                                  if (idFrontObj.downloadURL && typeof idFrontObj.downloadURL === 'string') {
+                                    url = idFrontObj.downloadURL;
+                                  } else if (idFrontObj.url && typeof idFrontObj.url === 'string') {
+                                    url = idFrontObj.url;
+                                  } else if (idFrontObj.path && typeof idFrontObj.path === 'string') {
+                                    url = idFrontObj.path;
                                   }
                                 }
                                 
@@ -3522,14 +3653,15 @@ export default function AdminKYCPage() {
                                   return idFront.trim();
                                 }
                                 if (idFront && typeof idFront === 'object') {
-                                  if (idFront.downloadURL && typeof idFront.downloadURL === 'string') {
-                                    return idFront.downloadURL.trim();
+                                  const idFrontObj = idFront as { downloadURL?: string; url?: string; path?: string; [key: string]: any };
+                                  if (idFrontObj.downloadURL && typeof idFrontObj.downloadURL === 'string') {
+                                    return idFrontObj.downloadURL.trim();
                                   }
-                                  if (idFront.url && typeof idFront.url === 'string') {
-                                    return idFront.url.trim();
+                                  if (idFrontObj.url && typeof idFrontObj.url === 'string') {
+                                    return idFrontObj.url.trim();
                                   }
-                                  if (idFront.path && typeof idFront.path === 'string') {
-                                    return idFront.path.trim();
+                                  if (idFrontObj.path && typeof idFrontObj.path === 'string') {
+                                    return idFrontObj.path.trim();
                                   }
                                 }
                                 return '#';
@@ -3556,10 +3688,11 @@ export default function AdminKYCPage() {
                           if (typeof idBack === 'string' && idBack.trim() !== '') {
                             idBackUrl = idBack.trim();
                           } else if (typeof idBack === 'object' && idBack !== null) {
-                            if (idBack.downloadURL && typeof idBack.downloadURL === 'string' && idBack.downloadURL.trim() !== '') {
-                              idBackUrl = idBack.downloadURL.trim();
-                            } else if (idBack.url && typeof idBack.url === 'string' && idBack.url.trim() !== '') {
-                              idBackUrl = idBack.url.trim();
+                            const idBackObj = idBack as DocumentObject;
+                            if (idBackObj.downloadURL && typeof idBackObj.downloadURL === 'string' && idBackObj.downloadURL.trim() !== '') {
+                              idBackUrl = idBackObj.downloadURL.trim();
+                            } else if (idBackObj.url && typeof idBackObj.url === 'string' && idBackObj.url.trim() !== '') {
+                              idBackUrl = idBackObj.url.trim();
                             }
                           }
                         }
@@ -3578,14 +3711,15 @@ export default function AdminKYCPage() {
                                   return idBack.trim();
                                 }
                                 if (idBack && typeof idBack === 'object') {
-                                  if (idBack.downloadURL && typeof idBack.downloadURL === 'string') {
-                                    return idBack.downloadURL.trim();
+                                  const idBackObj = idBack as DocumentObject;
+                                  if (idBackObj.downloadURL && typeof idBackObj.downloadURL === 'string') {
+                                    return idBackObj.downloadURL.trim();
                                   }
-                                  if (idBack.url && typeof idBack.url === 'string') {
-                                    return idBack.url.trim();
+                                  if (idBackObj.url && typeof idBackObj.url === 'string') {
+                                    return idBackObj.url.trim();
                                   }
-                                  if (idBack.path && typeof idBack.path === 'string') {
-                                    return idBack.path.trim();
+                                  if (idBackObj.path && typeof idBackObj.path === 'string') {
+                                    return idBackObj.path.trim();
                                   }
                                 }
                                 return '';
@@ -3597,12 +3731,15 @@ export default function AdminKYCPage() {
                                 let url = '';
                                 if (typeof idBack === 'string') {
                                   url = idBack;
-                                } else if (idBack?.downloadURL) {
-                                  url = idBack.downloadURL;
-                                } else if (idBack?.url) {
-                                  url = idBack.url;
-                                } else if (idBack?.path) {
-                                  url = idBack.path;
+                                } else if (idBack && typeof idBack === 'object') {
+                                  const idBackObj = idBack as DocumentObject;
+                                  if (idBackObj.downloadURL) {
+                                    url = idBackObj.downloadURL;
+                                  } else if (idBackObj.url) {
+                                    url = idBackObj.url;
+                                  } else if (idBackObj.path) {
+                                    url = idBackObj.path;
+                                  }
                                 }
                                 
                                 // If it's a relative path, try to convert it
@@ -3628,12 +3765,15 @@ export default function AdminKYCPage() {
                                 let url = '';
                                 if (typeof idBack === 'string') {
                                   url = idBack;
-                                } else if (idBack?.downloadURL) {
-                                  url = idBack.downloadURL;
-                                } else if (idBack?.url) {
-                                  url = idBack.url;
-                                } else if (idBack?.path) {
-                                  url = idBack.path;
+                                } else if (idBack && typeof idBack === 'object') {
+                                  const idBackObj = idBack as DocumentObject;
+                                  if (idBackObj.downloadURL) {
+                                    url = idBackObj.downloadURL;
+                                  } else if (idBackObj.url) {
+                                    url = idBackObj.url;
+                                  } else if (idBackObj.path) {
+                                    url = idBackObj.path;
+                                  }
                                 }
                                 
                                 // If it's a relative path, try to convert it
@@ -3668,14 +3808,15 @@ export default function AdminKYCPage() {
                                   return idBack.trim();
                                 }
                                 if (idBack && typeof idBack === 'object') {
-                                  if (idBack.downloadURL && typeof idBack.downloadURL === 'string') {
-                                    return idBack.downloadURL.trim();
+                                  const idBackObj = idBack as DocumentObject;
+                                  if (idBackObj.downloadURL && typeof idBackObj.downloadURL === 'string') {
+                                    return idBackObj.downloadURL.trim();
                                   }
-                                  if (idBack.url && typeof idBack.url === 'string') {
-                                    return idBack.url.trim();
+                                  if (idBackObj.url && typeof idBackObj.url === 'string') {
+                                    return idBackObj.url.trim();
                                   }
-                                  if (idBack.path && typeof idBack.path === 'string') {
-                                    return idBack.path.trim();
+                                  if (idBackObj.path && typeof idBackObj.path === 'string') {
+                                    return idBackObj.path.trim();
                                   }
                                 }
                                 return '#';
@@ -3701,10 +3842,11 @@ export default function AdminKYCPage() {
                           if (typeof selfie === 'string' && selfie.trim() !== '') {
                             selfieUrl = selfie.trim();
                           } else if (typeof selfie === 'object' && selfie !== null) {
-                            if (selfie.downloadURL && typeof selfie.downloadURL === 'string' && selfie.downloadURL.trim() !== '') {
-                              selfieUrl = selfie.downloadURL.trim();
-                            } else if (selfie.url && typeof selfie.url === 'string' && selfie.url.trim() !== '') {
-                              selfieUrl = selfie.url.trim();
+                            const selfieObj = selfie as DocumentObject;
+                            if (selfieObj.downloadURL && typeof selfieObj.downloadURL === 'string' && selfieObj.downloadURL.trim() !== '') {
+                              selfieUrl = selfieObj.downloadURL.trim();
+                            } else if (selfieObj.url && typeof selfieObj.url === 'string' && selfieObj.url.trim() !== '') {
+                              selfieUrl = selfieObj.url.trim();
                             }
                           }
                         }
@@ -3717,20 +3859,35 @@ export default function AdminKYCPage() {
                               src={(() => {
                                 const selfie = selectedDoc.documents?.selfie;
                                 if (typeof selfie === 'string') return selfie;
-                                if (selfie?.downloadURL) return selfie.downloadURL;
-                                if (selfie?.url) return selfie.url;
+                                if (selfie && typeof selfie === 'object') {
+                                  const selfieObj = selfie as DocumentObject;
+                                  if (selfieObj.downloadURL) return selfieObj.downloadURL;
+                                  if (selfieObj.url) return selfieObj.url;
+                                }
                                 return '';
                               })()} 
                               alt="Selfie" 
                               className="w-full h-48 object-contain rounded-lg bg-gray-900 p-2 cursor-pointer hover:opacity-90 transition-opacity"
                               onClick={() => {
                                 const selfie = selectedDoc.documents?.selfie;
-                                const url = typeof selfie === 'string' ? selfie : (selfie?.downloadURL || selfie?.url || '');
+                                let url = '';
+                                if (typeof selfie === 'string') {
+                                  url = selfie;
+                                } else if (selfie && typeof selfie === 'object') {
+                                  const selfieObj = selfie as DocumentObject;
+                                  url = selfieObj.downloadURL || selfieObj.url || '';
+                                }
                                 if (url) window.open(url, '_blank');
                               }}
                               onError={(e) => {
                                 const selfie = selectedDoc.documents?.selfie;
-                                const url = typeof selfie === 'string' ? selfie : (selfie?.downloadURL || selfie?.url || '');
+                                let url = '';
+                                if (typeof selfie === 'string') {
+                                  url = selfie;
+                                } else if (selfie && typeof selfie === 'object') {
+                                  const selfieObj = selfie as DocumentObject;
+                                  url = selfieObj.downloadURL || selfieObj.url || '';
+                                }
                                 console.error('Failed to load Selfie image:', url);
                                 (e.target as HTMLImageElement).style.display = 'none';
                               }}
@@ -3739,8 +3896,11 @@ export default function AdminKYCPage() {
                               href={(() => {
                                 const selfie = selectedDoc.documents?.selfie;
                                 if (typeof selfie === 'string') return selfie;
-                                if (selfie?.downloadURL) return selfie.downloadURL;
-                                if (selfie?.url) return selfie.url;
+                                if (selfie && typeof selfie === 'object') {
+                                  const selfieObj = selfie as DocumentObject;
+                                  if (selfieObj.downloadURL) return selfieObj.downloadURL;
+                                  if (selfieObj.url) return selfieObj.url;
+                                }
                                 return '#';
                               })()} 
                               target="_blank" 
@@ -3764,10 +3924,11 @@ export default function AdminKYCPage() {
                           if (typeof proofOfAddress === 'string' && proofOfAddress.trim() !== '') {
                             proofOfAddressUrl = proofOfAddress.trim();
                           } else if (typeof proofOfAddress === 'object' && proofOfAddress !== null) {
-                            if (proofOfAddress.downloadURL && typeof proofOfAddress.downloadURL === 'string' && proofOfAddress.downloadURL.trim() !== '') {
-                              proofOfAddressUrl = proofOfAddress.downloadURL.trim();
-                            } else if (proofOfAddress.url && typeof proofOfAddress.url === 'string' && proofOfAddress.url.trim() !== '') {
-                              proofOfAddressUrl = proofOfAddress.url.trim();
+                            const proofObj = proofOfAddress as DocumentObject;
+                            if (proofObj.downloadURL && typeof proofObj.downloadURL === 'string' && proofObj.downloadURL.trim() !== '') {
+                              proofOfAddressUrl = proofObj.downloadURL.trim();
+                            } else if (proofObj.url && typeof proofObj.url === 'string' && proofObj.url.trim() !== '') {
+                              proofOfAddressUrl = proofObj.url.trim();
                             }
                           }
                         }
@@ -3780,20 +3941,35 @@ export default function AdminKYCPage() {
                               src={(() => {
                                 const proofOfAddress = selectedDoc.documents?.proofOfAddress;
                                 if (typeof proofOfAddress === 'string') return proofOfAddress;
-                                if (proofOfAddress?.downloadURL) return proofOfAddress.downloadURL;
-                                if (proofOfAddress?.url) return proofOfAddress.url;
+                                if (proofOfAddress && typeof proofOfAddress === 'object') {
+                                  const proofObj = proofOfAddress as DocumentObject;
+                                  if (proofObj.downloadURL) return proofObj.downloadURL;
+                                  if (proofObj.url) return proofObj.url;
+                                }
                                 return '';
                               })()} 
                               alt="Proof of Address" 
                               className="w-full h-48 object-contain rounded-lg bg-gray-900 p-2 cursor-pointer hover:opacity-90 transition-opacity"
                               onClick={() => {
                                 const proofOfAddress = selectedDoc.documents?.proofOfAddress;
-                                const url = typeof proofOfAddress === 'string' ? proofOfAddress : (proofOfAddress?.downloadURL || proofOfAddress?.url || '');
+                                let url = '';
+                                if (typeof proofOfAddress === 'string') {
+                                  url = proofOfAddress;
+                                } else if (proofOfAddress && typeof proofOfAddress === 'object') {
+                                  const proofObj = proofOfAddress as DocumentObject;
+                                  url = proofObj.downloadURL || proofObj.url || '';
+                                }
                                 if (url) window.open(url, '_blank');
                               }}
                               onError={(e) => {
                                 const proofOfAddress = selectedDoc.documents?.proofOfAddress;
-                                const url = typeof proofOfAddress === 'string' ? proofOfAddress : (proofOfAddress?.downloadURL || proofOfAddress?.url || '');
+                                let url = '';
+                                if (typeof proofOfAddress === 'string') {
+                                  url = proofOfAddress;
+                                } else if (proofOfAddress && typeof proofOfAddress === 'object') {
+                                  const proofObj = proofOfAddress as DocumentObject;
+                                  url = proofObj.downloadURL || proofObj.url || '';
+                                }
                                 console.error('Failed to load Proof of Address image:', url);
                                 (e.target as HTMLImageElement).style.display = 'none';
                               }}
@@ -3802,8 +3978,11 @@ export default function AdminKYCPage() {
                               href={(() => {
                                 const proofOfAddress = selectedDoc.documents?.proofOfAddress;
                                 if (typeof proofOfAddress === 'string') return proofOfAddress;
-                                if (proofOfAddress?.downloadURL) return proofOfAddress.downloadURL;
-                                if (proofOfAddress?.url) return proofOfAddress.url;
+                                if (proofOfAddress && typeof proofOfAddress === 'object') {
+                                  const proofObj = proofOfAddress as DocumentObject;
+                                  if (proofObj.downloadURL) return proofObj.downloadURL;
+                                  if (proofObj.url) return proofObj.url;
+                                }
                                 return '#';
                               })()} 
                               target="_blank" 
