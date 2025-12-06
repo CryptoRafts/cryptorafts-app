@@ -23,7 +23,6 @@ export default function HomePage() {
   const [isVisible, setIsVisible] = useState({
     hero: true,
     features: false,
-    stats: false,
     networkStats: false,
     cta: false
   });
@@ -40,7 +39,6 @@ export default function HomePage() {
 
   const heroRef = useRef<HTMLDivElement>(null);
   const featuresRef = useRef<HTMLDivElement>(null);
-  const statsRef = useRef<HTMLDivElement>(null);
   const networkStatsRef = useRef<HTMLDivElement>(null);
   const ctaRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -144,7 +142,6 @@ export default function HomePage() {
       const sections = [
         { ref: heroRef, key: 'hero' },
         { ref: featuresRef, key: 'features' },
-        { ref: statsRef, key: 'stats' },
         { ref: networkStatsRef, key: 'networkStats' },
         { ref: ctaRef, key: 'cta' }
       ];
@@ -449,77 +446,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* PAGE 3 - PLATFORM FEATURES */}
-      <section
-        ref={statsRef}
-        className="w-full min-h-screen flex items-center justify-center relative px-4 sm:px-6 lg:px-8 bg-cover bg-center bg-no-repeat section-bg-2"
-        aria-label="Platform features section"
-      >
-        {/* Soft opacity wall - only on background, behind all content */}
-        <div className="absolute inset-0 bg-black/40 z-0"></div>
-
-        <div className="max-w-7xl mx-auto relative z-20">
-          <div className="text-center mb-8">
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 drop-shadow-2xl">
-              Platform Features
-            </h2>
-            <p className="text-lg md:text-xl text-white max-w-3xl mx-auto drop-shadow-lg">
-              Next-generation Web3 platform with AI-powered verification and intelligent communication
-            </p>
-          </div>
-          
-          {/* Platform Features Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            
-            {/* Feature Card 1 */}
-            <div className="bg-black/60 backdrop-blur-lg rounded-xl p-6 hover:bg-black/80 group border-2 border-cyan-400/20 hover:border-cyan-400/50 shadow-2xl shadow-cyan-500/10">
-              <div className="text-center relative z-10">
-                <div className="w-16 h-16 mx-auto mb-4 bg-blue-500/20 rounded-full flex items-center justify-center shadow-lg border-2 border-blue-400/30">
-                  <NeonCyanIcon type="shield" size={32} className="text-blue-300" />
-                </div>
-                <h3 className="text-lg font-bold text-white mb-2 drop-shadow-lg">
-                  AI-Hybrid KYC/KYB
-                </h3>
-                <p className="text-sm text-white drop-shadow-md">
-                  Verified humans. Verified entities. Verified trust — powered by AI and blockchain.
-                </p>
-              </div>
-            </div>
-
-            {/* Feature Card 2 */}
-            <div className="bg-black/60 backdrop-blur-lg rounded-xl p-6 hover:bg-black/80 group border-2 border-cyan-400/20 hover:border-cyan-400/50 shadow-2xl shadow-cyan-500/10">
-              <div className="text-center relative z-10">
-                <div className="w-16 h-16 mx-auto mb-4 bg-emerald-500/20 rounded-full flex items-center justify-center shadow-lg border-2 border-emerald-400/30">
-                  <NeonCyanIcon type="globe" size={32} className="text-emerald-300" />
-                </div>
-                <h3 className="text-lg font-bold text-white mb-2 drop-shadow-lg">
-                  All-in-One Web3 Platform
-                </h3>
-                <p className="text-sm text-white drop-shadow-md">
-                  One place to pitch, fund, and grow — verified by design.
-                </p>
-              </div>
-            </div>
-
-            {/* Feature Card 3 */}
-            <div className="bg-black/60 backdrop-blur-lg rounded-xl p-6 hover:bg-black/80 group border-2 border-cyan-400/20 hover:border-cyan-400/50 shadow-2xl shadow-cyan-500/10">
-              <div className="text-center relative z-10">
-                <div className="w-16 h-16 mx-auto mb-4 bg-violet-500/20 rounded-full flex items-center justify-center shadow-lg border-2 border-violet-400/30">
-                  <NeonCyanIcon type="cpu" size={32} className="text-violet-300" />
-                </div>
-                <h3 className="text-lg font-bold text-white mb-2 drop-shadow-lg">
-                  Intelligent Chat Ground
-                </h3>
-                <p className="text-sm text-white drop-shadow-md">
-                  AI-native communication layer that understands roles, verifies identity, and accelerates decisions.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* PAGE 4 - NETWORK STATISTICS */}
+      {/* PAGE 3 - NETWORK STATISTICS */}
       <section
         ref={networkStatsRef}
         className="w-full min-h-screen flex items-center justify-center relative px-4 bg-cover bg-center bg-no-repeat section-bg-1"

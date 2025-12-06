@@ -1833,8 +1833,7 @@ export async function storeKYCOnBNBChain(
         frontIdHash: frontIdHash?.substring(0, 20) || 'N/A',
         backIdHash: backIdHash?.substring(0, 20) || 'N/A',
         proofHash: proofOfAddressHash?.substring(0, 20) || 'N/A',
-        liveHash: liveSnapHash?.substring(0, 20) || 'N/A',
-        encodedParamsLength: encodedParams?.length || 'N/A'
+        liveHash: liveSnapHash?.substring(0, 20) || 'N/A'
       });
     }
     // Check if it's a gas/balance error
@@ -1881,6 +1880,113 @@ export async function storeKYBOnBNBChain(
   ];
 
   try {
+    // CRITICAL: Ultra-aggressive cleaning at function entry
+    // The hash values may come with or without 0x prefix, and may contain escape sequences
+    const cleanInputHash = (hash: string): string => {
+      if (!hash || typeof hash !== 'string') {
+        throw new Error('Invalid hash: must be a non-empty string');
+      }
+      
+      // Log original for debugging
+      const originalHash = hash;
+      const hasEscapeSequences = hash.includes('\\') || hash.includes('\r') || hash.includes('\n');
+      if (hasEscapeSequences) {
+        console.error('❌ CRITICAL: Hash contains escape sequences at function entry:', {
+          original: JSON.stringify(hash),
+          length: hash.length,
+          charCodes: Array.from(hash).slice(0, 50).map(c => ({ char: c, code: c.charCodeAt(0) })),
+          hasBackslash: hash.includes('\\'),
+          hasCR: hash.includes('\r'),
+          hasLF: hash.includes('\n')
+        });
+      }
+      
+      // Step 1: Remove ALL backslashes first (most aggressive - removes all escape sequences)
+      let cleaned = hash.replace(/\\/g, '');
+      
+      // Step 2: Remove actual newline characters
+      cleaned = cleaned.replace(/[\r\n\u000A\u000D\u2028\u2029]/g, '');
+      
+      // Step 3: Remove ALL whitespace and control characters
+      cleaned = cleaned.replace(/[\s\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\uFEFF]/g, '');
+      cleaned = cleaned.replace(/[\x00-\x1F\x7F-\x9F]/g, '');
+      
+      // Step 4: Extract ONLY hex characters character by character
+      let hexOnly = '';
+      for (let i = 0; i < cleaned.length; i++) {
+        const char = cleaned[i].toLowerCase();
+        if ((char >= '0' && char <= '9') || (char >= 'a' && char <= 'f')) {
+          hexOnly += char;
+        }
+      }
+      
+      // Step 5: Pad to 64
+      hexOnly = hexOnly.padStart(64, '0').slice(0, 64);
+      
+      // Step 6: Validate
+      if (!/^[0-9a-f]{64}$/.test(hexOnly)) {
+        console.error('❌ Hash cleaning failed:', {
+          original: JSON.stringify(hash),
+          cleaned: JSON.stringify(cleaned),
+          hexOnly: hexOnly.substring(0, 20) + '...',
+          hexOnlyLength: hexOnly.length
+        });
+        throw new Error('Invalid hash: not pure hex after cleaning');
+      }
+      
+      // Step 7: CRITICAL - Convert to Buffer and back to ensure absolute byte-level cleanliness
+      try {
+        const buffer = Buffer.from(hexOnly, 'hex');
+        if (buffer.length !== 32) {
+          throw new Error(`Invalid buffer length: ${buffer.length}, expected 32`);
+        }
+        const cleanHex = buffer.toString('hex');
+        
+        // Final validation
+        if (cleanHex.length !== 64 || !/^[0-9a-f]{64}$/.test(cleanHex)) {
+          throw new Error(`Invalid clean hex: ${cleanHex.substring(0, 20)}...`);
+        }
+        
+        // Final check for escape sequences (should never happen with Buffer)
+        if (cleanHex.includes('\\') || cleanHex.includes('\r') || cleanHex.includes('\n')) {
+          console.error('❌ CRITICAL: Clean hex still contains escape sequences after Buffer conversion:', {
+            cleanHex: JSON.stringify(cleanHex),
+            charCodes: Array.from(cleanHex).slice(0, 30).map(c => c.charCodeAt(0))
+          });
+          throw new Error('Clean hex contains escape sequences after Buffer conversion');
+        }
+        
+        // Log if cleaning was needed
+        if (originalHash !== cleanHex || hasEscapeSequences) {
+          console.warn('⚠️ Hash was cleaned at function entry:', {
+            originalLength: originalHash.length,
+            cleanedLength: cleanHex.length,
+            originalFirst20: originalHash.substring(0, 20),
+            cleanedFirst20: cleanHex.substring(0, 20),
+            hadEscapeSequences: hasEscapeSequences
+          });
+        }
+        
+        return cleanHex; // Return without 0x prefix
+      } catch (bufferError: any) {
+        console.error('❌ Buffer conversion failed:', {
+          hexOnly: hexOnly.substring(0, 30),
+          error: bufferError.message
+        });
+        throw bufferError;
+      }
+    };
+    
+    // Clean all hashes immediately
+    const cleanedPhone = cleanInputHash(phoneHash);
+    const cleanedEmail = cleanInputHash(emailHash);
+    
+    console.log('✅ Input parameters cleaned at function entry:', {
+      phone: cleanedPhone.substring(0, 20) + '...',
+      email: cleanedEmail.substring(0, 20) + '...',
+      userId: userId
+    });
+    
     // CRITICAL: Use the same robust cleaning and manual byte conversion as KYC
     // This ensures consistency and prevents any newline/whitespace issues
     const finalCleanHash = (hash: string): string => {
@@ -2060,24 +2166,185 @@ export async function storeKYBOnBNBChain(
       }
     };
     
-    // Clean and convert hashes
-    const cleanedPhoneHash = finalCleanHash(phoneHash);
-    const cleanedEmailHash = finalCleanHash(emailHash);
+    // CRITICAL: Clean userId to remove any newlines, control characters, or escaped sequences
+    // This prevents the "invalid BytesLike value" error from ethers.js
+    const cleanInputUserId = (id: string): string => {
+      if (!id || typeof id !== 'string') {
+        throw new Error('Invalid userId: must be a non-empty string');
+      }
+      
+      // Remove ALL control characters including newlines, carriage returns, tabs, etc.
+      let cleaned = String(id);
+      
+      // Remove ALL newline variants (actual and escaped)
+      cleaned = cleaned.replace(/[\r\n\u000A\u000D\u2028\u2029]/g, '');
+      // Remove escaped newlines (literal \r\n sequences)
+      cleaned = cleaned.replace(/\\[rn]/g, '');
+      // Remove ALL control characters
+      cleaned = cleaned.replace(/[\x00-\x1F\x7F-\x9F]/g, '');
+      // Remove backslashes that might be part of escape sequences
+      cleaned = cleaned.replace(/\\/g, '');
+      // Trim whitespace
+      cleaned = cleaned.trim();
+      
+      // Validate
+      if (cleaned.length === 0) {
+        console.error('❌ userId became empty after cleaning:', {
+          original: JSON.stringify(id)
+        });
+        throw new Error('Invalid userId: contains no valid characters after cleaning');
+      }
+      
+      // Log if original had issues
+      if (id !== cleaned) {
+        console.warn('⚠️ userId was cleaned:', {
+          original: JSON.stringify(id),
+          cleaned: JSON.stringify(cleaned),
+          originalLength: id.length,
+          cleanedLength: cleaned.length
+        });
+      }
+      
+      return cleaned;
+    };
+    
+    const cleanedUserId = cleanInputUserId(userId);
+    
+    // Clean and convert hashes (use already-cleaned hashes from function entry)
+    const cleanedPhoneHash = finalCleanHash(cleanedPhone);
+    const cleanedEmailHash = finalCleanHash(cleanedEmail);
     
     const phoneBytes32 = toBytes32(cleanedPhoneHash);
     const emailBytes32 = toBytes32(cleanedEmailHash);
     
     console.log('✅ KYB hashes converted to valid bytes32 format');
 
-    const contract = new ethers.Contract(contractAddress, KYB_ABI, signer);
-    const tx = await contract.storeKYBVerification(
-      userId,
-      phoneBytes32, // Proper bytes32 format
-      emailBytes32, // Proper bytes32 format
-      approvalStatus
-    );
-    await tx.wait();
-    return tx.hash;
+    // CRITICAL: Use the same manual encoding approach as KYC to avoid BytesLike errors
+    // This completely bypasses ethers.Contract string handling that could introduce escape sequences
+    const contractInterface = new ethers.Interface(KYB_ABI);
+    const functionFragment = contractInterface.getFunction('storeKYBVerification');
+    if (!functionFragment) {
+      throw new Error('Function storeKYBVerification not found in ABI');
+    }
+    
+    const functionSelector = functionFragment.selector;
+    
+    // CRITICAL: Final byte-level cleaning RIGHT BEFORE encoding
+    // Convert to bytes and back to ensure absolute cleanliness
+    const finalByteLevelClean = (hex: string, name: string): string => {
+      try {
+        // Step 1: Remove 0x if present and trim ALL whitespace/newlines
+        let clean = hex.startsWith('0x') ? hex.slice(2) : hex;
+        clean = clean.trim();
+        
+        // Step 2: Extract ONLY hex characters character by character
+        let hexOnly = '';
+        for (let i = 0; i < clean.length; i++) {
+          const char = clean[i].toLowerCase();
+          if ((char >= '0' && char <= '9') || (char >= 'a' && char <= 'f')) {
+            hexOnly += char;
+          }
+        }
+        
+        // Step 3: Pad to exactly 64 hex characters
+        hexOnly = hexOnly.padStart(64, '0').slice(0, 64);
+        
+        // Step 4: Validate
+        if (hexOnly.length !== 64 || !/^[0-9a-f]{64}$/.test(hexOnly)) {
+          throw new Error(`Invalid hex for ${name}: length=${hexOnly.length}`);
+        }
+        
+        // Step 5: Convert to Buffer (byte-level)
+        const buffer = Buffer.from(hexOnly, 'hex');
+        if (buffer.length !== 32) {
+          throw new Error(`Invalid buffer length: ${buffer.length}, expected 32`);
+        }
+        
+        // Step 6: Convert back to hex using Buffer.toString('hex')
+        const cleanHex = buffer.toString('hex');
+        
+        // Step 7: Validate cleanHex is exactly 64 characters
+        if (cleanHex.length !== 64 || !/^[0-9a-f]{64}$/.test(cleanHex)) {
+          throw new Error(`Invalid clean hex length: ${cleanHex.length}`);
+        }
+        
+        // Step 8: Manually construct result
+        const result = '0x' + cleanHex;
+        
+        // Step 9: Validate length is exactly 66
+        if (result.length !== 66) {
+          throw new Error(`${name} has wrong length: ${result.length}, expected 66`);
+        }
+        
+        // Step 10: Validate using ethers.getBytes
+        const bytes = ethers.getBytes(result);
+        if (bytes.length !== 32) {
+          throw new Error(`Invalid bytes length: ${bytes.length}, expected 32`);
+        }
+        
+        // Step 11: Check each character for escape sequences
+        for (let i = 0; i < result.length; i++) {
+          const char = result[i];
+          const code = char.charCodeAt(0);
+          if (code === 92 || code === 13 || code === 10) {
+            throw new Error(`${name} contains escape sequence at position ${i}`);
+          }
+        }
+        
+        return result;
+      } catch (error: any) {
+        console.error(`❌ Error in finalByteLevelClean for ${name}:`, {
+          hex: hex.substring(0, 30),
+          error: error.message
+        });
+        throw error;
+      }
+    };
+    
+    const finalPhoneBytes32 = finalByteLevelClean(phoneBytes32, 'phoneHash');
+    const finalEmailBytes32 = finalByteLevelClean(emailBytes32, 'emailHash');
+    
+    console.log('✅ Final KYB bytes32 values validated:', {
+      phone: finalPhoneBytes32.substring(0, 20) + '...',
+      email: finalEmailBytes32.substring(0, 20) + '...'
+    });
+    
+    // CRITICAL: Use AbiCoder.encode() directly instead of Interface.encodeFunctionData()
+    // This bypasses any string manipulation that could introduce escape sequences
+    try {
+      const abiCoder = ethers.AbiCoder.defaultAbiCoder();
+      const encodedParams = abiCoder.encode(
+        ['string', 'bytes32', 'bytes32', 'bool'],
+        [
+          cleanedUserId,
+          finalPhoneBytes32,
+          finalEmailBytes32,
+          approvalStatus
+        ]
+      );
+      
+      // Combine function selector with encoded parameters
+      const functionData = functionSelector + encodedParams.slice(2);
+      
+      console.log('✅ Function data encoded successfully, length:', functionData.length);
+      
+      // Send transaction directly using signer
+      const tx = await signer.sendTransaction({
+        to: contractAddress,
+        data: functionData
+      });
+      
+      await tx.wait();
+      return tx.hash;
+    } catch (encodeError: any) {
+      console.error('❌ AbiCoder.encode failed:', {
+        error: encodeError.message,
+        errorCode: encodeError.code,
+        argument: encodeError.argument,
+        value: encodeError.value ? String(encodeError.value).substring(0, 50) : 'N/A'
+      });
+      throw new Error(`Parameter encoding failed: ${encodeError.message}`);
+    }
   } catch (error: any) {
     // Check if it's a gas/balance error
     if (error.message?.includes('insufficient funds') || error.message?.includes('gas') || error.code === 'INSUFFICIENT_FUNDS') {

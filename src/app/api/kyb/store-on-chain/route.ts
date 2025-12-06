@@ -180,9 +180,86 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // CRITICAL: Clean phone and email data before hashing
+    // This prevents escape sequences from being included in the hash
+    const cleanData = (data: any): string => {
+      if (!data) return '';
+      
+      // Convert to string
+      let str = typeof data === 'string' ? data : String(data);
+      
+      // CRITICAL: Remove ALL escape sequences and control characters
+      str = str.replace(/\\r\\n/g, ''); // Remove literal \r\n
+      str = str.replace(/\\n/g, ''); // Remove literal \n
+      str = str.replace(/\\r/g, ''); // Remove literal \r
+      str = str.replace(/\\/g, ''); // Remove all backslashes
+      str = str.replace(/[\r\n\u000A\u000D\u2028\u2029]/g, ''); // Remove actual newlines
+      str = str.replace(/[\s\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\uFEFF]/g, ''); // Remove all whitespace
+      str = str.replace(/[\x00-\x1F\x7F-\x9F]/g, ''); // Remove control characters
+      str = str.trim();
+      
+      return str;
+    };
+    
     // Hash and salt phone and email separately
-    const phoneHash = hashAndSaltForBNBChain(phoneData);
-    const emailHash = hashAndSaltForBNBChain(emailData);
+    const phoneHash = hashAndSaltForBNBChain(cleanData(phoneData));
+    const emailHash = hashAndSaltForBNBChain(cleanData(emailData));
+    
+    // CRITICAL: Extract and clean hash values immediately after generation
+    // This prevents any escape sequences from being passed to the blockchain function
+    const extractCleanHash = (hashObj: { hash: string; salt: string }): string => {
+      let hashValue = hashObj.hash;
+      
+      // Remove ALL backslashes first (removes all escape sequences)
+      hashValue = hashValue.replace(/\\/g, '');
+      
+      // Remove actual newline characters
+      hashValue = hashValue.replace(/[\r\n\u000A\u000D\u2028\u2029]/g, '');
+      
+      // Remove ALL whitespace and control characters
+      hashValue = hashValue.replace(/[\s\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\uFEFF]/g, '');
+      hashValue = hashValue.replace(/[\x00-\x1F\x7F-\x9F]/g, '');
+      
+      // Extract ONLY hex characters character by character
+      let hexOnly = '';
+      for (let i = 0; i < hashValue.length; i++) {
+        const char = hashValue[i].toLowerCase();
+        if ((char >= '0' && char <= '9') || (char >= 'a' && char <= 'f')) {
+          hexOnly += char;
+        }
+      }
+      
+      // Pad to 64
+      const padded = hexOnly.padStart(64, '0').slice(0, 64);
+      
+      // Final validation
+      if (!/^[0-9a-f]{64}$/.test(padded)) {
+        throw new Error('Invalid hash: not pure hex after extraction');
+      }
+      
+      // Convert to Buffer and back to ensure absolute byte-level cleanliness
+      const buffer = Buffer.from(padded, 'hex');
+      if (buffer.length !== 32) {
+        throw new Error(`Invalid buffer length: ${buffer.length}, expected 32`);
+      }
+      const cleanHex = buffer.toString('hex');
+      
+      // Final validation
+      if (cleanHex.length !== 64 || !/^[0-9a-f]{64}$/.test(cleanHex)) {
+        throw new Error('Invalid clean hex after Buffer conversion');
+      }
+      
+      return cleanHex;
+    };
+    
+    // Extract clean hashes
+    const cleanPhoneHash = extractCleanHash(phoneHash);
+    const cleanEmailHash = extractCleanHash(emailHash);
+    
+    console.log('✅ KYB hashes extracted and cleaned:', {
+      phone: cleanPhoneHash.substring(0, 20) + '...',
+      email: cleanEmailHash.substring(0, 20) + '...'
+    });
 
     // Connect to BNB Smart Chain
     const provider = new ethers.JsonRpcProvider(getBNBChainRPC());
@@ -190,12 +267,34 @@ export async function POST(request: NextRequest) {
 
     // Use userId or orgId as identifier
     const identifier = userId || orgId;
+    
+    // CRITICAL: Clean identifier to remove any escape sequences
+    const cleanIdentifier = (id: string): string => {
+      if (!id || typeof id !== 'string') {
+        throw new Error('Invalid identifier: must be a non-empty string');
+      }
+      
+      let cleaned = String(id);
+      cleaned = cleaned.replace(/[\r\n\u000A\u000D\u2028\u2029]/g, '');
+      cleaned = cleaned.replace(/\\[rn]/g, '');
+      cleaned = cleaned.replace(/[\x00-\x1F\x7F-\x9F]/g, '');
+      cleaned = cleaned.replace(/\\/g, '');
+      cleaned = cleaned.trim();
+      
+      if (cleaned.length === 0) {
+        throw new Error('Invalid identifier: contains no valid characters after cleaning');
+      }
+      
+      return cleaned;
+    };
+    
+    const cleanedIdentifier = cleanIdentifier(identifier);
 
-    // Store on BNB Smart Chain
+    // Store on BNB Smart Chain with cleaned hash values
     const txHash = await storeKYBOnBNBChain(
-      phoneHash.hash,
-      emailHash.hash,
-      identifier,
+      cleanPhoneHash, // Already cleaned hex string (64 chars, no 0x)
+      cleanEmailHash, // Already cleaned hex string (64 chars, no 0x)
+      cleanedIdentifier,
       approvalStatus !== false, // Default to true if not specified
       signer
     );

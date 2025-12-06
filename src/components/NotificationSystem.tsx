@@ -95,19 +95,39 @@ export default function NotificationSystem() {
     const firestore = db;
     if (!firestore) return;
 
-    const notificationsQuery = query(
-      collection(firestore, 'notifications'),
-      where('userId', '==', user.uid),
-      orderBy('createdAt', 'desc')
-    );
+    // CRITICAL: Query notifications - handle both timestamp formats (number and Firestore Timestamp)
+    // If orderBy fails due to missing index, fall back to client-side sorting
+    let notificationsQuery;
+    try {
+      notificationsQuery = query(
+        collection(firestore, 'notifications'),
+        where('userId', '==', user.uid),
+        orderBy('createdAt', 'desc')
+      );
+    } catch (error: any) {
+      // If index is missing, query without orderBy and sort client-side
+      console.warn('⚠️ Notification index missing, using client-side sort:', error);
+      notificationsQuery = query(
+        collection(firestore, 'notifications'),
+        where('userId', '==', user.uid)
+      );
+    }
 
     let previousNotificationIds = new Set<string>();
     
     const unsubscribe = onSnapshot(notificationsQuery, (snapshot) => {
-      const notifs = snapshot.docs.map((doc: any) => ({
+      let notifs = snapshot.docs.map((doc: any) => ({
         id: doc.id,
         ...doc.data()
       })) as Notification[];
+      
+      // CRITICAL: If query doesn't have orderBy, sort client-side by createdAt
+      // Handle both number and Firestore Timestamp formats
+      notifs = notifs.sort((a, b) => {
+        const aTime = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : (a.createdAt || 0);
+        const bTime = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : (b.createdAt || 0);
+        return bTime - aTime; // Descending order
+      });
 
       // Check for new unread notifications (not just count increase)
       const currentNotificationIds = new Set(notifs.map(n => n.id));

@@ -59,21 +59,41 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
         }
 
         // Real-time listener for notifications
-        const notificationsQuery = query(
-          collection(dbInstance, 'notifications'),
-          where('userId', '==', user.uid),
-          orderBy('createdAt', 'desc'),
-          limit(50)
-        );
+        // CRITICAL: Handle missing index gracefully - try with orderBy first, fallback if needed
+        let notificationsQuery;
+        try {
+          notificationsQuery = query(
+            collection(dbInstance, 'notifications'),
+            where('userId', '==', user.uid),
+            orderBy('createdAt', 'desc'),
+            limit(50)
+          );
+        } catch (error: any) {
+          // If index is missing, query without orderBy and sort client-side
+          console.warn('⚠️ Notification index missing, using client-side sort:', error);
+          notificationsQuery = query(
+            collection(dbInstance, 'notifications'),
+            where('userId', '==', user.uid),
+            limit(50)
+          );
+        }
 
         unsubscribe = onSnapshot(notificationsQuery, (snapshot) => {
           if (!isMounted) return;
           
-          const notificationsData = snapshot.docs.map(doc => ({
+          let notificationsData = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
             createdAt: safeToDate(doc.data().createdAt),
           })) as Notification[];
+          
+          // CRITICAL: If query doesn't have orderBy, sort client-side by createdAt
+          // Sort by timestamp (handle both Date objects and numbers)
+          notificationsData = notificationsData.sort((a, b) => {
+            const aTime = a.createdAt instanceof Date ? a.createdAt.getTime() : (a.createdAt || 0);
+            const bTime = b.createdAt instanceof Date ? b.createdAt.getTime() : (b.createdAt || 0);
+            return bTime - aTime; // Descending order
+          });
 
           setNotifications(notificationsData);
           setIsLoading(false);

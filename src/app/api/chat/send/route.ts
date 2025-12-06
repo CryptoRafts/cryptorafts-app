@@ -127,6 +127,10 @@ export async function POST(req: NextRequest) {
         messageRoute = '/influencer/messages';
       }
       
+      // CRITICAL: Use serverTimestamp() for createdAt to ensure proper ordering and indexing
+      // Import serverTimestamp from firebase-admin/firestore
+      const { FieldValue } = await import('firebase-admin/firestore');
+      
       await db.collection('notifications').add({
         userId: memberId,
         type: 'message',
@@ -142,7 +146,7 @@ export async function POST(req: NextRequest) {
         },
         read: false,
         timestamp: Date.now(),
-        createdAt: Date.now()
+        createdAt: FieldValue.serverTimestamp() // FIXED: Use serverTimestamp() like call notifications
       });
     }
 
